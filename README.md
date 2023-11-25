@@ -11,7 +11,7 @@ AndroidPDFPreview is a lightweight and easy-to-use SDK that enables you to displ
 To install AndroidPDFPreview, add the following dependency to your project's Gradle file:
 ```
 dependencies {
-    implementation 'com.github.your-username:androidpdfpreview:1.0.0'
+    implementation 'com.github.rhariskumar3:androidpdfpreview:1.0.0'
 }
 ```
 
@@ -20,7 +20,7 @@ To use AndroidPDFPreview, simply create a PDFView instance and pass it the path 
 
 XML
 ```
-<com.github.your-username.androidpdfpreview.PDFView
+<com.github.rhariskumar3.androidpdfpreview.PDFView
     android:id="@+id/pdf_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
