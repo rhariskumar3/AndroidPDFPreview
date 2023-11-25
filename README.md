@@ -47,8 +47,8 @@ If you have any questions or feedback, please feel free to contact us at [email 
 
 ## Acknowledgements
 We would like to thank the following projects for their contributions to AndroidPDFPreview:
-* [PdfiumAndroid](https://github.com/mshockwave/PdfiumAndroid)
-* [barteksc/AndroidPdfViewer](https://github.com/barteksc/AndroidPdfViewer)
+* [PdfiumAndroid](https://github.com/mhiew/PdfiumAndroid)
+* [AndroidPdfViewer](https://github.com/barteksc/AndroidPdfViewer)
 
 We hope you find AndroidPDFPreview to be a valuable tool for developing your Android apps.
 
