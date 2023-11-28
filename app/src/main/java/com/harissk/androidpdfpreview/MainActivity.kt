@@ -13,12 +13,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toFile
 import androidx.databinding.DataBindingUtil
 import com.harissk.androidpdfpreview.databinding.ActivityMainBinding
+import com.harissk.pdfium.Meta
 import com.harissk.pdfpreview.PDFView
 import com.harissk.pdfpreview.listener.OnLoadCompleteListener
 import com.harissk.pdfpreview.listener.OnPageChangeListener
 import com.harissk.pdfpreview.listener.OnPageErrorListener
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
-import com.shockwave.pdfium.PdfDocument
 import java.io.File
 import kotlin.random.Random
 
@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteLi
         Log.d("=====>", "loadComplete() called with: nbPages = $nbPages")
 
         Log.d("=====>", "=============")
-        val meta: PdfDocument.Meta? = binding.pdfView.documentMeta
+        val meta: Meta? = binding.pdfView.documentMeta
         Log.d("=====>", "title = ${meta?.title}")
         Log.d("=====>", "author = ${meta?.author}")
         Log.d("=====>", "subject = ${meta?.subject}")

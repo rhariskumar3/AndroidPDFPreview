@@ -4,13 +4,15 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.RectF
 import android.util.SparseBooleanArray
+import com.harissk.pdfium.Bookmark
+import com.harissk.pdfium.Link
+import com.harissk.pdfium.Meta
+import com.harissk.pdfium.PdfiumCore
+import com.harissk.pdfium.util.Size
+import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.utils.PageSizeCalculator
-import com.shockwave.pdfium.PdfDocument
-import com.shockwave.pdfium.PdfiumCore
-import com.shockwave.pdfium.util.Size
-import com.shockwave.pdfium.util.SizeF
 
 
 /**
@@ -19,7 +21,6 @@ import com.shockwave.pdfium.util.SizeF
 
 class PdfFile(
     pdfiumCore: PdfiumCore?,
-    pdfDocument: PdfDocument?,
     pageFitPolicy: FitPolicy,
     viewSize: Size,
     originalUserPages: IntArray?,
@@ -28,7 +29,6 @@ class PdfFile(
     autoSpacing: Boolean,
     fitEachPage: Boolean,
 ) {
-    private var pdfDocument: PdfDocument?
     private val pdfiumCore: PdfiumCore?
     private var pagesCount = 0
 
@@ -86,7 +86,6 @@ class PdfFile(
 
     init {
         this.pdfiumCore = pdfiumCore
-        this.pdfDocument = pdfDocument
         this.pageFitPolicy = pageFitPolicy
         this.originalUserPages = originalUserPages
         this.isVertical = isVertical
@@ -100,10 +99,10 @@ class PdfFile(
         pagesCount = if (originalUserPages != null) {
             originalUserPages!!.size
         } else {
-            pdfiumCore!!.getPageCount(pdfDocument)
+            pdfiumCore!!.getPageCount()
         }
         for (i in 0 until pagesCount) {
-            val pageSize: Size = pdfiumCore!!.getPageSize(pdfDocument, documentPage(i))
+            val pageSize: Size = pdfiumCore!!.getPageSize(documentPage(i))
             if (pageSize.width > originalMaxWidthPageSize.width) {
                 originalMaxWidthPageSize = pageSize
             }
@@ -280,7 +279,7 @@ class PdfFile(
         synchronized(lock) {
             return if (openedPages.indexOfKey(docPage) < 0) {
                 try {
-                    pdfiumCore!!.openPage(pdfDocument, docPage)
+                    pdfiumCore!!.openPage(docPage)
                     openedPages.put(docPage, true)
                     true
                 } catch (e: Exception) {
@@ -297,31 +296,25 @@ class PdfFile(
     }
 
     fun renderPageBitmap(
-        bitmap: Bitmap?,
+        bitmap: Bitmap,
         pageIndex: Int,
         bounds: Rect,
         annotationRendering: Boolean,
     ) {
         val docPage = documentPage(pageIndex)
         pdfiumCore!!.renderPageBitmap(
-            pdfDocument, bitmap, docPage,
+            bitmap, docPage,
             bounds.left, bounds.top, bounds.width(), bounds.height(), annotationRendering
         )
     }
 
-    fun getMetaData(): PdfDocument.Meta? = when (pdfDocument) {
-        null -> null
-        else -> pdfiumCore?.getDocumentMeta(pdfDocument)
-    }
+    fun getMetaData(): Meta? = pdfiumCore?.getDocumentMeta()
 
-    fun getBookmarks(): List<PdfDocument.Bookmark> = when (pdfDocument) {
-        null -> null
-        else -> pdfiumCore?.getTableOfContents(pdfDocument)
-    }.orEmpty()
+    fun getBookmarks(): List<Bookmark> = pdfiumCore?.getTableOfContents().orEmpty()
 
-    fun getPageLinks(pageIndex: Int): List<PdfDocument.Link> {
+    fun getPageLinks(pageIndex: Int): List<Link> {
         val docPage = documentPage(pageIndex)
-        return pdfiumCore?.getPageLinks(pdfDocument, docPage).orEmpty()
+        return pdfiumCore?.getPageLinks(docPage).orEmpty()
     }
 
     fun mapRectToDevice(
@@ -329,23 +322,21 @@ class PdfFile(
         rect: RectF?,
     ): RectF {
         val docPage = documentPage(pageIndex)
-        return pdfiumCore!!.mapRectToDevice(
-            pdfDocument,
+        return pdfiumCore!!.mapPageCoordinateToDevice(
             docPage,
             startX,
             startY,
             sizeX,
             sizeY,
             0,
-            rect
+            rect!!
         )
     }
 
     fun dispose() {
-        if (pdfiumCore != null && pdfDocument != null) {
-            pdfiumCore.closeDocument(pdfDocument)
+        if (pdfiumCore != null) {
+            pdfiumCore.closeDocument()
         }
-        pdfDocument = null
         originalUserPages = null
     }
 

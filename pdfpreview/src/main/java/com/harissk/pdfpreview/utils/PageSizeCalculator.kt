@@ -1,7 +1,7 @@
 package com.harissk.pdfpreview.utils
 
-import com.shockwave.pdfium.util.Size
-import com.shockwave.pdfium.util.SizeF
+import com.harissk.pdfium.util.Size
+import com.harissk.pdfium.util.SizeF
 import kotlin.math.floor
 
 /**

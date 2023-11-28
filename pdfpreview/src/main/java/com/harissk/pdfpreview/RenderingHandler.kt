@@ -57,13 +57,13 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
             val part = proceed(task)
             if (part != null) {
                 if (running) {
-                    pdfView.post(Runnable { pdfView.onBitmapRendered(part) })
+                    pdfView.post { pdfView.onBitmapRendered(part) }
                 } else {
                     part.renderedBitmap!!.recycle()
                 }
             }
         } catch (ex: PageRenderingException) {
-            pdfView.post(Runnable { pdfView.onPageError(ex) })
+            pdfView.post { pdfView.onPageError(ex) }
         }
     }
 

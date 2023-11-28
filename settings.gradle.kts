@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "PDF Preview"
 include(":app")
 include(":pdfpreview")
+include(":pdfium")

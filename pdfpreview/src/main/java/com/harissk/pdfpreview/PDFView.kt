@@ -16,6 +16,12 @@ import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
 import android.widget.RelativeLayout
+import com.harissk.pdfium.Bookmark
+import com.harissk.pdfium.Link
+import com.harissk.pdfium.Meta
+import com.harissk.pdfium.PdfiumCore
+import com.harissk.pdfium.util.Size
+import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.link.DefaultLinkHandler
 import com.harissk.pdfpreview.link.LinkHandler
@@ -42,10 +48,6 @@ import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.utils.MathUtils
 import com.harissk.pdfpreview.utils.SnapEdge
 import com.harissk.pdfpreview.utils.Util.getDP
-import com.shockwave.pdfium.PdfDocument
-import com.shockwave.pdfium.PdfiumCore
-import com.shockwave.pdfium.util.Size
-import com.shockwave.pdfium.util.SizeF
 import java.io.File
 import java.io.InputStream
 
@@ -167,7 +169,7 @@ class PDFView(context: Context?, set: AttributeSet?) :
     var isPageSnap = true
 
     /** Pdfium core for loading and rendering PDFs  */
-    private val pdfiumCore: PdfiumCore = PdfiumCore(context)
+    private val pdfiumCore: PdfiumCore = PdfiumCore()
     var scrollHandle: ScrollHandle? = null
         private set
     private var isScrollHandleInit = false
@@ -1056,15 +1058,15 @@ class PDFView(context: Context?, set: AttributeSet?) :
     fun doRenderDuringScale(): Boolean = renderDuringScale
 
     /** Returns null if document is not loaded  */
-    val documentMeta: PdfDocument.Meta?
+    val documentMeta: Meta?
         get() = pdfFile?.getMetaData()
 
     /** Will be empty until document is loaded  */
-    val tableOfContents: List<PdfDocument.Bookmark>
+    val tableOfContents: List<Bookmark>
         get() = pdfFile?.getBookmarks().orEmpty()
 
     /** Will be empty until document is loaded  */
-    fun getLinks(page: Int): List<PdfDocument.Link> = pdfFile?.getPageLinks(page).orEmpty()
+    fun getLinks(page: Int): List<Link> = pdfFile?.getPageLinks(page).orEmpty()
 
     /** Use an asset file as the pdf source  */
     fun fromAsset(assetName: String?): Configurator {

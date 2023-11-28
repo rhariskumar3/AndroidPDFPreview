@@ -2,8 +2,7 @@ package com.harissk.pdfpreview.source
 
 import android.content.Context
 import android.net.Uri
-import com.shockwave.pdfium.PdfDocument
-import com.shockwave.pdfium.PdfiumCore
+import com.harissk.pdfium.PdfiumCore
 import java.io.IOException
 
 
@@ -18,7 +17,7 @@ class UriSource(private val uri: Uri) : DocumentSource {
         context: Context,
         core: PdfiumCore,
         password: String?,
-    ): PdfDocument? {
+    ) {
         val pfd = context.contentResolver.openFileDescriptor(uri, "r")
         return core.newDocument(pfd, password)
     }

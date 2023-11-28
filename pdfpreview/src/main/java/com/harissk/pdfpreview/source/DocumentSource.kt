@@ -1,8 +1,7 @@
 package com.harissk.pdfpreview.source
 
 import android.content.Context
-import com.shockwave.pdfium.PdfDocument
-import com.shockwave.pdfium.PdfiumCore
+import com.harissk.pdfium.PdfiumCore
 import java.io.IOException
 
 
@@ -12,5 +11,5 @@ import java.io.IOException
 
 fun interface DocumentSource {
     @Throws(IOException::class)
-    fun createDocument(context: Context, core: PdfiumCore, password: String?): PdfDocument?
+    fun createDocument(context: Context, core: PdfiumCore, password: String?)
 }

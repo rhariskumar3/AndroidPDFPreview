@@ -7,12 +7,12 @@ import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.View
 import android.view.View.OnTouchListener
+import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.scroll.ScrollHandle
 import com.harissk.pdfpreview.utils.Constants.Pinch.MAXIMUM_ZOOM
 import com.harissk.pdfpreview.utils.Constants.Pinch.MINIMUM_ZOOM
 import com.harissk.pdfpreview.utils.SnapEdge
-import com.shockwave.pdfium.util.SizeF
 import kotlin.math.abs
 
 

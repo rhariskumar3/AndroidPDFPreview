@@ -1,10 +1,9 @@
 package com.harissk.pdfpreview
 
 import android.os.AsyncTask
+import com.harissk.pdfium.PdfiumCore
+import com.harissk.pdfium.util.Size
 import com.harissk.pdfpreview.source.DocumentSource
-import com.shockwave.pdfium.PdfDocument
-import com.shockwave.pdfium.PdfiumCore
-import com.shockwave.pdfium.util.Size
 import java.lang.ref.WeakReference
 
 
@@ -41,11 +40,9 @@ internal class DecodingAsyncTask(
         return try {
             val pdfView = pdfViewReference.get()
             if (pdfView != null) {
-                val pdfDocument: PdfDocument? =
-                    docSource.createDocument(pdfView.context, pdfiumCore, password)
+                docSource.createDocument(pdfView.context, pdfiumCore, password)
                 pdfFile = PdfFile(
                     pdfiumCore = pdfiumCore,
-                    pdfDocument = pdfDocument,
                     pageFitPolicy = pdfView.pageFitPolicy,
                     viewSize = getViewSize(pdfView),
                     originalUserPages = userPages,
