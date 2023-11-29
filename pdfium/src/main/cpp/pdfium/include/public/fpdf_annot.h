@@ -47,6 +47,7 @@ extern "C" {
 #define FPDF_ANNOT_THREED 25
 #define FPDF_ANNOT_RICHMEDIA 26
 #define FPDF_ANNOT_XFAWIDGET 27
+#define FPDF_ANNOT_REDACT 28
 
 // Refer to PDF Reference (6th edition) table 8.16 for all annotation flags.
 #define FPDF_ANNOT_FLAG_NONE 0
@@ -90,8 +91,17 @@ typedef enum FPDFANNOT_COLORTYPE {
 
 // Experimental API.
 // Check if an annotation subtype is currently supported for creation.
-// Currently supported subtypes: circle, highlight, ink, popup, square,
-// squiggly, stamp, strikeout, text, and underline.
+// Currently supported subtypes:
+//    - circle
+//    - highlight
+//    - ink
+//    - popup
+//    - square,
+//    - squiggly
+//    - stamp
+//    - strikeout
+//    - text
+//    - underline
 //
 //   subtype   - the subtype to be checked.
 //
@@ -197,8 +207,8 @@ FPDFAnnot_UpdateObject(FPDF_ANNOTATION annot, FPDF_PAGEOBJECT obj);
 // Experimental API.
 // Add a new InkStroke, represented by an array of points, to the InkList of
 // |annot|. The API creates an InkList if one doesn't already exist in |annot|.
-// This API works only for ink annotations. Please refer section 12.5.6.13 in
-// PDF 32000-1:2008 Specification.
+// This API works only for ink annotations. Please refer to ISO 32000-1:2008
+// spec, section 12.5.6.13.
 //
 //   annot       - handle to an annotation.
 //   points      - pointer to a FS_POINTF array representing input points.

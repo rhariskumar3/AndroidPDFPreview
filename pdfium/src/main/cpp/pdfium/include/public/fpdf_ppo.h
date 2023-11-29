@@ -18,11 +18,13 @@ extern "C" {
 //
 //   dest_doc  - The destination document for the pages.
 //   src_doc   - The document to be imported.
-//   pagerange - A page range string, Such as "1,3,5-7". If |pagerange| is NULL,
-//               all pages from |src_doc| are imported.
-//   index     - The page index to insert at.
+//   pagerange - A page range string, Such as "1,3,5-7". The first page is one.
+//               If |pagerange| is NULL, all pages from |src_doc| are imported.
+//   index     - The page index at which to insert the first imported page into
+//               |dest_doc|. The first page is zero.
 //
-// Returns TRUE on success.
+// Returns TRUE on success. Returns FALSE if any pages in |pagerange| is
+// invalid or if |pagerange| cannot be read.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDF_ImportPages(FPDF_DOCUMENT dest_doc,
                                                      FPDF_DOCUMENT src_doc,
                                                      FPDF_BYTESTRING pagerange,

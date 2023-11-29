@@ -62,7 +62,7 @@ FPDF_StructTree_GetChildAtIndex(FPDF_STRUCTTREE struct_tree, int index);
 //          buffer         -   A buffer for output the alt text. May be NULL.
 //          buflen         -   The length of the buffer, in bytes. May be 0.
 // Return value:
-//          The number of bytes in the title, including the terminating NUL
+//          The number of bytes in the alt text, including the terminating NUL
 //          character. The number of bytes is returned regardless of the
 //          |buffer| and |buflen| parameters.
 // Comments:
@@ -154,8 +154,8 @@ FPDF_StructElement_GetMarkedContentID(FPDF_STRUCTELEMENT struct_element);
 //           Get the type (/S) for a given element.
 // Parameters:
 //           struct_element - Handle to the struct element.
-//           buffer        - A buffer for output. May be NULL.
-//           buflen        - The length of the buffer, in bytes. May be 0.
+//           buffer         - A buffer for output. May be NULL.
+//           buflen         - The length of the buffer, in bytes. May be 0.
 // Return value:
 //           The number of bytes in the type, including the terminating NUL
 //           character. The number of bytes is returned regardless of the
@@ -202,8 +202,8 @@ FPDF_StructElement_CountChildren(FPDF_STRUCTELEMENT struct_element);
 // Function: FPDF_StructElement_GetChildAtIndex
 //          Get a child in the structure element.
 // Parameters:
-//          struct_tree -   Handle to the struct element.
-//          index       -   The index for the child, 0-based.
+//          struct_element -   Handle to the struct element.
+//          index          -   The index for the child, 0-based.
 // Return value:
 //          The child at the n-th index or NULL on error.
 // Comments:

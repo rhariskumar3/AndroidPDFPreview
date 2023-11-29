@@ -71,6 +71,8 @@
 #define FPDF_PRINTMODE_POSTSCRIPT2_PASSTHROUGH 4
 #define FPDF_PRINTMODE_POSTSCRIPT3_PASSTHROUGH 5
 #define FPDF_PRINTMODE_EMF_IMAGE_MASKS 6
+#define FPDF_PRINTMODE_POSTSCRIPT3_TYPE42 7
+#define FPDF_PRINTMODE_POSTSCRIPT3_TYPE42_PASSTHROUGH 8
 
 typedef struct FPDF_IMAGEOBJ_METADATA {
   // The image width in pixels.
@@ -639,7 +641,7 @@ FPDFImageObj_GetBitmap(FPDF_PAGEOBJECT image_object);
 // Get a bitmap rasterization of |image_object| that takes the image mask and
 // image matrix into account. To render correctly, the caller must provide the
 // |document| associated with |image_object|. If there is a |page| associated
-// with |image_object| the caller should provide that as well.
+// with |image_object|, the caller should provide that as well.
 // The returned bitmap will be owned by the caller, and FPDFBitmap_Destroy()
 // must be called on the returned bitmap when it is no longer needed.
 //
@@ -647,7 +649,7 @@ FPDFImageObj_GetBitmap(FPDF_PAGEOBJECT image_object);
 //   page         - handle to an optional page associated with |image_object|.
 //   image_object - handle to an image object.
 //
-// Returns the bitmap.
+// Returns the bitmap or NULL on failure.
 FPDF_EXPORT FPDF_BITMAP FPDF_CALLCONV
 FPDFImageObj_GetRenderedBitmap(FPDF_DOCUMENT document,
                                FPDF_PAGE page,
@@ -753,7 +755,7 @@ FPDF_EXPORT FPDF_PAGEOBJECT FPDF_CALLCONV FPDFPageObj_CreateNewRect(float x,
 // right        - pointer where the right coordinate will be stored
 // top          - pointer where the top coordinate will be stored
 //
-// Returns TRUE on success.
+// On success, returns TRUE and fills in the 4 coordinates.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFPageObj_GetBounds(FPDF_PAGEOBJECT page_object,
                       float* left,
@@ -1067,7 +1069,7 @@ FPDFPageObj_NewTextObj(FPDF_DOCUMENT document,
                        FPDF_BYTESTRING font,
                        float font_size);
 
-// Set the text for a textobject. If it had text, it will be replaced.
+// Set the text for a text object. If it had text, it will be replaced.
 //
 // text_object  - handle to the text object.
 // text         - the UTF-16LE encoded string containing the text to be added.
