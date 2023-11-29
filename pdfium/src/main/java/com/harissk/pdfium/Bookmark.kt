@@ -5,9 +5,9 @@ package com.harissk.pdfium
  */
 
 data class Bookmark(
-    val title: String? = null,
+    val title: String,
     val pageIdx: Long = 0,
-    val children: ArrayList<Bookmark> = ArrayList(),
+    val children: ArrayList<Bookmark> = arrayListOf(),
     val mNativePtr: Long = -1,
 ) {
     val hasChildren

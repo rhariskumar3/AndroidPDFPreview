@@ -8,18 +8,15 @@ import java.lang.reflect.Field
  * Created by Harishkumar on 26/11/23.
  */
 object FileUtils {
-    private val FD_CLASS: Class<*> = FileDescriptor::class.java
-
-    private var mFdField: Field? = null
+    private val mFdField: Field by lazy {
+        FileDescriptor::class.java.getDeclaredField("descriptor").apply {
+            isAccessible = true
+        }
+    }
 
     fun getNumFd(fdObj: ParcelFileDescriptor?): Int = try {
-        if (mFdField == null) {
-            mFdField = FD_CLASS.getDeclaredField("descriptor")
-            mFdField?.isAccessible = true
-        }
-        mFdField?.getInt(fdObj?.fileDescriptor) ?: -1
-    } catch (e: ReflectiveOperationException) {
-        e.printStackTrace()
+        mFdField.getInt(fdObj?.fileDescriptor ?: throw NullPointerException())
+    } catch (e: Exception) {
         -1
     }
 }

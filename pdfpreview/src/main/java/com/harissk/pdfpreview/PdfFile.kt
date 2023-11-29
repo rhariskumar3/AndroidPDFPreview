@@ -99,7 +99,7 @@ class PdfFile(
         pagesCount = if (originalUserPages != null) {
             originalUserPages!!.size
         } else {
-            pdfiumCore!!.getPageCount()
+            pdfiumCore!!.pageCount
         }
         for (i in 0 until pagesCount) {
             val pageSize: Size = pdfiumCore!!.getPageSize(documentPage(i))
@@ -308,7 +308,7 @@ class PdfFile(
         )
     }
 
-    fun getMetaData(): Meta? = pdfiumCore?.getDocumentMeta()
+    fun getMetaData(): Meta? = pdfiumCore?.documentMeta
 
     fun getBookmarks(): List<Bookmark> = pdfiumCore?.getTableOfContents().orEmpty()
 
@@ -319,7 +319,7 @@ class PdfFile(
 
     fun mapRectToDevice(
         pageIndex: Int, startX: Int, startY: Int, sizeX: Int, sizeY: Int,
-        rect: RectF?,
+        rect: RectF,
     ): RectF {
         val docPage = documentPage(pageIndex)
         return pdfiumCore!!.mapPageCoordinateToDevice(
@@ -329,14 +329,12 @@ class PdfFile(
             sizeX,
             sizeY,
             0,
-            rect!!
+            rect
         )
     }
 
     fun dispose() {
-        if (pdfiumCore != null) {
-            pdfiumCore.closeDocument()
-        }
+        pdfiumCore?.closeDocument()
         originalUserPages = null
     }
 

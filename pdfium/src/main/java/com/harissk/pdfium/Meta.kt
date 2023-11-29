@@ -5,12 +5,12 @@ package com.harissk.pdfium
  */
 
 data class Meta(
-    val title: String? = null,
-    val author: String? = null,
-    val subject: String? = null,
-    val keywords: String? = null,
-    val creator: String? = null,
-    val producer: String? = null,
-    val creationDate: String? = null,
-    val modDate: String? = null,
+    val title: String,
+    val author: String,
+    val subject: String,
+    val keywords: String,
+    val creator: String,
+    val producer: String,
+    val creationDate: String,
+    val modDate: String,
 )

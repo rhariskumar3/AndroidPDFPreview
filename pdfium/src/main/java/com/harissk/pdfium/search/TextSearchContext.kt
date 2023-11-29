@@ -7,16 +7,16 @@ import android.graphics.RectF
  */
 
 interface TextSearchContext {
+    val pageIndex: Int
+    val query: String?
+    val isMatchCase: Boolean
+    val isMatchWholeWord: Boolean
+    val countResult: Int
+    val hasNext: Boolean
+    val hasPrev: Boolean
+    val searchNext: RectF?
+    val searchPrev: RectF?
     fun prepareSearch()
-    fun getPageIndex(): Int
-    fun getQuery(): String?
-    fun isMatchCase(): Boolean
-    fun isMatchWholeWord(): Boolean
-    fun countResult(): Int
-    operator fun hasNext(): Boolean
-    fun hasPrev(): Boolean
-    fun searchNext(): RectF?
-    fun searchPrev(): RectF?
     fun startSearch()
     fun stopSearch()
 }

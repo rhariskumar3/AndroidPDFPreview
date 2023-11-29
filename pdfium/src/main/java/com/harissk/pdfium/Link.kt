@@ -7,7 +7,7 @@ import android.graphics.RectF
  */
 
 data class Link(
-    var bounds: RectF? = null,
-    var destPageIdx: Int? = null,
-    var uri: String? = null,
+    val bounds: RectF,
+    val destPageIdx: Int? = null,
+    val uri: String? = null,
 )
