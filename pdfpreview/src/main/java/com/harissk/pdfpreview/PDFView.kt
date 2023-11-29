@@ -11,7 +11,6 @@ import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.RectF
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
@@ -48,6 +47,11 @@ import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.utils.MathUtils
 import com.harissk.pdfpreview.utils.SnapEdge
 import com.harissk.pdfpreview.utils.Util.getDP
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 
@@ -75,8 +79,8 @@ import java.io.InputStream
  * using [.load]. In this
  * particular case, a userPage of 5 can refer to a documentPage of 17.
  */
-class PDFView(context: Context?, set: AttributeSet?) :
-    RelativeLayout(context, set) {
+class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, set) {
+
     var minZoom = DEFAULT_MIN_SCALE
     var midZoom = DEFAULT_MID_SCALE
     var maxZoom = DEFAULT_MAX_SCALE
@@ -128,15 +132,16 @@ class PDFView(context: Context?, set: AttributeSet?) :
     var zoom = 1f
         private set
 
+    /** True if the PDFView has been Recycling  */
+    var isRecycling = false
+        private set
+
     /** True if the PDFView has been recycled  */
     var isRecycled = true
         private set
 
     /** Current state of the view  */
     private var state = State.DEFAULT
-
-    /** Async task used during the loading phase to decode a PDF document  */
-    private var decodingAsyncTask: DecodingAsyncTask? = null
 
     /** The thread [.renderingHandler] will run on  */
     private var renderingHandlerThread: HandlerThread?
@@ -232,12 +237,39 @@ class PDFView(context: Context?, set: AttributeSet?) :
         }
     }
 
-    private fun load(docSource: DocumentSource, password: String?, userPages: IntArray? = null) {
+    private suspend fun load(
+        docSource: DocumentSource,
+        password: String?,
+        userPages: IntArray? = null,
+    ) {
         check(isRecycled) { "Don't call load on a PDF View without recycling it first." }
+        isRecycling = false
         isRecycled = false
+
         // Start decoding document
-        decodingAsyncTask = DecodingAsyncTask(docSource, password, userPages, this, pdfiumCore)
-        decodingAsyncTask?.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        try {
+            val pdfFile = withContext(Dispatchers.IO) {
+                docSource.createDocument(this@PDFView.context, pdfiumCore, password)
+                PdfFile(
+                    pdfiumCore = pdfiumCore,
+                    pageFitPolicy = this@PDFView.pageFitPolicy,
+                    viewSize = Size(this@PDFView.width, this@PDFView.height),
+                    originalUserPages = userPages,
+                    isVertical = this@PDFView.isSwipeVertical,
+                    spacing = this@PDFView.spacingPx,
+                    autoSpacing = this@PDFView.isAutoSpacingEnabled,
+                    fitEachPage = this@PDFView.isFitEachPage
+                )
+            }
+
+            withContext(Dispatchers.Main) {
+                this@PDFView.loadComplete(pdfFile)
+            }
+        } catch (t: Throwable) {
+            withContext(Dispatchers.Main) {
+                this@PDFView.loadError(t)
+            }
+        }
     }
 
     /**
@@ -358,6 +390,8 @@ class PDFView(context: Context?, set: AttributeSet?) :
     }
 
     fun recycle() {
+        isRecycling = true
+
         waitingDocumentConfigurator = null
         animationManager.stopAll()
         dragPinchManager.disable()
@@ -367,7 +401,6 @@ class PDFView(context: Context?, set: AttributeSet?) :
             renderingHandler!!.stop()
             renderingHandler!!.removeMessages(RenderingHandler.MSG_RENDER_TASK)
         }
-        decodingAsyncTask?.cancel(true)
 
         // Clear caches
         cacheManager.recycle()
@@ -384,6 +417,7 @@ class PDFView(context: Context?, set: AttributeSet?) :
         currentYOffset = 0f
         currentXOffset = currentYOffset
         zoom = 1f
+        isRecycling = false
         isRecycled = true
         callbacks = Callbacks()
         state = State.DEFAULT
@@ -407,9 +441,10 @@ class PDFView(context: Context?, set: AttributeSet?) :
         super.onDetachedFromWindow()
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         hasSize = true
-        waitingDocumentConfigurator?.load()
+        GlobalScope.launch { waitingDocumentConfigurator?.load() }
         if (isInEditMode || state != State.SHOWN) {
             return
         }
@@ -665,7 +700,8 @@ class PDFView(context: Context?, set: AttributeSet?) :
     }
 
     /** Called when the PDF is loaded  */
-    fun loadComplete(pdfFile: PdfFile) {
+    private fun loadComplete(pdfFile: PdfFile) {
+        if (isRecycling) return
         state = State.LOADED
         this.pdfFile = pdfFile
         if (!renderingHandlerThread!!.isAlive) {
@@ -682,7 +718,8 @@ class PDFView(context: Context?, set: AttributeSet?) :
         jumpTo(defaultPage, false)
     }
 
-    fun loadError(t: Throwable?) {
+    private fun loadError(t: Throwable?) {
+        if (isRecycling) return
         state = State.ERROR
         // store reference, because callbacks will be cleared in recycle() method
         val onErrorListener: OnErrorListener? = callbacks.getOnError()
@@ -1273,7 +1310,7 @@ class PDFView(context: Context?, set: AttributeSet?) :
             return this
         }
 
-        fun load() {
+        suspend fun load() {
             if (!hasSize) {
                 waitingDocumentConfigurator = this
                 return
@@ -1304,11 +1341,7 @@ class PDFView(context: Context?, set: AttributeSet?) :
             isFitEachPage = fitEachPage
             isPageSnap = pageSnap
             setPageFling(pageFling)
-            if (pageNumbers != null) {
-                this@PDFView.load(documentSource, password, pageNumbers)
-            } else {
-                this@PDFView.load(documentSource, password)
-            }
+            this@PDFView.load(documentSource, password, pageNumbers)
         }
     }
 

@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toFile
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.lifecycleScope
 import com.harissk.androidpdfpreview.databinding.ActivityMainBinding
 import com.harissk.pdfium.Meta
 import com.harissk.pdfpreview.PDFView
@@ -19,6 +20,7 @@ import com.harissk.pdfpreview.listener.OnLoadCompleteListener
 import com.harissk.pdfpreview.listener.OnPageChangeListener
 import com.harissk.pdfpreview.listener.OnPageErrorListener
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
+import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.random.Random
 
@@ -52,20 +54,20 @@ class MainActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteLi
 
     private fun displayFromAsset(assetFileName: String) {
         fileName = assetFileName
-        loadPDF(binding.pdfView.fromAsset(assetFileName))
+        lifecycleScope.launch { loadPDF(binding.pdfView.fromAsset(assetFileName)) }
     }
 
     private fun displayFromUri(uri: Uri) {
         fileName = uri.fileName()
-        loadPDF(binding.pdfView.fromUri(uri))
+        lifecycleScope.launch { loadPDF(binding.pdfView.fromUri(uri)) }
     }
 
     private fun displayFromFile(file: File) {
         fileName = file.nameWithoutExtension
-        loadPDF(binding.pdfView.fromFile(file))
+        lifecycleScope.launch { loadPDF(binding.pdfView.fromFile(file)) }
     }
 
-    private fun loadPDF(configurator: PDFView.Configurator) {
+    private suspend fun loadPDF(configurator: PDFView.Configurator) {
         configurator
             .defaultPage(0)
             .swipeHorizontal(Random.nextBoolean())
