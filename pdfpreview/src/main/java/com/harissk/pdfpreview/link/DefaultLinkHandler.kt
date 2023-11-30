@@ -12,23 +12,17 @@ import com.harissk.pdfpreview.model.LinkTapEvent
 
 class DefaultLinkHandler(private val pdfView: PDFView) : LinkHandler {
 
-    override fun handleLinkEvent(event: LinkTapEvent?) {
-        val uri = event?.link?.uri
-        val page = event?.link?.destPageIdx
-        if (!uri.isNullOrEmpty()) {
-            handleUri(uri)
-        } else page?.let { handlePage(it) }
+    override fun handleLinkEvent(event: LinkTapEvent) {
+        when {
+            event.link.uri != null -> handleUri(event.link.uri!!)
+            event.link.destPageIdx != null -> pdfView.jumpTo(event.link.destPageIdx!!)
+        }
     }
+
 
     private fun handleUri(uri: String) {
-        val parsedUri = Uri.parse(uri)
-        val intent = Intent(Intent.ACTION_VIEW, parsedUri)
-        val context = pdfView.context
-        if (intent.resolveActivity(context.packageManager) == null) return
-        context.startActivity(intent)
-    }
-
-    private fun handlePage(page: Int) {
-        pdfView.jumpTo(page)
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+        if (intent.resolveActivity(pdfView.context.packageManager) == null) return
+        pdfView.context.startActivity(intent)
     }
 }

@@ -19,22 +19,17 @@ import com.harissk.pdfpreview.utils.Util.getDP
  * Created by Harishkumar on 25/11/23.
  */
 
-class DefaultScrollHandle @JvmOverloads constructor(context: Context, inverted: Boolean = false) :
+class DefaultScrollHandle(private val context: Context, private val inverted: Boolean = false) :
     RelativeLayout(context), ScrollHandle {
 
     private var relativeHandlerMiddle = 0f
-    private var textView: TextView
-    private var context: Context
-    private val inverted: Boolean
+    private var textView = TextView(context)
     private var pdfView: PDFView? = null
     private var currentPos = 0f
     private val handler: Handler = Handler()
     private val hidePageScrollerRunnable = Runnable { hide() }
 
     init {
-        this.context = context
-        this.inverted = inverted
-        textView = TextView(context)
         visibility = INVISIBLE
         setTextColor(Color.BLACK)
         setTextSize(DEFAULT_TEXT_SIZE)
@@ -84,14 +79,13 @@ class DefaultScrollHandle @JvmOverloads constructor(context: Context, inverted: 
     }
 
     override fun destroyLayout() {
-        pdfView!!.removeView(this)
+        pdfView?.removeView(this)
     }
 
     override fun setScroll(position: Float) {
-        if (!shown()) {
-            show()
-        } else {
-            handler.removeCallbacks(hidePageScrollerRunnable)
+        when {
+            shown -> handler.removeCallbacks(hidePageScrollerRunnable)
+            else -> show()
         }
         if (pdfView != null) {
             setPosition((if (pdfView!!.isSwipeVertical) pdfView!!.height else pdfView!!.width) * position)
@@ -150,9 +144,8 @@ class DefaultScrollHandle @JvmOverloads constructor(context: Context, inverted: 
         }
     }
 
-    override fun shown(): Boolean {
-        return visibility == VISIBLE
-    }
+    override val shown: Boolean
+        get() = visibility == VISIBLE
 
     override fun show() {
         visibility = VISIBLE

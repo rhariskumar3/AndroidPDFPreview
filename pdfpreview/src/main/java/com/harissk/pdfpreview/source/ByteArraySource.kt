@@ -9,7 +9,7 @@ import java.io.IOException
  * Created by Harishkumar on 25/11/23.
  */
 
-class ByteArraySource(private val data: ByteArray) : DocumentSource {
+internal class ByteArraySource(private val data: ByteArray) : DocumentSource {
 
     @Throws(IOException::class)
     override fun createDocument(

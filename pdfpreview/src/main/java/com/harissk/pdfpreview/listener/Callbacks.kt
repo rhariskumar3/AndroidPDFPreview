@@ -139,7 +139,7 @@ class Callbacks {
         this.linkHandler = linkHandler
     }
 
-    fun callLinkHandler(event: LinkTapEvent?) {
+    fun callLinkHandler(event: LinkTapEvent) {
         linkHandler?.handleLinkEvent(event)
     }
 }

@@ -41,7 +41,7 @@ interface ScrollHandle {
      *
      * @return true if handle is visible, false otherwise
      */
-    fun shown(): Boolean
+    val shown: Boolean
 
     /**
      * Show handle

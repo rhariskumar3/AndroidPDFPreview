@@ -11,15 +11,15 @@ import java.io.IOException
  * Created by Harishkumar on 25/11/23.
  */
 
-class FileSource(private val file: File) : DocumentSource {
+internal class FileSource(private val file: File) : DocumentSource {
 
     @Throws(IOException::class)
     override fun createDocument(
         context: Context,
         core: PdfiumCore,
         password: String?,
-    ) {
-        val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-        return core.newDocument(pfd, password)
-    }
+    ) = core.newDocument(
+        fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY),
+        password = password
+    )
 }

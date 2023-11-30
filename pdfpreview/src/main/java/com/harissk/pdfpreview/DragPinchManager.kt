@@ -9,7 +9,6 @@ import android.view.View
 import android.view.View.OnTouchListener
 import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.model.LinkTapEvent
-import com.harissk.pdfpreview.scroll.ScrollHandle
 import com.harissk.pdfpreview.utils.Constants.Pinch.MAXIMUM_ZOOM
 import com.harissk.pdfpreview.utils.Constants.Pinch.MINIMUM_ZOOM
 import com.harissk.pdfpreview.utils.SnapEdge
@@ -57,12 +56,10 @@ internal class DragPinchManager(private val pdfView: PDFView, animationManager: 
         val onTapHandled: Boolean = pdfView.callbacks.callOnTap(e)
         val linkTapped = checkLinkTapped(e.x, e.y)
         if (!onTapHandled && !linkTapped) {
-            val ps: ScrollHandle? = pdfView.scrollHandle
-            if (ps != null && !pdfView.documentFitsView()) {
-                if (ps.shown()) {
-                    ps.hide()
-                } else {
-                    ps.show()
+            if (!pdfView.documentFitsView()) {
+                when {
+                    pdfView.scrollHandle?.shown == true -> pdfView.scrollHandle?.hide()
+                    else -> pdfView.scrollHandle?.show()
                 }
             }
         }
@@ -309,7 +306,7 @@ internal class DragPinchManager(private val pdfView: PDFView, animationManager: 
     }
 
     private fun hideHandle() {
-        if (pdfView.scrollHandle?.shown() == true) pdfView.scrollHandle?.hideDelayed()
+        if (pdfView.scrollHandle?.shown == true) pdfView.scrollHandle?.hideDelayed()
     }
 
     private fun checkDoPageFling(velocityX: Float, velocityY: Float): Boolean {

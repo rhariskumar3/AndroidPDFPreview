@@ -16,21 +16,6 @@ object MathUtils {
      * @param and     The biggest value the number can take.
      * @return The limited number.
      */
-    fun limit(number: Int, between: Int, and: Int): Int {
-        if (number <= between) return between
-        return when {
-            number >= and -> and
-            else -> number
-        }
-    }
-
-    /**
-     * Limits the given **number** between the other values
-     * @param number  The number to limit.
-     * @param between The smallest value the number can take.
-     * @param and     The biggest value the number can take.
-     * @return The limited number.
-     */
     fun limit(number: Float, between: Float, and: Float): Float {
         if (number <= between) return between
         return when {
@@ -45,16 +30,6 @@ object MathUtils {
     }
 
     fun min(number: Float, min: Float): Float = when {
-        number < min -> min
-        else -> number
-    }
-
-    fun max(number: Int, max: Int): Int = when {
-        number > max -> max
-        else -> number
-    }
-
-    fun min(number: Int, min: Int): Int = when {
         number < min -> min
         else -> number
     }
