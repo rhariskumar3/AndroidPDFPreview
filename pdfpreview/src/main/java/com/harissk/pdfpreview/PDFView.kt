@@ -99,7 +99,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     private var scrollDir = ScrollDir.NONE
 
     /** Rendered parts go to the cache manager  */
-    var cacheManager: CacheManager = CacheManager()
+    internal var cacheManager: CacheManager = CacheManager()
 
     /** Animation manager manage all offset and zoom animation  */
     private val animationManager: AnimationManager = AnimationManager(this)
