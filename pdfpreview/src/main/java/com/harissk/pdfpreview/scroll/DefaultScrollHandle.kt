@@ -12,7 +12,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.harissk.pdfpreview.PDFView
 import com.harissk.pdfpreview.R
-import com.harissk.pdfpreview.utils.Util.getDP
+import com.harissk.pdfpreview.utils.toPx
 
 
 /**
@@ -37,8 +37,8 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
 
     override fun setupLayout(pdfView: PDFView?) {
         val align: Int
-        val width: Int
-        val height: Int
+        val width: Float
+        val height: Float
         val background: Drawable?
         // determine handler position, default is right (when scrolling vertically) or bottom (when scrolling horizontally)
         if (pdfView?.isSwipeVertical == true) {
@@ -67,7 +67,7 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
             }
         }
         setBackground(background)
-        val lp = LayoutParams(getDP(context, width), getDP(context, height))
+        val lp = LayoutParams(context.toPx(width), context.toPx(height))
         lp.setMargins(0, 0, 0, 0)
         val tvlp =
             LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -105,8 +105,8 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
         pos -= relativeHandlerMiddle
         if (pos < 0) {
             pos = 0f
-        } else if (pos > pdfViewSize - getDP(context, HANDLE_SHORT)) {
-            pos = pdfViewSize - getDP(context, HANDLE_SHORT)
+        } else if (pos > pdfViewSize - context.toPx(HANDLE_SHORT)) {
+            pos = pdfViewSize - context.toPx(HANDLE_SHORT)
         }
         if (pdfView!!.isSwipeVertical) {
             y = pos
@@ -214,8 +214,8 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
     }
 
     companion object {
-        private const val HANDLE_LONG = 65
-        private const val HANDLE_SHORT = 40
+        private const val HANDLE_LONG = 65F
+        private const val HANDLE_SHORT = 40F
         private const val DEFAULT_TEXT_SIZE = 16
     }
 }

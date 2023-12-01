@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteLi
             .enableAnnotationRendering(true)
             .onLoad(this)
             .scrollHandle(DefaultScrollHandle(this))
-            .spacing(10) // in dp
+            .spacing(10F) // in dp
             .onPageError(this)
             .load()
     }

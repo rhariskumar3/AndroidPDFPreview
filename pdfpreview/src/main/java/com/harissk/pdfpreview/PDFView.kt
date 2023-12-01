@@ -44,9 +44,8 @@ import com.harissk.pdfpreview.source.InputStreamSource
 import com.harissk.pdfpreview.source.UriSource
 import com.harissk.pdfpreview.utils.Constants
 import com.harissk.pdfpreview.utils.FitPolicy
-import com.harissk.pdfpreview.utils.MathUtils
 import com.harissk.pdfpreview.utils.SnapEdge
-import com.harissk.pdfpreview.utils.Util.getDP
+import com.harissk.pdfpreview.utils.toPx
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -326,13 +325,12 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
          * @return offset between 0 and 1
          */
         get() {
-            val offset: Float
-            offset = if (isSwipeVertical) {
+            val offset: Float = if (isSwipeVertical) {
                 -currentYOffset / (pdfFile!!.getDocLen(zoom) - height)
             } else {
                 -currentXOffset / (pdfFile!!.getDocLen(zoom) - width)
             }
-            return MathUtils.limit(offset, 0F, 1F)
+            return offset.coerceIn(0F, 1F)
         }
         set(progress) {
             setPositionOffset(progress, true)
@@ -885,7 +883,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     /**
      * Find the edge to snap to when showing the specified page
      */
-    fun findSnapEdge(page: Int): SnapEdge {
+    internal fun findSnapEdge(page: Int): SnapEdge {
         if (!isPageSnap || page < 0) {
             return SnapEdge.NONE
         }
@@ -907,7 +905,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     /**
      * Get the offset to move to in order to snap to the page
      */
-    fun snapOffsetForPage(pageIndex: Int, edge: SnapEdge): Float {
+    internal fun snapOffsetForPage(pageIndex: Int, edge: SnapEdge): Float {
         var offset = pdfFile!!.getPageOffset(pageIndex, zoom)
         val length = (if (isSwipeVertical) height else width).toFloat()
         val pageLength = pdfFile!!.getPageLength(pageIndex, zoom)
@@ -1084,8 +1082,8 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         isPageFlingEnabled = pageFling
     }
 
-    private fun setSpacing(spacingDp: Int) {
-        spacingPx = getDP(context, spacingDp)
+    private fun setSpacing(spacingDp: Float) {
+        spacingPx = context.toPx(spacingDp)
     }
 
     private fun setAutoSpacing(autoSpacing: Boolean) {
@@ -1163,7 +1161,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         private var password: String? = null
         private var scrollHandle: ScrollHandle? = null
         private var antialiasing = true
-        private var spacing = 0
+        private var spacing = 0F
         private var autoSpacing = false
         private var pageFitPolicy = FitPolicy.WIDTH
         private var fitEachPage = false
@@ -1270,7 +1268,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
             return this
         }
 
-        fun spacing(spacing: Int): Configurator {
+        fun spacing(spacing: Float): Configurator {
             this.spacing = spacing
             return this
         }

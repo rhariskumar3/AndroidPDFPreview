@@ -4,7 +4,7 @@ package com.harissk.pdfpreview.utils
  * Created by Harishkumar on 25/11/23.
  */
 
-object Constants {
+internal object Constants {
     var DEBUG_MODE = false
 
     /** Between 0 and 1, the thumbnails quality (default 0.3). Increasing this value may cause performance decrease  */
@@ -18,7 +18,7 @@ object Constants {
     var PART_SIZE = 256f
 
     /** Part of document above and below screen that should be preloaded, in dp  */
-    var PRELOAD_OFFSET = 20
+    var PRELOAD_OFFSET = 20F
 
     object Cache {
         /** The size of the cache (number of bitmaps kept)  */
