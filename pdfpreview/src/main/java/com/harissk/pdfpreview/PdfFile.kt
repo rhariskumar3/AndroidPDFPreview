@@ -122,11 +122,14 @@ class PdfFile(
     fun recalculatePageSizes(viewSize: Size) {
         pageSizes.clear()
         val calculator = PageSizeCalculator(
-            pageFitPolicy, originalMaxWidthPageSize,
-            originalMaxHeightPageSize, viewSize, fitEachPage
+            fitPolicy = pageFitPolicy,
+            originalMaxWidthPageSize = originalMaxWidthPageSize,
+            originalMaxHeightPageSize = originalMaxHeightPageSize,
+            viewSize = viewSize,
+            fitEachPage = fitEachPage
         )
-        maxWidthPageSize = calculator.getOptimalMaxWidthPageSize()
-        maxHeightPageSize = calculator.getOptimalMaxHeightPageSize()
+        maxWidthPageSize = calculator.optimalMaxWidthPageSize
+        maxHeightPageSize = calculator.optimalMaxHeightPageSize
         for (size in originalPageSizes) {
             pageSizes.add(calculator.calculate(size))
         }
