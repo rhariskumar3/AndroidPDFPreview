@@ -181,7 +181,7 @@ internal class DragPinchManager(private val pdfView: PDFView, animationManager: 
     private fun onScrollEnd() {
         pdfView.loadPages()
         hideHandle()
-        if (!animationManager.isFlinging()) {
+        if (!animationManager.isFlinging) {
             pdfView.performPageSnap()
         }
     }
