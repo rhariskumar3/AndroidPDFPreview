@@ -12,15 +12,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toFile
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.lifecycleScope
 import com.harissk.androidpdfpreview.databinding.ActivityMainBinding
 import com.harissk.pdfium.Meta
-import com.harissk.pdfpreview.PDFView
 import com.harissk.pdfpreview.listener.OnLoadCompleteListener
 import com.harissk.pdfpreview.listener.OnPageChangeListener
 import com.harissk.pdfpreview.listener.OnPageErrorListener
+import com.harissk.pdfpreview.load
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
-import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.random.Random
 
@@ -54,30 +52,44 @@ class MainActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteLi
 
     private fun displayFromAsset(assetFileName: String) {
         fileName = assetFileName
-        lifecycleScope.launch { loadPDF(binding.pdfView.fromAsset(assetFileName)) }
+        binding.pdfView.load(assetFileName) {
+            defaultPage(0)
+            swipeHorizontal(Random.nextBoolean())
+            onPageChange(this@MainActivity)
+            enableAnnotationRendering(true)
+            onLoad(this@MainActivity)
+            scrollHandle(DefaultScrollHandle(this@MainActivity))
+            spacing(10F) // in dp
+            onPageError(this@MainActivity)
+        }
     }
 
     private fun displayFromUri(uri: Uri) {
         fileName = uri.fileName()
-        lifecycleScope.launch { loadPDF(binding.pdfView.fromUri(uri)) }
+        binding.pdfView.load(uri) {
+            defaultPage(0)
+            swipeHorizontal(Random.nextBoolean())
+            onPageChange(this@MainActivity)
+            enableAnnotationRendering(true)
+            onLoad(this@MainActivity)
+            scrollHandle(DefaultScrollHandle(this@MainActivity))
+            spacing(10F) // in dp
+            onPageError(this@MainActivity)
+        }
     }
 
     private fun displayFromFile(file: File) {
         fileName = file.nameWithoutExtension
-        lifecycleScope.launch { loadPDF(binding.pdfView.fromFile(file)) }
-    }
-
-    private suspend fun loadPDF(configurator: PDFView.Configurator) {
-        configurator
-            .defaultPage(0)
-            .swipeHorizontal(Random.nextBoolean())
-            .onPageChange(this)
-            .enableAnnotationRendering(true)
-            .onLoad(this)
-            .scrollHandle(DefaultScrollHandle(this))
-            .spacing(10F) // in dp
-            .onPageError(this)
-            .load()
+        binding.pdfView.load(file) {
+            defaultPage(0)
+            swipeHorizontal(Random.nextBoolean())
+            onPageChange(this@MainActivity)
+            enableAnnotationRendering(true)
+            onLoad(this@MainActivity)
+            scrollHandle(DefaultScrollHandle(this@MainActivity))
+            spacing(10F) // in dp
+            onPageError(this@MainActivity)
+        }
     }
 
     override fun onDestroy() {

@@ -10,7 +10,6 @@ import android.graphics.PaintFlagsDrawFilter
 import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.RectF
-import android.net.Uri
 import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
@@ -23,36 +22,23 @@ import com.harissk.pdfium.util.Size
 import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.link.DefaultLinkHandler
-import com.harissk.pdfpreview.link.LinkHandler
 import com.harissk.pdfpreview.listener.Callbacks
 import com.harissk.pdfpreview.listener.OnDrawListener
 import com.harissk.pdfpreview.listener.OnErrorListener
-import com.harissk.pdfpreview.listener.OnLoadCompleteListener
-import com.harissk.pdfpreview.listener.OnLongPressListener
-import com.harissk.pdfpreview.listener.OnPageChangeListener
-import com.harissk.pdfpreview.listener.OnPageErrorListener
-import com.harissk.pdfpreview.listener.OnPageScrollListener
-import com.harissk.pdfpreview.listener.OnRenderListener
-import com.harissk.pdfpreview.listener.OnTapListener
 import com.harissk.pdfpreview.model.PagePart
+import com.harissk.pdfpreview.request.PdfRequest
 import com.harissk.pdfpreview.scroll.ScrollHandle
-import com.harissk.pdfpreview.source.AssetSource
-import com.harissk.pdfpreview.source.ByteArraySource
 import com.harissk.pdfpreview.source.DocumentSource
-import com.harissk.pdfpreview.source.FileSource
-import com.harissk.pdfpreview.source.InputStreamSource
-import com.harissk.pdfpreview.source.UriSource
 import com.harissk.pdfpreview.utils.Constants
 import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.utils.SnapEdge
 import com.harissk.pdfpreview.utils.toPx
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.InputStream
 
 
 /**
@@ -78,7 +64,9 @@ import java.io.InputStream
  */
 class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, set) {
 
-    private val scope by lazy { CoroutineScope(Dispatchers.IO) }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    private var pdfRequest: PdfRequest? = null
 
     var minZoom = DEFAULT_MIN_SCALE
     var midZoom = DEFAULT_MID_SCALE
@@ -219,13 +207,10 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         private set
 
     /** Pages numbers used when calling onDrawAllListener  */
-    private val onDrawPagesNums: MutableList<Int> = ArrayList(10)
+    private val onDrawPagesNumbers: MutableList<Int> = ArrayList(10)
 
     /** Holds info whether view has been added to layout and has width and height  */
     private var hasSize = false
-
-    /** Holds last used Configurator that should be loaded when view has size  */
-    private var waitingDocumentConfigurator: Configurator? = null
 
     /** Construct the initial view  */
     init {
@@ -233,6 +218,45 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         if (!isInEditMode) {
             debugPaint.style = Paint.Style.STROKE
             setWillNotDraw(false)
+        }
+    }
+
+    fun enqueue(pdfRequest: PdfRequest) {
+        scope.async(Dispatchers.Main.immediate) {
+            if (!hasSize) return@async
+            this@PDFView.recycle()
+            this@PDFView.pdfRequest = pdfRequest
+            this@PDFView.callbacks.setOnLoadComplete(pdfRequest.onLoadCompleteListener)
+            this@PDFView.callbacks.setOnError(pdfRequest.onErrorListener)
+            this@PDFView.callbacks.setOnDraw(pdfRequest.onDrawListener)
+            this@PDFView.callbacks.setOnDrawAll(pdfRequest.onDrawAllListener)
+            this@PDFView.callbacks.setOnPageChange(pdfRequest.onPageChangeListener)
+            this@PDFView.callbacks.setOnPageScroll(pdfRequest.onPageScrollListener)
+            this@PDFView.callbacks.setOnRender(pdfRequest.onRenderListener)
+            this@PDFView.callbacks.setOnTap(pdfRequest.onTapListener)
+            this@PDFView.callbacks.setOnLongPress(pdfRequest.onLongPressListener)
+            this@PDFView.callbacks.setOnPageError(pdfRequest.onPageErrorListener)
+            this@PDFView.callbacks.setLinkHandler(
+                pdfRequest.linkHandler ?: DefaultLinkHandler(this@PDFView)
+            )
+            this@PDFView.isSwipeEnabled = pdfRequest.enableSwipe
+            this@PDFView.setNightMode(pdfRequest.nightMode)
+            this@PDFView.isDoubleTapEnabled = pdfRequest.enableDoubleTap
+            this@PDFView.defaultPage = pdfRequest.defaultPage
+            this@PDFView.isSwipeVertical = !pdfRequest.swipeHorizontal
+            this@PDFView.isAnnotationRendering = pdfRequest.annotationRendering
+            this@PDFView.scrollHandle = pdfRequest.scrollHandle
+            this@PDFView.isAntialiasing = pdfRequest.antialiasing
+            this@PDFView.spacingPx = context.toPx(pdfRequest.spacing)
+            this@PDFView.isAutoSpacingEnabled = pdfRequest.autoSpacing
+            this@PDFView.pageFitPolicy = pdfRequest.pageFitPolicy
+            this@PDFView.isFitEachPage = pdfRequest.fitEachPage
+            this@PDFView.isPageSnap = pdfRequest.pageSnap
+            this@PDFView.isPageFlingEnabled = pdfRequest.pageFling
+            this@PDFView.isBestQuality = false
+            if (pdfRequest.disableLongPress)
+                dragPinchManager.disableLongPress()
+            load(pdfRequest.source, pdfRequest.password, pdfRequest.pageNumbers)
         }
     }
 
@@ -365,10 +389,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         }
     }
 
-    fun enableDoubleTap(doubleTap: Boolean) {
-        isDoubleTapEnabled = doubleTap
-    }
-
     fun onPageError(ex: PageRenderingException) {
         if (!callbacks.callOnPageError(ex.page, ex.cause))
             Log.e(TAG, "Cannot open page " + ex.page, ex.cause)
@@ -377,7 +397,8 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     fun recycle() {
         isRecycling = true
 
-        waitingDocumentConfigurator = null
+        pdfRequest = null
+
         animationManager.stopAll()
         dragPinchManager.disable()
 
@@ -419,7 +440,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         hasSize = true
-        scope.launch { waitingDocumentConfigurator?.load() }
+        pdfRequest?.let { enqueue(it) }
         if (isInEditMode || state != State.SHOWN) return
 
         // calculates the position of the point which in the center of view relative to big strip
@@ -544,11 +565,11 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         // Draws parts
         for (part in cacheManager.getPageParts()) {
             drawPart(canvas, part)
-            if (callbacks.getOnDrawAll() != null && !onDrawPagesNums.contains(part.page))
-                onDrawPagesNums.add(part.page)
+            if (callbacks.getOnDrawAll() != null && !onDrawPagesNumbers.contains(part.page))
+                onDrawPagesNumbers.add(part.page)
         }
-        for (page in onDrawPagesNums) drawWithListener(canvas, page, callbacks.getOnDrawAll())
-        onDrawPagesNums.clear()
+        for (page in onDrawPagesNumbers) drawWithListener(canvas, page, callbacks.getOnDrawAll())
+        onDrawPagesNumbers.clear()
         drawWithListener(canvas, currentPage, callbacks.getOnDraw())
 
         // Restores the canvas position
@@ -950,10 +971,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     val isZooming: Boolean
         get() = zoom != minZoom
 
-    private fun setDefaultPage(defaultPage: Int) {
-        this.defaultPage = defaultPage
-    }
-
     fun resetZoom() = zoomTo(minZoom)
 
     fun resetZoomWithAnimation() = zoomWithAnimation(minZoom)
@@ -979,34 +996,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     fun getPageAtPositionOffset(positionOffset: Float): Int =
         pdfFile?.getPageAtOffset(pdfFile!!.getDocLen(zoom) * positionOffset, zoom) ?: 0
 
-    fun useBestQuality(bestQuality: Boolean) {
-        isBestQuality = bestQuality
-    }
-
-    fun enableAnnotationRendering(annotationRendering: Boolean) {
-        isAnnotationRendering = annotationRendering
-    }
-
-    fun enableRenderDuringScale(renderDuringScale: Boolean) {
-        this.renderDuringScale = renderDuringScale
-    }
-
-    fun enableAntialiasing(enableAntialiasing: Boolean) {
-        isAntialiasing = enableAntialiasing
-    }
-
-    fun setPageFling(pageFling: Boolean) {
-        isPageFlingEnabled = pageFling
-    }
-
-    private fun setSpacing(spacingDp: Float) {
-        spacingPx = context.toPx(spacingDp)
-    }
-
-    private fun setAutoSpacing(autoSpacing: Boolean) {
-        isAutoSpacingEnabled = autoSpacing
-    }
-
     val doRenderDuringScale: Boolean
         get() = renderDuringScale
 
@@ -1021,232 +1010,11 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     /** Will be empty until document is loaded  */
     fun getLinks(page: Int): List<Link> = pdfFile?.getPageLinks(page).orEmpty()
 
-    /** Use an asset file as the pdf source  */
-    fun fromAsset(assetName: String): Configurator = Configurator(AssetSource(assetName))
-
-    /** Use a file as the pdf source  */
-    fun fromFile(file: File): Configurator = Configurator(FileSource(file))
-
-    /** Use URI as the pdf source, for use with content providers  */
-    fun fromUri(uri: Uri): Configurator = Configurator(UriSource(uri))
-
-    /** Use bytearray as the pdf source, documents is not saved  */
-    fun fromBytes(bytes: ByteArray): Configurator = Configurator(ByteArraySource(bytes))
-
-    /** Use stream as the pdf source. Stream will be written to bytearray, because native code does not support Java Streams  */
-    fun fromStream(stream: InputStream): Configurator = Configurator(InputStreamSource(stream))
-
-    /** Use custom source as pdf source  */
-    fun fromSource(docSource: DocumentSource): Configurator = Configurator(docSource)
-
     private enum class State {
         DEFAULT,
         LOADED,
         SHOWN,
         ERROR
-    }
-
-    inner class Configurator(private val documentSource: DocumentSource) {
-        private var pageNumbers: IntArray? = null
-        private var enableSwipe = true
-        private var enableDoubleTap = true
-        private var onDrawListener: OnDrawListener? = null
-        private var onDrawAllListener: OnDrawListener? = null
-        private var onLoadCompleteListener: OnLoadCompleteListener? = null
-        private var onErrorListener: OnErrorListener? = null
-        private var onPageChangeListener: OnPageChangeListener? = null
-        private var onPageScrollListener: OnPageScrollListener? = null
-        private var onRenderListener: OnRenderListener? = null
-        private var onTapListener: OnTapListener? = null
-        private var onLongPressListener: OnLongPressListener? = null
-        private var onPageErrorListener: OnPageErrorListener? = null
-        private var linkHandler: LinkHandler = DefaultLinkHandler(this@PDFView)
-        private var defaultPage = 0
-        private var swipeHorizontal = false
-        private var annotationRendering = false
-        private var password: String? = null
-        private var scrollHandle: ScrollHandle? = null
-        private var antialiasing = true
-        private var spacing = 0F
-        private var autoSpacing = false
-        private var pageFitPolicy = FitPolicy.WIDTH
-        private var fitEachPage = false
-        private var pageFling = false
-        private var pageSnap = false
-        private var nightMode = false
-        fun pages(vararg pageNumbers: Int): Configurator {
-            this.pageNumbers = pageNumbers
-            return this
-        }
-
-        fun enableSwipe(enableSwipe: Boolean): Configurator {
-            this.enableSwipe = enableSwipe
-            return this
-        }
-
-        fun enableDoubleTap(doubleTap: Boolean): Configurator {
-            this.enableDoubleTap = doubleTap
-            return this
-        }
-
-        fun enableAnnotationRendering(annotationRendering: Boolean): Configurator {
-            this.annotationRendering = annotationRendering
-            return this
-        }
-
-        fun onDraw(onDrawListener: OnDrawListener?): Configurator {
-            this.onDrawListener = onDrawListener
-            return this
-        }
-
-        fun onDrawAll(onDrawAllListener: OnDrawListener?): Configurator {
-            this.onDrawAllListener = onDrawAllListener
-            return this
-        }
-
-        fun onLoad(onLoadCompleteListener: OnLoadCompleteListener?): Configurator {
-            this.onLoadCompleteListener = onLoadCompleteListener
-            return this
-        }
-
-        fun onPageScroll(onPageScrollListener: OnPageScrollListener?): Configurator {
-            this.onPageScrollListener = onPageScrollListener
-            return this
-        }
-
-        fun onError(onErrorListener: OnErrorListener?): Configurator {
-            this.onErrorListener = onErrorListener
-            return this
-        }
-
-        fun onPageError(onPageErrorListener: OnPageErrorListener?): Configurator {
-            this.onPageErrorListener = onPageErrorListener
-            return this
-        }
-
-        fun onPageChange(onPageChangeListener: OnPageChangeListener?): Configurator {
-            this.onPageChangeListener = onPageChangeListener
-            return this
-        }
-
-        fun onRender(onRenderListener: OnRenderListener?): Configurator {
-            this.onRenderListener = onRenderListener
-            return this
-        }
-
-        fun onTap(onTapListener: OnTapListener?): Configurator {
-            this.onTapListener = onTapListener
-            return this
-        }
-
-        fun onLongPress(onLongPressListener: OnLongPressListener?): Configurator {
-            this.onLongPressListener = onLongPressListener
-            return this
-        }
-
-        fun linkHandler(linkHandler: LinkHandler): Configurator {
-            this.linkHandler = linkHandler
-            return this
-        }
-
-        fun defaultPage(defaultPage: Int): Configurator {
-            this.defaultPage = defaultPage
-            return this
-        }
-
-        fun swipeHorizontal(swipeHorizontal: Boolean): Configurator {
-            this.swipeHorizontal = swipeHorizontal
-            return this
-        }
-
-        fun password(password: String?): Configurator {
-            this.password = password
-            return this
-        }
-
-        fun scrollHandle(scrollHandle: ScrollHandle?): Configurator {
-            this.scrollHandle = scrollHandle
-            return this
-        }
-
-        fun enableAntialiasing(antialiasing: Boolean): Configurator {
-            this.antialiasing = antialiasing
-            return this
-        }
-
-        fun spacing(spacing: Float): Configurator {
-            this.spacing = spacing
-            return this
-        }
-
-        fun autoSpacing(autoSpacing: Boolean): Configurator {
-            this.autoSpacing = autoSpacing
-            return this
-        }
-
-        fun pageFitPolicy(pageFitPolicy: FitPolicy): Configurator {
-            this.pageFitPolicy = pageFitPolicy
-            return this
-        }
-
-        fun fitEachPage(fitEachPage: Boolean): Configurator {
-            this.fitEachPage = fitEachPage
-            return this
-        }
-
-        fun pageSnap(pageSnap: Boolean): Configurator {
-            this.pageSnap = pageSnap
-            return this
-        }
-
-        fun pageFling(pageFling: Boolean): Configurator {
-            this.pageFling = pageFling
-            return this
-        }
-
-        fun nightMode(nightMode: Boolean): Configurator {
-            this.nightMode = nightMode
-            return this
-        }
-
-        fun disableLongPress(): Configurator {
-            dragPinchManager.disableLongPress()
-            return this
-        }
-
-        suspend fun load() {
-            if (!hasSize) {
-                this@PDFView.waitingDocumentConfigurator = this
-                return
-            }
-            this@PDFView.recycle()
-            this@PDFView.callbacks.setOnLoadComplete(onLoadCompleteListener)
-            this@PDFView.callbacks.setOnError(onErrorListener)
-            this@PDFView.callbacks.setOnDraw(onDrawListener)
-            this@PDFView.callbacks.setOnDrawAll(onDrawAllListener)
-            this@PDFView.callbacks.setOnPageChange(onPageChangeListener)
-            this@PDFView.callbacks.setOnPageScroll(onPageScrollListener)
-            this@PDFView.callbacks.setOnRender(onRenderListener)
-            this@PDFView.callbacks.setOnTap(onTapListener)
-            this@PDFView.callbacks.setOnLongPress(onLongPressListener)
-            this@PDFView.callbacks.setOnPageError(onPageErrorListener)
-            this@PDFView.callbacks.setLinkHandler(linkHandler)
-            this@PDFView.isSwipeEnabled = enableSwipe
-            this@PDFView.setNightMode(nightMode)
-            this@PDFView.enableDoubleTap(enableDoubleTap)
-            this@PDFView.setDefaultPage(defaultPage)
-            this@PDFView.isSwipeVertical = !swipeHorizontal
-            this@PDFView.enableAnnotationRendering(annotationRendering)
-            this@PDFView.scrollHandle = scrollHandle
-            this@PDFView.enableAntialiasing(antialiasing)
-            this@PDFView.setSpacing(spacing)
-            this@PDFView.setAutoSpacing(autoSpacing)
-            this@PDFView.pageFitPolicy = pageFitPolicy
-            this@PDFView.isFitEachPage = fitEachPage
-            this@PDFView.isPageSnap = pageSnap
-            this@PDFView.setPageFling(pageFling)
-            this@PDFView.load(documentSource, password, pageNumbers)
-        }
     }
 
     companion object {
