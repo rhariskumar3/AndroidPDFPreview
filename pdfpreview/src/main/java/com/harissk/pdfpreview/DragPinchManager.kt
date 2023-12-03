@@ -170,7 +170,7 @@ internal class DragPinchManager(
         scrolling = true
         if (pdfView.isZooming || pdfView.isSwipeEnabled)
             pdfView.moveRelativeTo(-distanceX, -distanceY)
-        if (!scaling || pdfView.doRenderDuringScale()) pdfView.loadPageByOffset()
+        if (!scaling || pdfView.doRenderDuringScale) pdfView.loadPageByOffset()
         return true
     }
 
