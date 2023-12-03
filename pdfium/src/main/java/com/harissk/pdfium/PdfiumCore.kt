@@ -376,6 +376,7 @@ class PdfiumCore {
      * Get all links from given page
      */
     fun getPageLinks(pageIndex: Int): List<Link> {
+        if (pageIndex < 0) return emptyList()
         val links = mutableListOf<Link>()
         val nativePagePtr = mNativePagesPtr[pageIndex] ?: return links
 

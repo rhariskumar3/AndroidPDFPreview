@@ -7,7 +7,7 @@ import com.harissk.pdfpreview.utils.Constants.Cache.CACHE_SIZE
 import com.harissk.pdfpreview.utils.Constants.PRELOAD_OFFSET
 import com.harissk.pdfpreview.utils.toPx
 import java.util.LinkedList
-import kotlin.math.absoluteValue
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -138,8 +138,8 @@ internal class PagesLoader(private val pdfView: PDFView) {
                 range.gridSize,
                 range.page
             ) // get the page's grid size that rows and cols
-            val scaledPageSize: SizeF =
-                pdfView.pdfFile!!.getScaledPageSize(range.page, pdfView.zoom)
+            val scaledPageSize = pdfView.pdfFile?.getScaledPageSize(range.page, pdfView.zoom)
+                ?: return emptyList()
             val rowHeight: Float = scaledPageSize.height / range.gridSize.rows
             val colWidth: Float = scaledPageSize.width / range.gridSize.cols
 
@@ -154,33 +154,47 @@ internal class PagesLoader(private val pdfView: PDFView) {
             val secondaryOffset = pdfView.pdfFile!!.getSecondaryPageOffset(page, pdfView.zoom)
 
             // calculate the row,col of the point in the leftTop and rightBottom
-            if (pdfView.isSwipeVertical) {
-                range.leftTop.row = ((pageFirstYOffset - pdfView.pdfFile!!.getPageOffset(
-                    range.page,
-                    pdfView.zoom
-                )) / rowHeight).absoluteValue.roundToInt()
-                range.leftTop.col =
-                    ((pageFirstXOffset - secondaryOffset).coerceAtLeast(0F) / colWidth).roundToInt()
-                range.rightBottom.row = ceil(
-                    (pageLastYOffset - pdfView.pdfFile!!.getPageOffset(
+            when {
+                pdfView.isSwipeVertical -> {
+                    range.leftTop.row = floor(
+                        abs(
+                            pageFirstYOffset - pdfView.pdfFile!!.getPageOffset(
+                                range.page,
+                                pdfView.zoom
+                            )
+                        ) / rowHeight
+                    ).roundToInt()
+                    range.leftTop.col =
+                        ((pageFirstXOffset - secondaryOffset).coerceAtLeast(0F) / colWidth).roundToInt()
+                    range.rightBottom.row = ceil(
+                        (pageLastYOffset - pdfView.pdfFile!!.getPageOffset(
+                            range.page,
+                            pdfView.zoom
+                        )) / rowHeight
+                    ).roundToInt()
+                    range.rightBottom.col =
+                        ((pageLastXOffset - secondaryOffset).coerceAtLeast(0F) / colWidth).roundToInt()
+                }
+
+                else -> {
+                    range.leftTop.col = floor(
+                        abs(
+                            pageFirstXOffset - (pdfView.pdfFile?.getPageOffset(
+                                range.page,
+                                pdfView.zoom
+                            )
+                                ?: 0f)
+                        ) / colWidth
+                    ).roundToInt()
+                    range.leftTop.row =
+                        ((pageFirstYOffset - secondaryOffset).coerceAtLeast(0F) / rowHeight).roundToInt()
+                    range.rightBottom.col = ((pageLastXOffset - pdfView.pdfFile!!.getPageOffset(
                         range.page,
                         pdfView.zoom
-                    )) / rowHeight
-                ).roundToInt()
-                range.rightBottom.col =
-                    ((pageLastXOffset - secondaryOffset).coerceAtLeast(0F) / colWidth).roundToInt()
-            } else {
-                range.leftTop.col =
-                    ((pageFirstXOffset - (pdfView.pdfFile?.getPageOffset(range.page, pdfView.zoom)
-                        ?: 0f)) / colWidth).absoluteValue.roundToInt()
-                range.leftTop.row =
-                    ((pageFirstYOffset - secondaryOffset).coerceAtLeast(0F) / rowHeight).roundToInt()
-                range.rightBottom.col = ((pageLastXOffset - pdfView.pdfFile!!.getPageOffset(
-                    range.page,
-                    pdfView.zoom
-                )) / colWidth).roundToInt()
-                range.rightBottom.row =
-                    floor((pageLastYOffset - secondaryOffset).coerceAtLeast(0F) / rowHeight).roundToInt()
+                    )) / colWidth).roundToInt()
+                    range.rightBottom.row =
+                        floor((pageLastYOffset - secondaryOffset).coerceAtLeast(0F) / rowHeight).roundToInt()
+                }
             }
             renderRanges.add(range)
         }

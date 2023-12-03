@@ -203,12 +203,12 @@ internal class DragPinchManager(
                 val xOffset = pdfView.currentXOffset.toInt()
                 val yOffset = pdfView.currentYOffset.toInt()
                 val minX = when (pdfView.isSwipeVertical) {
-                    true -> -(pdfView.toCurrentScale(pdfFile.getMaxPageWidth()) - pdfView.width)
+                    true -> -(pdfView.toCurrentScale(pdfFile.maxPageWidth) - pdfView.width)
                     false -> -(pdfFile.getDocLen(pdfView.zoom) - pdfView.width)
                 }.roundToInt()
                 val minY = when (pdfView.isSwipeVertical) {
                     true -> -(pdfFile.getDocLen(pdfView.zoom) - pdfView.height)
-                    false -> -(pdfView.toCurrentScale(pdfFile.getMaxPageHeight()) - pdfView.height)
+                    false -> -(pdfView.toCurrentScale(pdfFile.maxPageHeight) - pdfView.height)
                 }.roundToInt()
                 animationManager.startFlingAnimation(
                     startX = xOffset,
@@ -235,7 +235,7 @@ internal class DragPinchManager(
         val maxY: Float
         when {
             pdfView.isSwipeVertical -> {
-                minX = -(pdfView.toCurrentScale(pdfFile.getMaxPageWidth()) - pdfView.width)
+                minX = -(pdfView.toCurrentScale(pdfFile.maxPageWidth) - pdfView.width)
                 minY = pageEnd + pdfView.height
                 maxX = 0f
                 maxY = pageStart
@@ -243,7 +243,7 @@ internal class DragPinchManager(
 
             else -> {
                 minX = pageEnd + pdfView.width
-                minY = -(pdfView.toCurrentScale(pdfFile.getMaxPageHeight()) - pdfView.height)
+                minY = -(pdfView.toCurrentScale(pdfFile.maxPageHeight) - pdfView.height)
                 maxX = pageStart
                 maxY = 0f
             }
