@@ -69,7 +69,7 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
 
     @Throws(PageRenderingException::class)
     private fun proceed(renderingTask: RenderingTask): PagePart? {
-        val pdfFile: PdfFile = pdfView.pdfFile!!
+        val pdfFile: PdfFile = pdfView.pdfFile
         pdfFile.openPage(renderingTask.page)
         val w = Math.round(renderingTask.width)
         val h = Math.round(renderingTask.height)

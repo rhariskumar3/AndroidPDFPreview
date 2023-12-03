@@ -65,7 +65,7 @@ internal class DragPinchManager(
     }
 
     private fun checkLinkTapped(x: Float, y: Float): Boolean {
-        val pdfFile: PdfFile = pdfView.pdfFile ?: return false
+        val pdfFile: PdfFile = pdfView.pdfFile
         val mappedX: Float = -pdfView.currentXOffset + x
         val mappedY: Float = -pdfView.currentYOffset + y
         val page = pdfFile.getPageAtOffset(
@@ -189,7 +189,7 @@ internal class DragPinchManager(
         velocityY: Float,
     ): Boolean {
         if (!pdfView.isSwipeEnabled) return false
-        val pdfFile = pdfView.pdfFile ?: return false
+        val pdfFile = pdfView.pdfFile
         when {
             pdfView.isPageFlingEnabled -> {
                 when {
@@ -226,7 +226,7 @@ internal class DragPinchManager(
     }
 
     private fun onBoundedFling(velocityX: Float, velocityY: Float) {
-        val pdfFile = pdfView.pdfFile ?: return
+        val pdfFile = pdfView.pdfFile
         val pageStart = -pdfFile.getPageOffset(pdfView.currentPage, pdfView.zoom)
         val pageEnd = pageStart - pdfFile.getPageLength(pdfView.currentPage, pdfView.zoom)
         val minX: Float

@@ -68,9 +68,12 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
     private var pdfRequest: PdfRequest? = null
 
-    var minZoom = DEFAULT_MIN_SCALE
-    var midZoom = DEFAULT_MID_SCALE
-    var maxZoom = DEFAULT_MAX_SCALE
+    private var _pdfFile: PdfFile? = null
+    val pdfFile: PdfFile get() = _pdfFile ?: throw NullPointerException("PDF not decoded")
+
+    val minZoom = DEFAULT_MIN_SCALE
+    val midZoom = DEFAULT_MID_SCALE
+    val maxZoom = DEFAULT_MAX_SCALE
 
     /**
      * START - scrolling in first page direction
@@ -93,7 +96,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
     /** Drag manager manage all touch events  */
     private val dragPinchManager: DragPinchManager = DragPinchManager(this, animationManager)
-    var pdfFile: PdfFile? = null
 
     /** The index of the current sequence  */
     var currentPage = 0
@@ -301,9 +303,9 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * @param page Page index.
      */
     fun jumpTo(page: Int, withAnimation: Boolean = false) {
-        pdfFile ?: return
-        val userPage = pdfFile?.determineValidPageNumberFrom(page) ?: page
-        val offset: Float = if (userPage == 0) 0F else -pdfFile!!.getPageOffset(userPage, zoom)
+        _pdfFile ?: return
+        val userPage = pdfFile.determineValidPageNumberFrom(page)
+        val offset: Float = if (userPage == 0) 0F else -pdfFile.getPageOffset(userPage, zoom)
         when {
             isSwipeVertical -> when {
                 withAnimation -> animationManager.startYAnimation(currentYOffset, offset)
@@ -323,11 +325,11 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
         // Check the page number and makes the
         // difference between UserPages and DocumentPages
-        val userPage = pdfFile?.determineValidPageNumberFrom(pageNb) ?: pageNb
+        val userPage = pdfFile.determineValidPageNumberFrom(pageNb)
         currentPage = userPage
         loadPages()
         if (!documentFitsView()) scrollHandle?.setPageNum(currentPage + 1)
-        callbacks.callOnPageChange(currentPage, pdfFile?.pagesCount ?: 0)
+        callbacks.callOnPageChange(currentPage, pdfFile.pagesCount)
     }
 
     /**
@@ -338,8 +340,8 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      */
     var positionOffset: Float
         get() = when {
-            isSwipeVertical -> -currentYOffset / ((pdfFile?.getDocLen(zoom) ?: 0F) - height)
-            else -> -currentXOffset / (pdfFile!!.getDocLen(zoom) - width)
+            isSwipeVertical -> -currentYOffset / (pdfFile.getDocLen(zoom) - height)
+            else -> -currentXOffset / (pdfFile.getDocLen(zoom) - width)
         }.coerceIn(0F, 1F)
         set(progress) = setPositionOffset(progress, true)
 
@@ -352,12 +354,12 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         when {
             isSwipeVertical -> moveTo(
                 currentXOffset,
-                (-(pdfFile?.getDocLen(zoom) ?: 0F) + height) * progress,
+                (-pdfFile.getDocLen(zoom) + height) * progress,
                 moveHandle
             )
 
             else -> moveTo(
-                (-(pdfFile?.getDocLen(zoom) ?: 0F) + width) * progress,
+                (-pdfFile.getDocLen(zoom) + width) * progress,
                 currentYOffset,
                 moveHandle
             )
@@ -368,9 +370,9 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     fun stopFling() = animationManager.stopFling()
 
     val pageCount: Int
-        get() = pdfFile?.pagesCount ?: 0
+        get() = _pdfFile?.pagesCount ?: 0
 
-    fun setNightMode(nightMode: Boolean) {
+    private fun setNightMode(nightMode: Boolean) {
         this.nightMode = nightMode
         when {
             nightMode -> {
@@ -409,8 +411,8 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         // Clear caches
         cacheManager.recycle()
         if (isScrollHandleInit) scrollHandle?.destroyLayout()
-        pdfFile?.dispose()
-        pdfFile = null
+        _pdfFile?.dispose()
+        _pdfFile = null
         renderingHandler = null
         scrollHandle = null
         isScrollHandleInit = false
@@ -450,65 +452,60 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         val relativeCenterPointInStripYOffset: Float
         when {
             isSwipeVertical -> {
-                relativeCenterPointInStripXOffset =
-                    centerPointInStripXOffset / pdfFile!!.maxPageWidth
+                relativeCenterPointInStripXOffset = centerPointInStripXOffset / pdfFile.maxPageWidth
                 relativeCenterPointInStripYOffset =
-                    centerPointInStripYOffset / pdfFile!!.getDocLen(zoom)
+                    centerPointInStripYOffset / pdfFile.getDocLen(zoom)
             }
 
             else -> {
                 relativeCenterPointInStripXOffset =
-                    centerPointInStripXOffset / pdfFile!!.getDocLen(zoom)
+                    centerPointInStripXOffset / pdfFile.getDocLen(zoom)
                 relativeCenterPointInStripYOffset =
-                    centerPointInStripYOffset / pdfFile!!.maxPageHeight
+                    centerPointInStripYOffset / pdfFile.maxPageHeight
             }
         }
         animationManager.stopAll()
-        pdfFile?.recalculatePageSizes(Size(w, h))
+        pdfFile.recalculatePageSizes(Size(w, h))
         if (isSwipeVertical) {
-            currentXOffset =
-                -relativeCenterPointInStripXOffset * pdfFile!!.maxPageWidth + w * 0.5f
-            currentYOffset =
-                -relativeCenterPointInStripYOffset * pdfFile!!.getDocLen(zoom) + h * 0.5f
+            currentXOffset = -relativeCenterPointInStripXOffset * pdfFile.maxPageWidth + w * 0.5f
+            currentYOffset = -relativeCenterPointInStripYOffset * pdfFile.getDocLen(zoom) + h * 0.5f
         } else {
-            currentXOffset =
-                -relativeCenterPointInStripXOffset * pdfFile!!.getDocLen(zoom) + w * 0.5f
-            currentYOffset =
-                -relativeCenterPointInStripYOffset * pdfFile!!.maxPageHeight + h * 0.5f
+            currentXOffset = -relativeCenterPointInStripXOffset * pdfFile.getDocLen(zoom) + w * 0.5f
+            currentYOffset = -relativeCenterPointInStripYOffset * pdfFile.maxPageHeight + h * 0.5f
         }
         moveTo(currentXOffset, currentYOffset)
         loadPageByOffset()
     }
 
     override fun canScrollHorizontally(direction: Int): Boolean {
-        pdfFile ?: return true
+        _pdfFile ?: return true
         return when {
             isSwipeVertical -> when {
                 direction < 0 && currentXOffset < 0 -> true
-                direction > 0 && currentXOffset + toCurrentScale(pdfFile!!.maxPageWidth) > width -> true
+                direction > 0 && currentXOffset + toCurrentScale(pdfFile.maxPageWidth) > width -> true
                 else -> false
             }
 
             else -> when {
                 direction < 0 && currentXOffset < 0 -> true
-                direction > 0 && currentXOffset + pdfFile!!.getDocLen(zoom) > width -> true
+                direction > 0 && currentXOffset + pdfFile.getDocLen(zoom) > width -> true
                 else -> false
             }
         }
     }
 
     override fun canScrollVertically(direction: Int): Boolean {
-        pdfFile ?: return true
+        _pdfFile ?: return true
         return when {
             isSwipeVertical -> when {
                 direction < 0 && currentYOffset < 0 -> true
-                direction > 0 && currentYOffset + pdfFile!!.getDocLen(zoom) > height -> true
+                direction > 0 && currentYOffset + pdfFile.getDocLen(zoom) > height -> true
                 else -> false
             }
 
             else -> when {
                 direction < 0 && currentYOffset < 0 -> true
-                direction > 0 && currentYOffset + toCurrentScale(pdfFile!!.maxPageHeight) > height -> true
+                direction > 0 && currentYOffset + toCurrentScale(pdfFile.maxPageHeight) > height -> true
                 else -> false
             }
         }
@@ -583,16 +580,16 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         when {
             isSwipeVertical -> {
                 translateX = 0f
-                translateY = pdfFile!!.getPageOffset(page, zoom)
+                translateY = pdfFile.getPageOffset(page, zoom)
             }
 
             else -> {
                 translateY = 0f
-                translateX = pdfFile!!.getPageOffset(page, zoom)
+                translateX = pdfFile.getPageOffset(page, zoom)
             }
         }
         canvas.translate(translateX, translateY)
-        val size: SizeF = pdfFile?.getPageSize(page) ?: SizeF(0f, 0f)
+        val size: SizeF = pdfFile.getPageSize(page) ?: SizeF(0f, 0f)
         listener.onLayerDrawn(
             canvas = canvas,
             pageWidth = toCurrentScale(size.width),
@@ -612,13 +609,13 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         // Move to the target page
         val localTranslationX: Float
         val localTranslationY: Float
-        val size: SizeF = pdfFile?.getPageSize(part.page) ?: SizeF(0f, 0f)
+        val size: SizeF = pdfFile.getPageSize(part.page) ?: SizeF(0f, 0f)
         if (isSwipeVertical) {
-            localTranslationY = pdfFile!!.getPageOffset(part.page, zoom)
-            localTranslationX = toCurrentScale(pdfFile!!.maxPageWidth - size.width) / 2
+            localTranslationY = pdfFile.getPageOffset(part.page, zoom)
+            localTranslationX = toCurrentScale(pdfFile.maxPageWidth - size.width) / 2
         } else {
-            localTranslationX = pdfFile!!.getPageOffset(part.page, zoom)
-            localTranslationY = toCurrentScale(pdfFile!!.maxPageHeight - size.height) / 2
+            localTranslationX = pdfFile.getPageOffset(part.page, zoom)
+            localTranslationY = toCurrentScale(pdfFile.maxPageHeight - size.height) / 2
         }
         canvas.translate(localTranslationX, localTranslationY)
         val srcRect = Rect(
@@ -664,10 +661,10 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * the current page displayed
      */
     fun loadPages() {
-        if (pdfFile == null || renderingHandler == null) return
+        if (_pdfFile == null || renderingHandler == null) return
 
         // Cancel all current tasks
-        renderingHandler!!.removeMessages(RenderingHandler.MSG_RENDER_TASK)
+        renderingHandler?.removeMessages(RenderingHandler.MSG_RENDER_TASK)
         cacheManager.makeANewSet()
         pagesLoader.loadPages()
         redraw()
@@ -677,7 +674,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     private fun loadComplete(pdfFile: PdfFile) {
         if (isRecycling) return
         state = State.LOADED
-        this.pdfFile = pdfFile
+        _pdfFile = pdfFile
         if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
         renderingHandler = RenderingHandler(renderingHandlerThread!!.getLooper(), this)
         renderingHandler?.start()
@@ -717,7 +714,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         // when it is first rendered part
         if (state == State.LOADED) {
             state = State.SHOWN
-            callbacks.callOnRender(pdfFile?.pagesCount ?: 0)
+            callbacks.callOnRender(pageCount)
         }
         when {
             part.isThumbnail -> cacheManager.cacheThumbnail(part)
@@ -734,14 +731,13 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * @param offsetY    The big strip Y offset to use as the right border of the screen.
      * @param moveHandle whether to move scroll handle or not
      */
-    @JvmOverloads
     fun moveTo(offsetX: Float, offsetY: Float, moveHandle: Boolean = true) {
         var offsetX1 = offsetX
         var offsetY1 = offsetY
         when {
             isSwipeVertical -> {
                 // Check X offset
-                val scaledPageWidth = toCurrentScale(pdfFile!!.maxPageWidth)
+                val scaledPageWidth = toCurrentScale(pdfFile.maxPageWidth)
                 when {
                     scaledPageWidth < width -> offsetX1 = width / 2 - scaledPageWidth / 2
                     else -> when {
@@ -751,7 +747,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
                 }
 
                 // Check Y offset
-                val contentHeight = pdfFile!!.getDocLen(zoom)
+                val contentHeight = pdfFile.getDocLen(zoom)
                 // top visible
                 when {
                     // whole document height visible on screen
@@ -771,7 +767,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
             else -> {
                 // Check Y offset
-                val scaledPageHeight = toCurrentScale(pdfFile!!.maxPageHeight)
+                val scaledPageHeight = toCurrentScale(pdfFile.maxPageHeight)
                 when {
                     scaledPageHeight < height -> offsetY1 = height / 2 - scaledPageHeight / 2
                     else -> when {
@@ -781,7 +777,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
                 }
 
                 // Check X offset
-                val contentWidth = pdfFile!!.getDocLen(zoom)
+                val contentWidth = pdfFile.getDocLen(zoom)
                 when {
                     // whole document width visible on screen
                     contentWidth < width -> offsetX1 = (width - contentWidth) / 2
@@ -808,7 +804,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     }
 
     fun loadPageByOffset() {
-        if (0 == pdfFile?.pagesCount) return
+        if (0 == pageCount) return
         val offset: Float
         val screenCenter: Float
         when {
@@ -822,9 +818,9 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
                 screenCenter = width.toFloat() / 2
             }
         }
-        val page = pdfFile?.getPageAtOffset(-(offset - screenCenter), zoom) ?: -1
+        val page = pdfFile.getPageAtOffset(-(offset - screenCenter), zoom)
         when {
-            page >= 0 && page <= pdfFile!!.pagesCount - 1 && page != currentPage -> showPage(page)
+            page >= 0 && page <= pdfFile.pagesCount - 1 && page != currentPage -> showPage(page)
             else -> loadPages()
         }
     }
@@ -833,7 +829,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * Animate to the nearest snapping position for the current SnapPolicy
      */
     fun performPageSnap() {
-        if (!isPageSnap || pdfFile == null || pdfFile?.pagesCount == 0) return
+        if (!isPageSnap || _pdfFile == null || pageCount == 0) return
         val centerPage = findFocusPage(currentXOffset, currentYOffset)
         val edge = findSnapEdge(centerPage)
         if (edge === SnapEdge.NONE) return
@@ -850,9 +846,9 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     internal fun findSnapEdge(page: Int): SnapEdge {
         if (!isPageSnap || page < 0) return SnapEdge.NONE
         val currentOffset = if (isSwipeVertical) currentYOffset else currentXOffset
-        val offset = -pdfFile!!.getPageOffset(page, zoom)
+        val offset = -pdfFile.getPageOffset(page, zoom)
         val length = if (isSwipeVertical) height else width
-        val pageLength = pdfFile!!.getPageLength(page, zoom)
+        val pageLength = pdfFile.getPageLength(page, zoom)
         return when {
             length >= pageLength -> SnapEdge.CENTER
             currentOffset >= offset -> SnapEdge.START
@@ -865,9 +861,9 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * Get the offset to move to in order to snap to the page
      */
     internal fun snapOffsetForPage(pageIndex: Int, edge: SnapEdge): Float {
-        val offset = pdfFile?.getPageOffset(pageIndex, zoom) ?: 0F
+        val offset = pdfFile.getPageOffset(pageIndex, zoom)
         val length = if (isSwipeVertical) height else width
-        val pageLength = pdfFile?.getPageLength(pageIndex, zoom) ?: 0F
+        val pageLength = pdfFile.getPageLength(pageIndex, zoom)
         return when {
             edge === SnapEdge.CENTER -> offset - length / 2f + pageLength / 2f
             edge === SnapEdge.END -> offset - length + pageLength
@@ -881,9 +877,9 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         // make sure first and last page can be found
         return when {
             currOffset > -1 -> 0
-            currOffset < -pdfFile!!.getDocLen(zoom) + length + 1 -> pdfFile!!.pagesCount - 1
+            currOffset < -pdfFile.getDocLen(zoom) + length + 1 -> pdfFile.pagesCount - 1
             // else find page in center
-            else -> pdfFile?.getPageAtOffset(-(currOffset - length / 2f), zoom)
+            else -> pdfFile.getPageAtOffset(-(currOffset - length / 2f), zoom)
         } ?: 0
     }
 
@@ -891,8 +887,8 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * @return true if single page fills the entire screen in the scrolling direction
      */
     fun pageFillsScreen(): Boolean {
-        val start = -(pdfFile?.getPageOffset(currentPage, zoom) ?: 0F)
-        val end = start - (pdfFile?.getPageLength(currentPage, zoom) ?: 0F)
+        val start = -pdfFile.getPageOffset(currentPage, zoom)
+        val end = start - pdfFile.getPageLength(currentPage, zoom)
         return when {
             isSwipeVertical -> start > currentYOffset && end < currentYOffset - height
             else -> start > currentXOffset && end < currentXOffset - width
@@ -946,7 +942,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * @return true if whole document can displayed at once, false otherwise
      */
     fun documentFitsView(): Boolean {
-        val len = pdfFile?.getDocLen(1f) ?: return true
+        val len = pdfFile.getDocLen(1f)
         return when {
             isSwipeVertical -> len < height
             else -> len < width
@@ -958,11 +954,11 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
             Log.e(TAG, "Cannot fit, document not rendered yet")
             return
         }
-        zoomTo(width / pdfFile?.getPageSize(page)?.width!!)
+        zoomTo(width / pdfFile.getPageSize(page)?.width!!)
         jumpTo(page)
     }
 
-    fun getPageSize(pageIndex: Int): SizeF = pdfFile?.getPageSize(pageIndex) ?: SizeF(0F, 0F)
+    fun getPageSize(pageIndex: Int): SizeF = pdfFile.getPageSize(pageIndex) ?: SizeF(0F, 0F)
 
     fun toRealScale(size: Float): Float = size / zoom
 
@@ -994,21 +990,21 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * @return page number at given offset, starting from 0
      */
     fun getPageAtPositionOffset(positionOffset: Float): Int =
-        pdfFile?.getPageAtOffset(pdfFile!!.getDocLen(zoom) * positionOffset, zoom) ?: 0
+        pdfFile.getPageAtOffset(pdfFile.getDocLen(zoom) * positionOffset, zoom)
 
     val doRenderDuringScale: Boolean
         get() = renderDuringScale
 
     /** Returns null if document is not loaded  */
     val documentMeta: Meta?
-        get() = pdfFile?.metaData
+        get() = _pdfFile?.metaData
 
     /** Will be empty until document is loaded  */
     val tableOfContents: List<Bookmark>
-        get() = pdfFile?.bookmarks.orEmpty()
+        get() = _pdfFile?.bookmarks.orEmpty()
 
     /** Will be empty until document is loaded  */
-    fun getLinks(page: Int): List<Link> = pdfFile?.getPageLinks(page).orEmpty()
+    fun getLinks(page: Int): List<Link> = _pdfFile?.getPageLinks(page).orEmpty()
 
     private enum class State {
         DEFAULT,
