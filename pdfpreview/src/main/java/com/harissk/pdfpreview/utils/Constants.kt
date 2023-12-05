@@ -7,8 +7,8 @@ package com.harissk.pdfpreview.utils
 internal object Constants {
     var DEBUG_MODE = false
 
-    /** Between 0 and 1, the thumbnails quality (default 0.3). Increasing this value may cause performance decrease  */
-    var THUMBNAIL_RATIO = 0.3f
+    /** Between 0 and 1, the thumbnails quality (default 0.7). Increasing this value may cause performance decrease  */
+    var THUMBNAIL_RATIO = 0.7f
 
     /**
      * The size of the rendered parts (default 256)

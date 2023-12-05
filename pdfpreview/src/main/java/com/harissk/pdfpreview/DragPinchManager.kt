@@ -52,7 +52,7 @@ internal class DragPinchManager(
     }
 
     override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-        if (!pdfView.callbacks.callOnTap(e) && !checkLinkTapped(e.x, e.y)) {
+        if (!pdfView.callOnTap(e) && !checkLinkTapped(e.x, e.y)) {
             if (!pdfView.documentFitsView()) {
                 when {
                     pdfView.scrollHandle?.shown == true -> pdfView.scrollHandle?.hide()
@@ -97,7 +97,7 @@ internal class DragPinchManager(
             )
             mapped.sort()
             if (mapped.contains(mappedX, mappedY)) {
-                pdfView.callbacks.callLinkHandler(
+                pdfView.callLinkHandler(
                     LinkTapEvent(
                         originalX = x,
                         originalY = y,
@@ -180,7 +180,7 @@ internal class DragPinchManager(
         if (!animationManager.isFlinging) pdfView.performPageSnap()
     }
 
-    override fun onLongPress(e: MotionEvent) = pdfView.callbacks.callOnLongPress(e)
+    override fun onLongPress(e: MotionEvent) = pdfView.callOnLongPress(e)
 
     override fun onFling(
         e1: MotionEvent?,

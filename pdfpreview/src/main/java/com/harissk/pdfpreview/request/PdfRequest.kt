@@ -1,15 +1,10 @@
 package com.harissk.pdfpreview.request
 
 import com.harissk.pdfpreview.link.LinkHandler
-import com.harissk.pdfpreview.listener.OnDrawListener
-import com.harissk.pdfpreview.listener.OnErrorListener
-import com.harissk.pdfpreview.listener.OnLoadCompleteListener
-import com.harissk.pdfpreview.listener.OnLongPressListener
-import com.harissk.pdfpreview.listener.OnPageChangeListener
-import com.harissk.pdfpreview.listener.OnPageErrorListener
-import com.harissk.pdfpreview.listener.OnPageScrollListener
-import com.harissk.pdfpreview.listener.OnRenderListener
-import com.harissk.pdfpreview.listener.OnTapListener
+import com.harissk.pdfpreview.listener.DocumentLoadListener
+import com.harissk.pdfpreview.listener.GestureEventListener
+import com.harissk.pdfpreview.listener.PageNavigationEventListener
+import com.harissk.pdfpreview.listener.RenderingEventListener
 import com.harissk.pdfpreview.scroll.ScrollHandle
 import com.harissk.pdfpreview.source.DocumentSource
 import com.harissk.pdfpreview.utils.FitPolicy
@@ -25,17 +20,6 @@ class PdfRequest private constructor(
     val pageNumbers: IntArray? = null,
     val enableSwipe: Boolean = true,
     val enableDoubleTap: Boolean = true,
-    val onDrawListener: OnDrawListener? = null,
-    val onDrawAllListener: OnDrawListener? = null,
-    val onLoadCompleteListener: OnLoadCompleteListener? = null,
-    val onErrorListener: OnErrorListener? = null,
-    val onPageChangeListener: OnPageChangeListener? = null,
-    val onPageScrollListener: OnPageScrollListener? = null,
-    val onRenderListener: OnRenderListener? = null,
-    val onTapListener: OnTapListener? = null,
-    val onLongPressListener: OnLongPressListener? = null,
-    val onPageErrorListener: OnPageErrorListener? = null,
-    val linkHandler: LinkHandler? = null,
     val defaultPage: Int = 0,
     val swipeHorizontal: Boolean = false,
     val annotationRendering: Boolean = false,
@@ -50,6 +34,11 @@ class PdfRequest private constructor(
     val pageSnap: Boolean = false,
     val nightMode: Boolean = false,
     val disableLongPress: Boolean = false,
+    val documentLoadListener: DocumentLoadListener? = null,
+    val renderingEventListener: RenderingEventListener? = null,
+    val pageNavigationEventListener: PageNavigationEventListener? = null,
+    val gestureEventListener: GestureEventListener? = null,
+    val linkHandler: LinkHandler? = null,
 ) {
 
     class Builder {
@@ -57,17 +46,6 @@ class PdfRequest private constructor(
         private var pageNumbers: IntArray? = null
         private var enableSwipe: Boolean = true
         private var enableDoubleTap: Boolean = true
-        private var onDrawListener: OnDrawListener? = null
-        private var onDrawAllListener: OnDrawListener? = null
-        private var onLoadCompleteListener: OnLoadCompleteListener? = null
-        private var onErrorListener: OnErrorListener? = null
-        private var onPageChangeListener: OnPageChangeListener? = null
-        private var onPageScrollListener: OnPageScrollListener? = null
-        private var onRenderListener: OnRenderListener? = null
-        private var onTapListener: OnTapListener? = null
-        private var onLongPressListener: OnLongPressListener? = null
-        private var onPageErrorListener: OnPageErrorListener? = null
-        private var linkHandler: LinkHandler? = null
         private var defaultPage: Int = 0
         private var swipeHorizontal: Boolean = false
         private var annotationRendering: Boolean = false
@@ -82,6 +60,11 @@ class PdfRequest private constructor(
         private var pageSnap: Boolean = false
         private var nightMode: Boolean = false
         private var disableLongPress: Boolean = false
+        private var documentLoadListener: DocumentLoadListener? = null
+        private var renderingEventListener: RenderingEventListener? = null
+        private var pageNavigationEventListener: PageNavigationEventListener? = null
+        private var gestureEventListener: GestureEventListener? = null
+        private var linkHandler: LinkHandler? = null
 
         fun source(source: DocumentSource) = apply {
             this.source = source
@@ -101,50 +84,6 @@ class PdfRequest private constructor(
 
         fun enableAnnotationRendering(annotationRendering: Boolean) = apply {
             this.annotationRendering = annotationRendering
-        }
-
-        fun onDraw(onDrawListener: OnDrawListener?) = apply {
-            this.onDrawListener = onDrawListener
-        }
-
-        fun onDrawAll(onDrawAllListener: OnDrawListener?) = apply {
-            this.onDrawAllListener = onDrawAllListener
-        }
-
-        fun onLoad(onLoadCompleteListener: OnLoadCompleteListener?) = apply {
-            this.onLoadCompleteListener = onLoadCompleteListener
-        }
-
-        fun onPageScroll(onPageScrollListener: OnPageScrollListener?) = apply {
-            this.onPageScrollListener = onPageScrollListener
-        }
-
-        fun onError(onErrorListener: OnErrorListener?) = apply {
-            this.onErrorListener = onErrorListener
-        }
-
-        fun onPageError(onPageErrorListener: OnPageErrorListener?) = apply {
-            this.onPageErrorListener = onPageErrorListener
-        }
-
-        fun onPageChange(onPageChangeListener: OnPageChangeListener?) = apply {
-            this.onPageChangeListener = onPageChangeListener
-        }
-
-        fun onRender(onRenderListener: OnRenderListener?) = apply {
-            this.onRenderListener = onRenderListener
-        }
-
-        fun onTap(onTapListener: OnTapListener?) = apply {
-            this.onTapListener = onTapListener
-        }
-
-        fun onLongPress(onLongPressListener: OnLongPressListener?) = apply {
-            this.onLongPressListener = onLongPressListener
-        }
-
-        fun linkHandler(linkHandler: LinkHandler) = apply {
-            this.linkHandler = linkHandler
         }
 
         fun defaultPage(defaultPage: Int) = apply {
@@ -199,6 +138,27 @@ class PdfRequest private constructor(
             this.disableLongPress = true
         }
 
+        fun documentLoadListener(documentLoadListener: DocumentLoadListener) = apply {
+            this.documentLoadListener = documentLoadListener
+        }
+
+        fun renderingEventListener(renderingEventListener: RenderingEventListener) = apply {
+            this.renderingEventListener = renderingEventListener
+        }
+
+        fun pageNavigationEventListener(pageNavigationEventListener: PageNavigationEventListener) =
+            apply {
+                this.pageNavigationEventListener = pageNavigationEventListener
+            }
+
+        fun gestureEventListener(gestureEventListener: GestureEventListener) = apply {
+            this.gestureEventListener = gestureEventListener
+        }
+
+        fun linkHandler(linkHandler: LinkHandler) = apply {
+            this.linkHandler = linkHandler
+        }
+
         /**
          * Create a new [PdfRequest].
          */
@@ -207,17 +167,6 @@ class PdfRequest private constructor(
             pageNumbers = pageNumbers,
             enableSwipe = enableSwipe,
             enableDoubleTap = enableDoubleTap,
-            onDrawListener = onDrawListener,
-            onDrawAllListener = onDrawAllListener,
-            onLoadCompleteListener = onLoadCompleteListener,
-            onErrorListener = onErrorListener,
-            onPageChangeListener = onPageChangeListener,
-            onPageScrollListener = onPageScrollListener,
-            onRenderListener = onRenderListener,
-            onTapListener = onTapListener,
-            onLongPressListener = onLongPressListener,
-            onPageErrorListener = onPageErrorListener,
-            linkHandler = linkHandler,
             defaultPage = defaultPage,
             swipeHorizontal = swipeHorizontal,
             annotationRendering = annotationRendering,
@@ -231,7 +180,12 @@ class PdfRequest private constructor(
             pageSnap = pageSnap,
             pageFling = pageFling,
             nightMode = nightMode,
-            disableLongPress = disableLongPress
+            disableLongPress = disableLongPress,
+            documentLoadListener = documentLoadListener,
+            renderingEventListener = renderingEventListener,
+            pageNavigationEventListener = pageNavigationEventListener,
+            gestureEventListener = gestureEventListener,
+            linkHandler = linkHandler,
         )
     }
 }

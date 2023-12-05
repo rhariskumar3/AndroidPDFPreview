@@ -13,6 +13,7 @@ import android.graphics.RectF
 import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
+import android.view.MotionEvent
 import android.widget.RelativeLayout
 import com.harissk.pdfium.Bookmark
 import com.harissk.pdfium.Link
@@ -21,10 +22,7 @@ import com.harissk.pdfium.PdfiumCore
 import com.harissk.pdfium.util.Size
 import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.exception.PageRenderingException
-import com.harissk.pdfpreview.link.DefaultLinkHandler
-import com.harissk.pdfpreview.listener.Callbacks
-import com.harissk.pdfpreview.listener.OnDrawListener
-import com.harissk.pdfpreview.listener.OnErrorListener
+import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.model.PagePart
 import com.harissk.pdfpreview.request.PdfRequest
 import com.harissk.pdfpreview.scroll.ScrollHandle
@@ -69,7 +67,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     private var pdfRequest: PdfRequest? = null
 
     private var _pdfFile: PdfFile? = null
-    val pdfFile: PdfFile get() = _pdfFile ?: throw NullPointerException("PDF not decoded")
+    val pdfFile: PdfFile get() = _pdfFile ?: throw IllegalStateException("PDF not decoded")
 
     val minZoom = DEFAULT_MIN_SCALE
     val midZoom = DEFAULT_MID_SCALE
@@ -138,7 +136,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     /** Handler always waiting in the background and rendering tasks  */
     var renderingHandler: RenderingHandler? = null
     private val pagesLoader: PagesLoader = PagesLoader(this)
-    var callbacks = Callbacks()
 
     /** Paint object for drawing  */
     private val paint: Paint = Paint()
@@ -228,19 +225,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
             if (!hasSize) return@async
             this@PDFView.recycle()
             this@PDFView.pdfRequest = pdfRequest
-            this@PDFView.callbacks.setOnLoadComplete(pdfRequest.onLoadCompleteListener)
-            this@PDFView.callbacks.setOnError(pdfRequest.onErrorListener)
-            this@PDFView.callbacks.setOnDraw(pdfRequest.onDrawListener)
-            this@PDFView.callbacks.setOnDrawAll(pdfRequest.onDrawAllListener)
-            this@PDFView.callbacks.setOnPageChange(pdfRequest.onPageChangeListener)
-            this@PDFView.callbacks.setOnPageScroll(pdfRequest.onPageScrollListener)
-            this@PDFView.callbacks.setOnRender(pdfRequest.onRenderListener)
-            this@PDFView.callbacks.setOnTap(pdfRequest.onTapListener)
-            this@PDFView.callbacks.setOnLongPress(pdfRequest.onLongPressListener)
-            this@PDFView.callbacks.setOnPageError(pdfRequest.onPageErrorListener)
-            this@PDFView.callbacks.setLinkHandler(
-                pdfRequest.linkHandler ?: DefaultLinkHandler(this@PDFView)
-            )
             this@PDFView.isSwipeEnabled = pdfRequest.enableSwipe
             this@PDFView.setNightMode(pdfRequest.nightMode)
             this@PDFView.isDoubleTapEnabled = pdfRequest.enableDoubleTap
@@ -273,6 +257,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
         // Start decoding document
         try {
+            pdfRequest?.documentLoadListener?.onDocumentLoadingStart()
             val pdfFile = withContext(Dispatchers.IO) {
                 docSource.createDocument(this@PDFView.context, pdfiumCore, password)
                 PdfFile(
@@ -329,7 +314,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         currentPage = userPage
         loadPages()
         if (!documentFitsView()) scrollHandle?.setPageNum(currentPage + 1)
-        callbacks.callOnPageChange(currentPage, pdfFile.pagesCount)
+        pdfRequest?.pageNavigationEventListener?.onPageChanged(currentPage, pageCount)
     }
 
     /**
@@ -392,8 +377,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     }
 
     fun onPageError(ex: PageRenderingException) {
-        if (!callbacks.callOnPageError(ex.page, ex.cause))
-            Log.e(TAG, "Cannot open page " + ex.page, ex.cause)
+        pdfRequest?.renderingEventListener?.onPageFailedToRender(ex)
     }
 
     fun recycle() {
@@ -421,7 +405,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         zoom = 1f
         isRecycling = false
         isRecycled = true
-        callbacks = Callbacks()
         state = State.DEFAULT
     }
 
@@ -560,21 +543,16 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         for (part in cacheManager.getThumbnails()) drawPart(canvas, part)
 
         // Draws parts
-        for (part in cacheManager.getPageParts()) {
-            drawPart(canvas, part)
-            if (callbacks.getOnDrawAll() != null && !onDrawPagesNumbers.contains(part.page))
-                onDrawPagesNumbers.add(part.page)
-        }
-        for (page in onDrawPagesNumbers) drawWithListener(canvas, page, callbacks.getOnDrawAll())
+        for (part in cacheManager.getPageParts()) drawPart(canvas, part)
         onDrawPagesNumbers.clear()
-        drawWithListener(canvas, currentPage, callbacks.getOnDraw())
+        if (Constants.DEBUG_MODE && pdfRequest?.renderingEventListener != null)
+            drawWithListener(canvas, currentPage)
 
         // Restores the canvas position
         canvas.translate(-currentXOffset, -currentYOffset)
     }
 
-    private fun drawWithListener(canvas: Canvas, page: Int, listener: OnDrawListener?) {
-        listener ?: return
+    private fun drawWithListener(canvas: Canvas, page: Int) {
         val translateX: Float
         val translateY: Float
         when {
@@ -590,7 +568,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         }
         canvas.translate(translateX, translateY)
         val size: SizeF = pdfFile.getPageSize(page) ?: SizeF(0f, 0f)
-        listener.onLayerDrawn(
+        pdfRequest?.renderingEventListener?.onDrawPage(
             canvas = canvas,
             pageWidth = toCurrentScale(size.width),
             pageHeight = toCurrentScale(size.height),
@@ -683,21 +661,16 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
             isScrollHandleInit = true
         }
         dragPinchManager.enable()
-        callbacks.callOnLoadComplete(pdfFile.pagesCount)
+        pdfRequest?.documentLoadListener?.onDocumentLoaded(pageCount)
         jumpTo(defaultPage, false)
     }
 
-    private fun loadError(t: Throwable?) {
+    private fun loadError(t: Throwable) {
         if (isRecycling) return
         state = State.ERROR
-        // store reference, because callbacks will be cleared in recycle() method
-        val onErrorListener: OnErrorListener? = callbacks.getOnError()
+        pdfRequest?.documentLoadListener?.onDocumentLoadError(t)
         recycle()
         invalidate()
-        when {
-            onErrorListener != null -> onErrorListener.onError(t)
-            else -> Log.e("PDFView", "load pdf error", t)
-        }
     }
 
     fun redraw() {
@@ -714,7 +687,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         // when it is first rendered part
         if (state == State.LOADED) {
             state = State.SHOWN
-            callbacks.callOnRender(pageCount)
+            pdfRequest?.renderingEventListener?.onPageRendered(part.page)
         }
         when {
             part.isThumbnail -> cacheManager.cacheThumbnail(part)
@@ -799,7 +772,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         currentYOffset = offsetY1
         val positionOffset = positionOffset
         if (moveHandle && !documentFitsView()) scrollHandle?.setScroll(positionOffset)
-        callbacks.callOnPageScroll(currentPage, positionOffset)
+        pdfRequest?.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)
         redraw()
     }
 
@@ -880,7 +853,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
             currOffset < -pdfFile.getDocLen(zoom) + length + 1 -> pdfFile.pagesCount - 1
             // else find page in center
             else -> pdfFile.getPageAtOffset(-(currOffset - length / 2f), zoom)
-        } ?: 0
+        }
     }
 
     /**
@@ -1005,6 +978,16 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
     /** Will be empty until document is loaded  */
     fun getLinks(page: Int): List<Link> = _pdfFile?.getPageLinks(page).orEmpty()
+
+    fun callOnTap(e: MotionEvent): Boolean = pdfRequest?.gestureEventListener?.onTap(e) ?: false
+
+    fun callOnLongPress(e: MotionEvent) {
+        pdfRequest?.gestureEventListener?.onLongPress(e)
+    }
+
+    fun callLinkHandler(linkTapEvent: LinkTapEvent) {
+        pdfRequest?.linkHandler?.handleLinkEvent(linkTapEvent)
+    }
 
     private enum class State {
         DEFAULT,
