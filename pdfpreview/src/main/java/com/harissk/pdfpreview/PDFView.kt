@@ -26,9 +26,9 @@ import com.harissk.pdfpreview.link.DefaultLinkHandler
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.model.PagePart
 import com.harissk.pdfpreview.request.PdfRequest
+import com.harissk.pdfpreview.request.RenderOptions
 import com.harissk.pdfpreview.scroll.ScrollHandle
 import com.harissk.pdfpreview.source.DocumentSource
-import com.harissk.pdfpreview.utils.Constants
 import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.utils.SnapEdge
 import com.harissk.pdfpreview.utils.toPx
@@ -70,6 +70,8 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     private var _pdfFile: PdfFile? = null
     val pdfFile: PdfFile get() = _pdfFile ?: throw IllegalStateException("PDF not decoded")
 
+    val renderOptions get() = pdfRequest?.renderOptions ?: RenderOptions.DEFAULT
+
     val minZoom = DEFAULT_MIN_SCALE
     val midZoom = DEFAULT_MID_SCALE
     val maxZoom = DEFAULT_MAX_SCALE
@@ -88,7 +90,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     private var scrollDir = ScrollDir.NONE
 
     /** Rendered parts go to the cache manager  */
-    internal var cacheManager: CacheManager = CacheManager()
+    internal val cacheManager = CacheManager(renderOptions)
 
     /** Animation manager manage all offset and zoom animation  */
     private val animationManager: AnimationManager = AnimationManager(this)
@@ -546,7 +548,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         // Draws parts
         for (part in cacheManager.getPageParts()) drawPart(canvas, part)
         onDrawPagesNumbers.clear()
-        if (Constants.DEBUG_MODE && pdfRequest?.renderingEventListener != null)
+        if (renderOptions.debugMode && pdfRequest?.renderingEventListener != null)
             drawWithListener(canvas, currentPage)
 
         // Restores the canvas position
@@ -625,7 +627,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
             return
         }
         canvas.drawBitmap(renderedBitmap, srcRect, dstRect, paint)
-        if (Constants.DEBUG_MODE) {
+        if (renderOptions.debugMode) {
             debugPaint.setColor(if (part.page % 2 == 0) Color.RED else Color.BLUE)
             canvas.drawRect(dstRect, debugPaint)
         }

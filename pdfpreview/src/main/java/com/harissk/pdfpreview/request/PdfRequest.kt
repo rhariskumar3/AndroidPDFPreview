@@ -34,6 +34,7 @@ class PdfRequest private constructor(
     val pageSnap: Boolean = false,
     val nightMode: Boolean = false,
     val disableLongPress: Boolean = false,
+    val renderOptions: RenderOptions = RenderOptions.DEFAULT,
     val documentLoadListener: DocumentLoadListener? = null,
     val renderingEventListener: RenderingEventListener? = null,
     val pageNavigationEventListener: PageNavigationEventListener? = null,
@@ -60,6 +61,7 @@ class PdfRequest private constructor(
         private var pageSnap: Boolean = false
         private var nightMode: Boolean = false
         private var disableLongPress: Boolean = false
+        private var renderOptions: RenderOptions = RenderOptions.DEFAULT
         private var documentLoadListener: DocumentLoadListener? = null
         private var renderingEventListener: RenderingEventListener? = null
         private var pageNavigationEventListener: PageNavigationEventListener? = null
@@ -138,6 +140,10 @@ class PdfRequest private constructor(
             this.disableLongPress = true
         }
 
+        fun renderOptions(renderOptions: RenderOptions) = apply {
+            this.renderOptions = renderOptions
+        }
+
         fun documentLoadListener(documentLoadListener: DocumentLoadListener) = apply {
             this.documentLoadListener = documentLoadListener
         }
@@ -181,6 +187,7 @@ class PdfRequest private constructor(
             pageFling = pageFling,
             nightMode = nightMode,
             disableLongPress = disableLongPress,
+            renderOptions = renderOptions,
             documentLoadListener = documentLoadListener,
             renderingEventListener = renderingEventListener,
             pageNavigationEventListener = pageNavigationEventListener,

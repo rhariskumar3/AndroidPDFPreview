@@ -2,8 +2,7 @@ package com.harissk.pdfpreview
 
 import android.graphics.RectF
 import com.harissk.pdfpreview.model.PagePart
-import com.harissk.pdfpreview.utils.Constants.Cache.CACHE_SIZE
-import com.harissk.pdfpreview.utils.Constants.Cache.THUMBNAILS_CACHE_SIZE
+import com.harissk.pdfpreview.request.RenderOptions
 import java.util.PriorityQueue
 
 
@@ -11,17 +10,17 @@ import java.util.PriorityQueue
  * Created by Harishkumar on 25/11/23.
  */
 
-internal class CacheManager {
+internal class CacheManager(private val renderOptions: RenderOptions) {
 
     private val passiveCache: PriorityQueue<PagePart> by lazy {
         PriorityQueue(
-            CACHE_SIZE,
+            renderOptions.cacheSize,
             orderComparator
         )
     }
     private val activeCache: PriorityQueue<PagePart> by lazy {
         PriorityQueue(
-            CACHE_SIZE,
+            renderOptions.cacheSize,
             orderComparator
         )
     }
@@ -55,7 +54,7 @@ internal class CacheManager {
     private fun makeAFreeSpace() {
         // Remove and recycle bitmaps from both passive and active cache until the limit is reached
         synchronized(passiveActiveLock) {
-            while (activeCache.size + passiveCache.size >= CACHE_SIZE) {
+            while (activeCache.size + passiveCache.size >= renderOptions.cacheSize) {
                 if (!passiveCache.isEmpty()) passiveCache.poll()?.renderedBitmap?.recycle()
                 if (!activeCache.isEmpty()) activeCache.poll()?.renderedBitmap?.recycle()
             }
@@ -66,7 +65,7 @@ internal class CacheManager {
         synchronized(thumbnails) {
             try {
                 // If cache too big, remove and recycle
-                while (thumbnails.size >= THUMBNAILS_CACHE_SIZE)
+                while (thumbnails.size >= renderOptions.thumbnailsCacheSize)
                     thumbnails.removeAt(0).renderedBitmap?.recycle()
 
                 // Add part if it doesn't exist, recycle bitmap otherwise

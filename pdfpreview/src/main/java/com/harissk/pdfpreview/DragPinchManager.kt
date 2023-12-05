@@ -9,8 +9,6 @@ import android.view.View
 import android.view.View.OnTouchListener
 import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.model.LinkTapEvent
-import com.harissk.pdfpreview.utils.Constants.Pinch.MAXIMUM_ZOOM
-import com.harissk.pdfpreview.utils.Constants.Pinch.MINIMUM_ZOOM
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -263,8 +261,8 @@ internal class DragPinchManager(
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         var dr = detector.getScaleFactor()
         val wantedZoom: Float = pdfView.zoom * dr
-        val minZoom: Float = MINIMUM_ZOOM.coerceAtMost(pdfView.minZoom)
-        val maxZoom: Float = MAXIMUM_ZOOM.coerceAtMost(pdfView.maxZoom)
+        val minZoom: Float = pdfView.renderOptions.pinchMinimumZoom.coerceAtMost(pdfView.minZoom)
+        val maxZoom: Float = pdfView.renderOptions.pinchMaximumZoom.coerceAtMost(pdfView.maxZoom)
         when {
             wantedZoom < minZoom -> dr = minZoom / pdfView.zoom
 
