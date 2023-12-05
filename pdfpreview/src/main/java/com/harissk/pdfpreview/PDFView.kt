@@ -22,6 +22,7 @@ import com.harissk.pdfium.PdfiumCore
 import com.harissk.pdfium.util.Size
 import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.exception.PageRenderingException
+import com.harissk.pdfpreview.link.DefaultLinkHandler
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.model.PagePart
 import com.harissk.pdfpreview.request.PdfRequest
@@ -986,7 +987,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     }
 
     fun callLinkHandler(linkTapEvent: LinkTapEvent) {
-        pdfRequest?.linkHandler?.handleLinkEvent(linkTapEvent)
+        pdfRequest?.linkHandler?.handleLinkEvent(linkTapEvent) ?: DefaultLinkHandler(this)
     }
 
     private enum class State {
