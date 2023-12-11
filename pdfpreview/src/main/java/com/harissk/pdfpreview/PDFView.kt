@@ -224,10 +224,10 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     }
 
     fun enqueue(pdfRequest: PdfRequest) {
+        if (!hasSize) return
         scope.async(Dispatchers.Main.immediate) {
-            if (!hasSize) return@async
-            this@PDFView.recycle()
             this@PDFView.pdfRequest = pdfRequest
+            this@PDFView.recycle(false)
             this@PDFView.isSwipeEnabled = pdfRequest.enableSwipe
             this@PDFView.setNightMode(pdfRequest.nightMode)
             this@PDFView.isDoubleTapEnabled = pdfRequest.enableDoubleTap
@@ -383,10 +383,12 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         pdfRequest?.renderingEventListener?.onPageFailedToRender(ex)
     }
 
-    fun recycle() {
+    fun recycle() = recycle(true)
+
+    private fun recycle(isRemoveRequest: Boolean = true) {
         isRecycling = true
 
-        pdfRequest = null
+        if (isRemoveRequest) pdfRequest = null
 
         animationManager.stopAll()
         dragPinchManager.disable()
