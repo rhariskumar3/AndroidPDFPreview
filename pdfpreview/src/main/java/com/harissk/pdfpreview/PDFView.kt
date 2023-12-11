@@ -224,27 +224,28 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     }
 
     fun enqueue(pdfRequest: PdfRequest) {
+        this.pdfRequest = pdfRequest
+        isSwipeEnabled = pdfRequest.enableSwipe
+        setNightMode(pdfRequest.nightMode)
+        isDoubleTapEnabled = pdfRequest.enableDoubleTap
+        defaultPage = pdfRequest.defaultPage
+        isSwipeVertical = !pdfRequest.swipeHorizontal
+        isAnnotationRendering = pdfRequest.annotationRendering
+        scrollHandle = pdfRequest.scrollHandle
+        isAntialiasing = pdfRequest.antialiasing
+        spacingPx = context.toPx(pdfRequest.spacing)
+        isAutoSpacingEnabled = pdfRequest.autoSpacing
+        pageFitPolicy = pdfRequest.pageFitPolicy
+        isFitEachPage = pdfRequest.fitEachPage
+        isPageSnap = pdfRequest.pageSnap
+        isPageFlingEnabled = pdfRequest.pageFling
+        isBestQuality = false
+        if (pdfRequest.disableLongPress)
+            dragPinchManager.disableLongPress()
+
         if (!hasSize) return
         scope.async(Dispatchers.Main.immediate) {
-            this@PDFView.pdfRequest = pdfRequest
-            this@PDFView.recycle(false)
-            this@PDFView.isSwipeEnabled = pdfRequest.enableSwipe
-            this@PDFView.setNightMode(pdfRequest.nightMode)
-            this@PDFView.isDoubleTapEnabled = pdfRequest.enableDoubleTap
-            this@PDFView.defaultPage = pdfRequest.defaultPage
-            this@PDFView.isSwipeVertical = !pdfRequest.swipeHorizontal
-            this@PDFView.isAnnotationRendering = pdfRequest.annotationRendering
-            this@PDFView.scrollHandle = pdfRequest.scrollHandle
-            this@PDFView.isAntialiasing = pdfRequest.antialiasing
-            this@PDFView.spacingPx = context.toPx(pdfRequest.spacing)
-            this@PDFView.isAutoSpacingEnabled = pdfRequest.autoSpacing
-            this@PDFView.pageFitPolicy = pdfRequest.pageFitPolicy
-            this@PDFView.isFitEachPage = pdfRequest.fitEachPage
-            this@PDFView.isPageSnap = pdfRequest.pageSnap
-            this@PDFView.isPageFlingEnabled = pdfRequest.pageFling
-            this@PDFView.isBestQuality = false
-            if (pdfRequest.disableLongPress)
-                dragPinchManager.disableLongPress()
+            recycle(false)
             load(pdfRequest.source, pdfRequest.password, pdfRequest.pageNumbers)
         }
     }
