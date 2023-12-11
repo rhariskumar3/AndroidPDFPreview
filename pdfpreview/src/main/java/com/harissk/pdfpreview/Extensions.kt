@@ -21,8 +21,7 @@ inline fun PDFView.load(
     builder: PdfRequest.Builder.() -> Unit = {},
 ) {
     enqueue(
-        pdfRequest = PdfRequest.Builder()
-            .source(source)
+        pdfRequest = PdfRequest.Builder(source)
             .apply(builder)
             .build()
     )

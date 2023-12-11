@@ -37,7 +37,7 @@ class PdfFile(
     private val pdfiumCore: PdfiumCore,
     private val pageFitPolicy: FitPolicy,
     viewSize: Size,
-    originalUserPages: IntArray?,
+    originalUserPages: List<Int>?,
     private val isVertical: Boolean,
     private val spacingPx: Int,
     private val autoSpacing: Boolean,
@@ -80,7 +80,7 @@ class PdfFile(
      * The pages the user want to display in order
      * (ex: 0, 2, 2, 8, 8, 1, 1, 1)
      */
-    private var originalUserPages: IntArray?
+    private var originalUserPages: List<Int>?
 
     init {
         this.originalUserPages = originalUserPages

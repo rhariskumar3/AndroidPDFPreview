@@ -252,7 +252,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     private suspend fun load(
         docSource: DocumentSource,
         password: String?,
-        userPages: IntArray? = null,
+        userPages: List<Int>? = null,
     ) {
         check(isRecycled) { "Don't call load on a PDF View without recycling it first." }
         isRecycling = false

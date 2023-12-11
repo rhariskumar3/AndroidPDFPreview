@@ -15,9 +15,9 @@ import com.harissk.pdfpreview.utils.FitPolicy
 /**
  * Represents a configuration request for loading and rendering a PDF document.
  */
-class PdfRequest private constructor(
+data class PdfRequest(
     val source: DocumentSource,
-    val pageNumbers: IntArray? = null,
+    val pageNumbers: List<Int>? = null,
     val enableSwipe: Boolean = true,
     val enableDoubleTap: Boolean = true,
     val defaultPage: Int = 0,
@@ -42,9 +42,8 @@ class PdfRequest private constructor(
     val linkHandler: LinkHandler? = null,
 ) {
 
-    class Builder {
-        private var source: DocumentSource? = null
-        private var pageNumbers: IntArray? = null
+    class Builder(private val source: DocumentSource) {
+        private var pageNumbers: List<Int>? = null
         private var enableSwipe: Boolean = true
         private var enableDoubleTap: Boolean = true
         private var defaultPage: Int = 0
@@ -68,12 +67,8 @@ class PdfRequest private constructor(
         private var gestureEventListener: GestureEventListener? = null
         private var linkHandler: LinkHandler? = null
 
-        fun source(source: DocumentSource) = apply {
-            this.source = source
-        }
-
         fun pages(vararg pageNumbers: Int) = apply {
-            this.pageNumbers = pageNumbers
+            this.pageNumbers = pageNumbers.asList()
         }
 
         fun enableSwipe(enableSwipe: Boolean) = apply {
@@ -169,7 +164,7 @@ class PdfRequest private constructor(
          * Create a new [PdfRequest].
          */
         fun build() = PdfRequest(
-            source = source ?: throw NullPointerException(),
+            source = source,
             pageNumbers = pageNumbers,
             enableSwipe = enableSwipe,
             enableDoubleTap = enableDoubleTap,
