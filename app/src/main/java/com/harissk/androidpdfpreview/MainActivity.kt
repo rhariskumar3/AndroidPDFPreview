@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
         setSupportActionBar(binding.toolbar)
 
         binding.pdfView.setBackgroundColor(Color.LTGRAY);
-        displayFromAsset("sample.pdf")
+        displayFromAsset("pdf_bookmark_sample.pdf")
     }
 
     private fun displayFromAsset(assetFileName: String) {

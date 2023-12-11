@@ -21,7 +21,7 @@ internal class AssetSource(private val assetName: String) : DocumentSource {
     ) {
         val outFile = File(context.cacheDir, "$assetName-pdfview.pdf")
         if (assetName.contains("/")) outFile.getParentFile()?.mkdirs()
-        context.assets.open(assetName).copyTo(outFile.outputStream().buffered())
+        context.assets.open(assetName).buffered().copyTo(outFile.outputStream().buffered())
         core.newDocument(
             fd = ParcelFileDescriptor.open(outFile, ParcelFileDescriptor.MODE_READ_ONLY),
             password = password
