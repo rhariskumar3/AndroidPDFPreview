@@ -15,7 +15,7 @@ extern "C" {
 #define JNI_FUNC(retType, bindClass, name)  JNIEXPORT retType JNICALL Java_com_harissk_pdfium_##bindClass##_##name
 #define JNI_ARGS    JNIEnv *env, jobject thiz
 
-#define LOG_TAG "PDFSDK"
+#define LOG_TAG "PDFCORE"
 #define LOGI(...)   __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...)   __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGD(...)   __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -33,18 +33,18 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 #include <Mutex.h>
-#include <public/fpdfview.h>
-#include <public/fpdf_doc.h>
-#include <public/fpdf_edit.h>
-#include <public/fpdf_text.h>
-#include <public/fpdf_annot.h>
-#include <public/cpp/fpdf_scopers.h>
+#include <fpdfview.h>
+#include <fpdf_doc.h>
+#include <fpdf_edit.h>
+#include <fpdf_text.h>
+#include <fpdf_annot.h>
+#include <cpp/fpdf_scopers.h>
 }
 
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <android/bitmap.h>
-#include <public/fpdf_save.h>
+#include <fpdf_save.h>
 
 using namespace android;
 

@@ -833,7 +833,7 @@ class PdfiumCore {
         private const val TAG = "PdfiumCore"
 
         init {
-            System.loadLibrary("pdfsdk")
+            System.loadLibrary("pdfium")
             System.loadLibrary("pdfium_jni")
         }
     }

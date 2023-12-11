@@ -20,11 +20,10 @@ To use AndroidPDFPreview, simply create a PDFView instance and pass it the path 
 
 XML
 ```
-<com.github.rhariskumar3.androidpdfpreview.PDFView
+<com.harissk.pdfpreview.PDFView
     android:id="@+id/pdf_view"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    app:pdf_src="@raw/my_pdf.pdf" />
+    android:layout_height="match_parent" />
 ```
 Use code with caution. Learn more
 
@@ -47,6 +46,7 @@ If you have any questions or feedback, please feel free to contact us at [email 
 
 ## Acknowledgements
 We would like to thank the following projects for their contributions to AndroidPDFPreview:
+* [Pre-compiled binaries of PDFium](https://github.com/bblanchon/pdfium-binaries)
 * [PdfiumAndroid](https://github.com/benjinus/android-support-pdfium)
 * [AndroidPdfViewer](https://github.com/barteksc/AndroidPdfViewer)
 

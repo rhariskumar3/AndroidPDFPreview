@@ -14,9 +14,9 @@ set(Pdfium_DIR ${CMAKE_SOURCE_DIR}/pdfium)
 # refer to app/build.gradle, jniLibs section for that purpose.
 # ${ANDROID_ABI} is handy for our purpose here. Probably this ${ANDROID_ABI} is
 # the most valuable thing of this sample, the rest are pretty much normal cmake
-add_library(pdfsdk SHARED IMPORTED)
-set_target_properties(pdfsdk PROPERTIES IMPORTED_LOCATION
-        ${Pdfium_DIR}/lib/${ANDROID_ABI}/libpdfsdk.so)
+add_library(pdfium SHARED IMPORTED)
+set_target_properties(pdfium PROPERTIES IMPORTED_LOCATION
+        ${Pdfium_DIR}/lib/${ANDROID_ABI}/libpdfium.so)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-warn-mismatch")
@@ -46,7 +46,7 @@ target_include_directories(pdfium_jni PRIVATE
 
 target_link_libraries( # Specifies the target library.
         pdfium_jni
-        pdfsdk
+        pdfium
         jnigraphics
         android
         GLESv2
