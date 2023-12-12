@@ -42,14 +42,14 @@ class PdfiumCore {
     private external fun nativeGetPageHeightPoint(pagePtr: Long): Int
     private external fun nativeGetPageRotation(pagePtr: Long): Int
     private external fun nativeRenderPage(
-        pagePtr: Long, surface: Surface, dpi: Int,
+        pagePtr: Long, surface: Surface,
         startX: Int, startY: Int,
         drawSizeHor: Int, drawSizeVer: Int,
         renderAnnot: Boolean,
     )
 
     private external fun nativeRenderPageBitmap(
-        pagePtr: Long, bitmap: Bitmap, dpi: Int,
+        pagePtr: Long, bitmap: Bitmap,
         startX: Int, startY: Int,
         drawSizeHor: Int, drawSizeVer: Int,
         renderAnnot: Boolean,
@@ -270,7 +270,7 @@ class PdfiumCore {
         try {
             //nativeRenderPage(mNativePagesPtr.get(pageIndex), surface, mCurrentDpi);
             nativeRenderPage(
-                mNativePagesPtr[pageIndex] ?: throw NullPointerException(), surface, mCurrentDpi,
+                mNativePagesPtr[pageIndex] ?: throw NullPointerException(), surface,
                 startX, startY, drawSizeX, drawSizeY, renderAnnot
             )
         } catch (e: NullPointerException) {
@@ -294,7 +294,7 @@ class PdfiumCore {
     ) {
         try {
             nativeRenderPageBitmap(
-                mNativePagesPtr[pageIndex] ?: throw NullPointerException(), bitmap, mCurrentDpi,
+                mNativePagesPtr[pageIndex] ?: throw NullPointerException(), bitmap,
                 startX, startY, drawSizeX, drawSizeY, renderAnnot
             )
         } catch (e: NullPointerException) {

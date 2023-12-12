@@ -437,7 +437,7 @@ static void renderPageInternal(FPDF_PAGE page,
 }
 
 JNI_FUNC(void, PdfiumCore, nativeRenderPage)(JNI_ARGS, jlong pagePtr, jobject objSurface,
-                                             jint dpi, jint startX, jint startY,
+                                             jint startX, jint startY,
                                              jint drawSizeHor, jint drawSizeVer,
                                              jboolean renderAnnot) {
     ANativeWindow *nativeWindow = ANativeWindow_fromSurface(env, objSurface);
@@ -447,7 +447,7 @@ JNI_FUNC(void, PdfiumCore, nativeRenderPage)(JNI_ARGS, jlong pagePtr, jobject ob
     }
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
 
-    if (page == NULL || nativeWindow == NULL) {
+    if (page == NULL) {
         LOGE("Render page pointers invalid");
         return;
     }
@@ -478,7 +478,7 @@ JNI_FUNC(void, PdfiumCore, nativeRenderPage)(JNI_ARGS, jlong pagePtr, jobject ob
 }
 
 JNI_FUNC(void, PdfiumCore, nativeRenderPageBitmap)(JNI_ARGS, jlong pagePtr, jobject bitmap,
-                                                   jint dpi, jint startX, jint startY,
+                                                   jint startX, jint startY,
                                                    jint drawSizeHor, jint drawSizeVer,
                                                    jboolean renderAnnot) {
 
@@ -728,15 +728,11 @@ static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, int textPageIn
         if (doc == NULL) throw "Get page document null";
 
         FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(loadPageInternal(env, doc, textPageIndex));
-        if (page != NULL) {
-            FPDF_TEXTPAGE textPage = FPDFText_LoadPage(page);
-            if (textPage == NULL) {
-                throw "Loaded text page is null";
-            }
-            return reinterpret_cast<jlong>(textPage);
-        } else {
-            throw "Load page null";
+        FPDF_TEXTPAGE textPage = FPDFText_LoadPage(page);
+        if (textPage == NULL) {
+            throw "Loaded text page is null";
         }
+        return reinterpret_cast<jlong>(textPage);
     } catch (const char *msg) {
         LOGE("%s", msg);
 
