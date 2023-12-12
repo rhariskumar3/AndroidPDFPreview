@@ -111,34 +111,6 @@ inline long getFileSize(int fd) {
     }
 }
 
-static char *getErrorDescription(const long error) {
-    char *description = NULL;
-    switch (error) {
-        case FPDF_ERR_SUCCESS:
-            asprintf(&description, "No error.");
-            break;
-        case FPDF_ERR_FILE:
-            asprintf(&description, "File not found or could not be opened.");
-            break;
-        case FPDF_ERR_FORMAT:
-            asprintf(&description, "File not in PDF format or corrupted.");
-            break;
-        case FPDF_ERR_PASSWORD:
-            asprintf(&description, "Incorrect password.");
-            break;
-        case FPDF_ERR_SECURITY:
-            asprintf(&description, "Unsupported security scheme.");
-            break;
-        case FPDF_ERR_PAGE:
-            asprintf(&description, "Page not found or content error.");
-            break;
-        default:
-            asprintf(&description, "Unknown error.");
-    }
-
-    return description;
-}
-
 int jniThrowException(JNIEnv *env, const char *className, const char *message) {
     jclass exClass = env->FindClass(className);
     if (exClass == NULL) {
@@ -213,13 +185,47 @@ static int getBlock(void *param, unsigned long position, unsigned char *outBuffe
     return 1;
 }
 
+void throwPdfiumException(JNIEnv *env, long errorNum) {
+    switch (errorNum) {
+        case FPDF_ERR_UNKNOWN:
+            jniThrowException(env, "com/harissk/pdfium/exception/UnknownException",
+                              "An unexpected error occurred while processing the PDF document");
+            break;
+        case FPDF_ERR_FILE:
+            jniThrowException(env, "com/harissk/pdfium/exception/FileNotFoundException",
+                              "Unable to find the specified PDF file");
+            break;
+        case FPDF_ERR_FORMAT:
+            jniThrowException(env, "com/harissk/pdfium/exception/InvalidFormatException",
+                              "The provided file is not a valid PDF document");
+            break;
+        case FPDF_ERR_PASSWORD:
+            jniThrowException(env, "com/harissk/pdfium/exception/IncorrectPasswordException",
+                              "The provided password is incorrect");
+            break;
+        case FPDF_ERR_SECURITY:
+            jniThrowException(env, "com/harissk/pdfium/exception/UnsupportedSecurityException",
+                              "The PDF document uses an unsupported security scheme");
+            break;
+        case FPDF_ERR_PAGE:
+            jniThrowException(env, "com/harissk/pdfium/exception/PageNotFoundException",
+                              "The requested page was not found within the PDF document");
+            break;
+        case 7:
+            jniThrowException(env, "com/harissk/pdfium/exception/FileNotFoundException",
+                              "File is Empty");
+            break;
+        default:
+            jniThrowException(env, "com/harissk/pdfium/exception/UnknownException", "No Error");
+    }
+}
+
 
 JNI_FUNC(jlong, PdfiumCore, nativeOpenDocument)(JNI_ARGS, jint fd, jstring password) {
 
     size_t fileLength = (size_t) getFileSize(fd);
     if (fileLength <= 0) {
-        jniThrowException(env, "java/io/IOException",
-                          "File is empty");
+        throwPdfiumException(env, 7);
         return -1;
     }
 
@@ -245,17 +251,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeOpenDocument)(JNI_ARGS, jint fd, jstring passw
         delete docFile;
 
         const long errorNum = FPDF_GetLastError();
-        if (errorNum == FPDF_ERR_PASSWORD) {
-            jniThrowException(env, "com/harissk/pdfium/PdfPasswordException",
-                              "Password required or incorrect password.");
-        } else {
-            char *error = getErrorDescription(errorNum);
-            jniThrowExceptionFmt(env, "java/io/IOException",
-                                 "cannot create document: %s", error);
-
-            free(error);
-        }
-
+        throwPdfiumException(env, errorNum);
         return -1;
     }
 
@@ -288,17 +284,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeOpenMemDocument)(JNI_ARGS, jbyteArray data, js
         delete docFile;
 
         const long errorNum = FPDF_GetLastError();
-        if (errorNum == FPDF_ERR_PASSWORD) {
-            jniThrowException(env, "com/harissk/pdfium/PdfPasswordException",
-                              "Password required or incorrect password.");
-        } else {
-            char *error = getErrorDescription(errorNum);
-            jniThrowExceptionFmt(env, "java/io/IOException",
-                                 "cannot create document: %s", error);
-
-            free(error);
-        }
-
+        throwPdfiumException(env, errorNum);
         return -1;
     }
 
@@ -351,7 +337,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeLoadPage)(JNI_ARGS, jlong docPtr, jint pageInd
     return loadPageInternal(env, doc, (int) pageIndex);
 }
 JNI_FUNC(jlongArray, PdfiumCore, nativeLoadPages)(JNI_ARGS, jlong docPtr, jint fromIndex,
-                                                 jint toIndex) {
+                                                  jint toIndex) {
     DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
 
     if (toIndex < fromIndex) return NULL;
@@ -395,7 +381,7 @@ JNI_FUNC(jint, PdfiumCore, nativeGetPageHeightPoint)(JNI_ARGS, jlong pagePtr) {
     return (jint) FPDF_GetPageHeight(page);
 }
 JNI_FUNC(jobject, PdfiumCore, nativeGetPageSizeByIndex)(JNI_ARGS, jlong docPtr, jint pageIndex,
-                                                       jint dpi) {
+                                                        jint dpi) {
     DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
     if (doc == NULL) {
         LOGE("Document is null");
@@ -451,9 +437,9 @@ static void renderPageInternal(FPDF_PAGE page,
 }
 
 JNI_FUNC(void, PdfiumCore, nativeRenderPage)(JNI_ARGS, jlong pagePtr, jobject objSurface,
-                                            jint dpi, jint startX, jint startY,
-                                            jint drawSizeHor, jint drawSizeVer,
-                                            jboolean renderAnnot) {
+                                             jint dpi, jint startX, jint startY,
+                                             jint drawSizeHor, jint drawSizeVer,
+                                             jboolean renderAnnot) {
     ANativeWindow *nativeWindow = ANativeWindow_fromSurface(env, objSurface);
     if (nativeWindow == NULL) {
         LOGE("native window pointer null");
@@ -492,9 +478,9 @@ JNI_FUNC(void, PdfiumCore, nativeRenderPage)(JNI_ARGS, jlong pagePtr, jobject ob
 }
 
 JNI_FUNC(void, PdfiumCore, nativeRenderPageBitmap)(JNI_ARGS, jlong pagePtr, jobject bitmap,
-                                                  jint dpi, jint startX, jint startY,
-                                                  jint drawSizeHor, jint drawSizeVer,
-                                                  jboolean renderAnnot) {
+                                                   jint dpi, jint startX, jint startY,
+                                                   jint drawSizeHor, jint drawSizeVer,
+                                                   jboolean renderAnnot) {
 
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
 
@@ -592,7 +578,7 @@ JNI_FUNC(jstring, PdfiumCore, nativeGetDocumentMetaText)(JNI_ARGS, jlong docPtr,
 }
 
 JNI_FUNC(jobject, PdfiumCore, nativeGetFirstChildBookmark)(JNI_ARGS, jlong docPtr,
-                                                          jobject bookmarkPtr) {
+                                                           jobject bookmarkPtr) {
     DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
     FPDF_BOOKMARK parent;
     if (bookmarkPtr == NULL) {
@@ -700,9 +686,9 @@ JNI_FUNC(jobject, PdfiumCore, nativeGetLinkRect)(JNI_ARGS, jlong linkPtr) {
 }
 
 JNI_FUNC(jobject, PdfiumCore, nativePageCoordinateToDevice)(JNI_ARGS, jlong pagePtr, jint startX,
-                                                           jint startY, jint sizeX,
-                                                           jint sizeY, jint rotate, jdouble pageX,
-                                                           jdouble pageY) {
+                                                            jint startY, jint sizeX,
+                                                            jint sizeY, jint rotate, jdouble pageX,
+                                                            jdouble pageY) {
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
     int deviceX, deviceY;
 
@@ -714,9 +700,9 @@ JNI_FUNC(jobject, PdfiumCore, nativePageCoordinateToDevice)(JNI_ARGS, jlong page
 }
 
 JNI_FUNC(jobject, PdfiumCore, nativeDeviceCoordinateToPage)(JNI_ARGS, jlong pagePtr, jint startX,
-                                                           jint startY, jint sizeX,
-                                                           jint sizeY, jint rotate, jint deviceX,
-                                                           jint deviceY) {
+                                                            jint startY, jint sizeX,
+                                                            jint sizeY, jint rotate, jint deviceX,
+                                                            jint deviceY) {
     FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
     double pageX, pageY;
 
@@ -771,7 +757,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeLoadTextPage)(JNI_ARGS, jlong docPtr, jint pag
 }
 
 JNI_FUNC(jlongArray, PdfiumCore, nativeLoadTextPages)(JNI_ARGS, jlong docPtr, jint fromIndex,
-                                                     jint toIndex) {
+                                                      jint toIndex) {
     DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
 
     if (toIndex < fromIndex) return NULL;
@@ -823,15 +809,15 @@ JNI_FUNC(jdoubleArray, PdfiumCore, nativeTextGetCharBox)(JNI_ARGS, jlong textPag
 }
 
 JNI_FUNC(jint, PdfiumCore, nativeTextGetCharIndexAtPos)(JNI_ARGS, jlong textPagePtr, jdouble x,
-                                                       jdouble y, jdouble xTolerance,
-                                                       jdouble yTolerance) {
+                                                        jdouble y, jdouble xTolerance,
+                                                        jdouble yTolerance) {
     FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     return (jint) FPDFText_GetCharIndexAtPos(textPage, (double) x, (double) y, (double) xTolerance,
                                              (double) yTolerance);
 }
 
 JNI_FUNC(jint, PdfiumCore, nativeTextGetText)(JNI_ARGS, jlong textPagePtr, jint start_index,
-                                             jint count, jshortArray result) {
+                                              jint count, jshortArray result) {
     FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     jboolean isCopy = 0;
     unsigned short *arr = (unsigned short *) env->GetShortArrayElements(result, &isCopy);
@@ -844,13 +830,13 @@ JNI_FUNC(jint, PdfiumCore, nativeTextGetText)(JNI_ARGS, jlong textPagePtr, jint 
 }
 
 JNI_FUNC(jint, PdfiumCore, nativeTextCountRects)(JNI_ARGS, jlong textPagePtr, jint start_index,
-                                                jint count) {
+                                                 jint count) {
     FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     return (jint) FPDFText_CountRects(textPage, (int) start_index, (int) count);
 }
 
 JNI_FUNC(jdoubleArray, PdfiumCore, nativeTextGetRect)(JNI_ARGS, jlong textPagePtr,
-                                                     jint rect_index) {
+                                                      jint rect_index) {
     FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     jdoubleArray result = env->NewDoubleArray(4);
     if (result == NULL) {
@@ -864,9 +850,9 @@ JNI_FUNC(jdoubleArray, PdfiumCore, nativeTextGetRect)(JNI_ARGS, jlong textPagePt
 
 
 JNI_FUNC(jint, PdfiumCore, nativeTextGetBoundedTextLength)(JNI_ARGS, jlong textPagePtr,
-                                                          jdouble left,
-                                                          jdouble top, jdouble right,
-                                                          jdouble bottom) {
+                                                           jdouble left,
+                                                           jdouble top, jdouble right,
+                                                           jdouble bottom) {
     FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
 
     return (jint) FPDFText_GetBoundedText(textPage, (double) left, (double) top,
@@ -874,8 +860,8 @@ JNI_FUNC(jint, PdfiumCore, nativeTextGetBoundedTextLength)(JNI_ARGS, jlong textP
 }
 
 JNI_FUNC(jint, PdfiumCore, nativeTextGetBoundedText)(JNI_ARGS, jlong textPagePtr, jdouble left,
-                                                    jdouble top, jdouble right, jdouble bottom,
-                                                    jshortArray arr) {
+                                                     jdouble top, jdouble right, jdouble bottom,
+                                                     jshortArray arr) {
     FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
     jboolean isCopy = 0;
     unsigned short *buffer = NULL;
@@ -909,7 +895,7 @@ unsigned short *convertWideString(JNIEnv *env, jstring query) {
     unsigned short *result = static_cast<unsigned short *>(malloc(length));
     char *ptr = reinterpret_cast<char *>(result);
     size_t i = 0;
-    for (wchar_t w : value) {
+    for (wchar_t w: value) {
         ptr[i++] = w & 0xff;
         ptr[i++] = (w >> 8) & 0xff;
     }
@@ -920,7 +906,7 @@ unsigned short *convertWideString(JNIEnv *env, jstring query) {
 }
 
 JNI_FUNC(jlong, PdfiumCore, nativeSearchStart)(JNI_ARGS, jlong textPagePtr, jstring query,
-                                              jboolean matchCase, jboolean matchWholeWord) {
+                                               jboolean matchCase, jboolean matchWholeWord) {
     // convert jstring to UTF-16LE encoded wide strings
     unsigned short *pQuery = convertWideString(env, query);
     FPDF_TEXTPAGE textPage = reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr);
@@ -969,8 +955,8 @@ JNI_FUNC(jint, PdfiumCore, nativeCountSearchResult)(JNI_ARGS, jlong searchHandle
 // Begin PDF Annotation api
 //////////////////////////////////////////
 JNI_FUNC(jlong, PdfiumCore, nativeAddTextAnnotation)(JNI_ARGS, jlong docPtr, int page_index,
-                                                    jstring text_,
-                                                    jintArray color_, jintArray bound_) {
+                                                     jstring text_,
+                                                     jintArray color_, jintArray bound_) {
 
     FPDF_PAGE page;
     DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
