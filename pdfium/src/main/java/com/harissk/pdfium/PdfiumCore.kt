@@ -305,6 +305,15 @@ class PdfiumCore {
     }
 
     /**
+     * Release native page resources of given page
+     */
+    fun closePage(pageIndex: Int) {
+        val pagePtr = mNativePagesPtr[pageIndex] ?: throw NullPointerException()
+        nativeClosePage(pagePtr)
+        mNativePagesPtr.remove(pageIndex)
+    }
+
+    /**
      * Release native resources and opened file
      */
     fun closeDocument() {

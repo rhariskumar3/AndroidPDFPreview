@@ -266,13 +266,14 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
                 docSource.createDocument(this@PDFView.context, pdfiumCore, password)
                 PdfFile(
                     pdfiumCore = pdfiumCore,
-                    pageFitPolicy = this@PDFView.pageFitPolicy,
+                    pageFitPolicy = pageFitPolicy,
                     viewSize = Size(this@PDFView.width, this@PDFView.height),
                     originalUserPages = userPages,
-                    isVertical = this@PDFView.isSwipeVertical,
-                    spacingPx = this@PDFView.spacingPx,
-                    autoSpacing = this@PDFView.isAutoSpacingEnabled,
-                    fitEachPage = this@PDFView.isFitEachPage
+                    isVertical = isSwipeVertical,
+                    spacingPx = spacingPx,
+                    autoSpacing = isAutoSpacingEnabled,
+                    fitEachPage = isFitEachPage,
+                    maxPageCacheSize = renderOptions.maxPageCacheSize
                 )
             }
 

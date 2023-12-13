@@ -14,6 +14,8 @@ import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.utils.PageSizeCalculator
+import java.util.LinkedList
+import java.util.Queue
 import kotlin.math.max
 
 
@@ -31,6 +33,7 @@ import kotlin.math.max
  * @param spacingPx Fixed spacing between pages in pixels.
  * @param autoSpacing Calculate spacing automatically so each page fits on its own in the center of the view.
  * @param fitEachPage True if every page should fit separately according to the FitPolicy,
+ * @param maxPageCacheSize The maximum number of pages that can be kept in the view
  * else the largest page fits and other pages scale relatively.
  */
 class PdfFile(
@@ -42,6 +45,7 @@ class PdfFile(
     private val spacingPx: Int,
     private val autoSpacing: Boolean,
     private val fitEachPage: Boolean,
+    private val maxPageCacheSize: Int,
 ) {
     var pagesCount = 0
         private set
@@ -54,6 +58,9 @@ class PdfFile(
 
     /** Opened pages with indicator whether opening was successful  */
     private val openedPages = SparseBooleanArray()
+
+    /** Opened pages queue **/
+    private val openedPageQueue: Queue<Int> = LinkedList()
 
     /** Page with maximum width  */
     private var originalMaxWidthPageSize: Size = Size(0, 0)
@@ -261,6 +268,9 @@ class PdfFile(
                 openedPages.indexOfKey(docPage) < 0 -> try {
                     pdfiumCore.openPage(docPage)
                     openedPages.put(docPage, true)
+                    openedPageQueue.add(pageIndex)
+                    if (openedPageQueue.size > maxPageCacheSize)
+                        openedPageQueue.poll()?.let { closePage(it) }
                     true
                 } catch (e: Exception) {
                     openedPages.put(docPage, false)
@@ -268,6 +278,15 @@ class PdfFile(
                 }
 
                 else -> false
+            }
+        }
+    }
+
+    private fun closePage(pageIndex: Int) {
+        synchronized(lock) {
+            if (openedPages.indexOfKey(pageIndex) >= 0) {
+                pdfiumCore.closePage(pageIndex)
+                openedPages.delete(pageIndex)
             }
         }
     }

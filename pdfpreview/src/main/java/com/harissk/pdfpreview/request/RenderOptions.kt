@@ -9,7 +9,8 @@ data class RenderOptions(
      */
     val debugMode: Boolean = false,
     /** Between 0 and 1, the thumbnails quality (default 0.7).
-     * Increasing this value may cause performance decrease  */
+     * Increasing this value may cause performance decrease
+     */
     val thumbnailRatio: Float = 0.7f,
     /**
      * The size of the rendered parts (default 256)
@@ -21,6 +22,10 @@ data class RenderOptions(
     val preloadOffset: Float = 20F,
     /** The size of the cache (number of bitmaps kept)  */
     val cacheSize: Int = 120,
+    /** Max pages kept in View
+     * Increasing this value may cause performance decrease
+     */
+    val maxPageCacheSize: Int = 10,
     /** The size of the thumbnails cache (number of bitmaps kept)  */
     val thumbnailsCacheSize: Int = 8,
     /** Minimum zoom level  */
