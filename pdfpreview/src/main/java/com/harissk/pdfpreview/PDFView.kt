@@ -400,12 +400,14 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
         // Clear caches
         cacheManager.recycle()
-        if (isScrollHandleInit) scrollHandle?.destroyLayout()
+        if (isScrollHandleInit && isRemoveRequest) scrollHandle?.destroyLayout()
         _pdfFile?.dispose()
         _pdfFile = null
         renderingHandler = null
-        scrollHandle = null
-        isScrollHandleInit = false
+        if (isRemoveRequest) {
+            scrollHandle = null
+            isScrollHandleInit = false
+        }
         currentYOffset = 0f
         currentXOffset = currentYOffset
         zoom = 1f
