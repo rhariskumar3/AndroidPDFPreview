@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.harissk.androidpdfpreview"
-    compileSdk = 34
+    compileSdk = (property("compileSdk") as String).toInt()
 
     defaultConfig {
         applicationId = "com.harissk.androidpdfpreview"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = (property("minSdk") as String).toInt()
+        targetSdk = (property("minSdk") as String).toInt()
         versionCode = 1
         versionName = "1.0"
     }

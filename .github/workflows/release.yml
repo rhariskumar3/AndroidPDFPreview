@@ -6,7 +6,34 @@ on:
     branches: [ release/* ]
   pull_request:
     branches: [ main ]
+env:
+  CACHE_VERSION: 1 # Increment this to invalidate the cache.
+  CI: true
+  JAVA_VERSION: 17
 jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+      - run: ./ci_clear_gradle_cache.sh
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ env.CACHE_VERSION }}-${{ hashFiles('**/**.gradle.kts', '**/gradle/wrapper/gradle-wrapper.properties', '**/libs.versions.toml') }}
+
+      - name: Check Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Check assemble
+        run: ./gradlew assembleDebug
   publish:
     runs-on: ubuntu-latest
     steps:
@@ -18,43 +45,14 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
 
       - name: Run chmod to make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Publish package to local staging directory
+      - name: Publish package to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.JRELEASER_NEXUS2_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.JRELEASER_NEXUS2_PASSWORD }}
         run: ./gradlew publish
-
-      # Post JARs to Maven Central
-
-      - name: Release to Maven Central
-        env:
-          JRELEASER_NEXUS2_USERNAME: ${{ secrets.JRELEASER_NEXUS2_USERNAME }}
-          JRELEASER_NEXUS2_PASSWORD: ${{ secrets.JRELEASER_NEXUS2_PASSWORD }}
-          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
-          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
-          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
-        run: |
-          export GPG_TTY=$(tty)
-          git config user.name "${{ github.event.head_commit.committer.name }}"
-          git config user.email "${{ github.event.head_commit.committer.email }}"
-
-      # Create a release
-
-      - name: Run JReleaser
-        uses: jreleaser/release-action@2.4.1
-        env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Persist logs
-
-      - name: JReleaser release output
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: jreleaser-release
-          path: |
-            out/jreleaser/trace.log
-            out/jreleaser/output.properties

@@ -5,10 +5,10 @@ plugins {
 
 android {
     namespace = "com.harissk.pdfium"
-    compileSdk = 34
+    compileSdk = (property("compileSdk") as String).toInt()
 
     defaultConfig {
-        minSdk = 21
+        minSdk = (property("minSdk") as String).toInt()
 
         consumerProguardFiles("consumer-rules.pro")
         externalNativeBuild {

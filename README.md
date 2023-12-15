@@ -1,4 +1,5 @@
-# AndroidPDFPreview
+![AndroidPDFPreview](logo.png)
+
 AndroidPDFPreview is a lightweight and easy-to-use SDK that enables you to display and interact with PDF documents in your Android apps. Built upon PdfiumAndroid for decoding PDF files and barteksc/AndroidPdfViewer for rendering, AndroidPDFPreview provides a seamless and user-friendly experience for viewing PDFs on Android devices. With support for gestures, zoom, and double tap, AndroidPDFPreview offers a comprehensive solution for integrating PDF preview functionality into your Android apps.
 
 ## Features
@@ -11,7 +12,7 @@ AndroidPDFPreview is a lightweight and easy-to-use SDK that enables you to displ
 To install AndroidPDFPreview, add the following dependency to your project's Gradle file:
 ```
 dependencies {
-    implementation 'com.github.rhariskumar3:androidpdfpreview:1.0.0'
+    implementation 'io.github.rhariskumar3:androidpdfpreview:1.0.0'
 }
 ```
 
@@ -35,9 +36,6 @@ AndroidPDFPreview supports a number of additional features, including:
 * Bookmarks
 * Annotations
 
-## License
-AndroidPDFPreview is licensed under the Apache License 2.0.
-
 ## Contributing
 We welcome contributions to AndroidPDFPreview. Please feel free to submit pull requests or file issues on GitHub.
 
@@ -47,9 +45,24 @@ If you have any questions or feedback, please feel free to contact us at [email 
 ## Acknowledgements
 We would like to thank the following projects for their contributions to AndroidPDFPreview:
 * [Pre-compiled binaries of PDFium](https://github.com/bblanchon/pdfium-binaries)
-* [PdfiumAndroid](https://github.com/benjinus/android-support-pdfium)
 * [AndroidPdfViewer](https://github.com/barteksc/AndroidPdfViewer)
 
 We hope you find AndroidPDFPreview to be a valuable tool for developing your Android apps.
+
+## License
+
+    Copyright 2023 AndroidPDFPreview Contributors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 
 ** Happy coding! **
