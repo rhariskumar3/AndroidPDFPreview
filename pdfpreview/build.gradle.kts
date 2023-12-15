@@ -114,11 +114,6 @@ jreleaser {
     }
 }
 
-signing {
-    useGpgCmd()
-    sign(publishing.publications)
-}
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
