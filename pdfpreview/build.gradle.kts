@@ -1,4 +1,5 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     alias(libs.plugins.androidLibrary)
@@ -43,7 +44,7 @@ mavenPublishing {
         )
     )
     pomFromGradleProperties()
-    publishToMavenCentral()
+    publishToMavenCentral(SonatypeHost.S01)
     signAllPublications()
     coordinates(
         groupId = project.property("POM_GROUP_ID").toString(),
