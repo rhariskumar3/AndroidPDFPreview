@@ -3,6 +3,7 @@ on:
   push:
     tags:
       - v*
+    branches: [ release/* ]
   pull_request:
     branches: [ main ]
 jobs:
@@ -18,7 +19,7 @@ jobs:
       - name: Run chmod to make gradlew executable
         run: chmod +x ./gradlew
       - name: Publish package to local staging directory
-        run: ./gradlew :publish
+        run: ./gradlew publish
       - name: Publish package to maven central
         env:
           JRELEASER_NEXUS2_USERNAME: ${{ secrets.JRELEASER_NEXUS2_USERNAME }}
