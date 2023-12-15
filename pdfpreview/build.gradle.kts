@@ -36,13 +36,7 @@ android {
 }
 
 mavenPublishing {
-    configure(
-        AndroidSingleVariantLibrary(
-            variant = "release",
-            sourcesJar = true,
-            publishJavadocJar = true,
-        )
-    )
+    configure(AndroidSingleVariantLibrary())
     pomFromGradleProperties()
     publishToMavenCentral(SonatypeHost.S01)
     signAllPublications()

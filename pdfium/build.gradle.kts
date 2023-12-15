@@ -1,6 +1,10 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    id("com.vanniktech.maven.publish.base")
 }
 
 android {
@@ -46,4 +50,16 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+}
+
+mavenPublishing {
+    configure(AndroidSingleVariantLibrary())
+    pomFromGradleProperties()
+    publishToMavenCentral(SonatypeHost.S01)
+    signAllPublications()
+    coordinates(
+        groupId = project.property("POM_GROUP_ID").toString(),
+        artifactId = project.property("POM_ARTIFACT_ID").toString(),
+        version = project.property("POM_VERSION").toString(),
+    )
 }
