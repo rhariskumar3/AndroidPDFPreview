@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "com.harissk.androidpdfpreview"
         minSdk = (property("minSdk") as String).toInt()
-        targetSdk = (property("minSdk") as String).toInt()
+        targetSdk = (property("compileSdk") as String).toInt()
         versionCode = 1
         versionName = "1.0"
     }

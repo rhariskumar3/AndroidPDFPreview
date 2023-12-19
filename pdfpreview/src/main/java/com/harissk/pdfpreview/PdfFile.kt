@@ -373,7 +373,7 @@ class PdfFile(
 
         // Check if the resulting documentPage is valid
         return when (documentPage) {
-            in 0..<pagesCount -> documentPage
+            in 0 until pagesCount -> documentPage
             else -> -1
         }
     }
