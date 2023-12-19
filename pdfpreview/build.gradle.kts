@@ -7,6 +7,15 @@ plugins {
     id("com.vanniktech.maven.publish.base")
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 android {
     namespace = "com.harissk.pdfpreview"
     compileSdk = (property("compileSdk") as String).toInt()
@@ -25,13 +34,6 @@ android {
                 "proguard-rules.pro"
             )
         }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
     }
 }
 
