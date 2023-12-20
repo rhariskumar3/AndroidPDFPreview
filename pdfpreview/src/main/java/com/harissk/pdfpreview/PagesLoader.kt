@@ -2,6 +2,7 @@ package com.harissk.pdfpreview
 
 import android.graphics.RectF
 import com.harissk.pdfium.util.SizeF
+import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.utils.toPx
 import java.util.LinkedList
 import kotlin.math.abs
@@ -68,7 +69,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
         firstYOffset: Float,
         lastXOffset: Float,
         lastYOffset: Float,
-    ): List<RenderRange> {
+    ): List<RenderRange> = try {
         val fixedFirstXOffset: Float = -firstXOffset.coerceAtMost(0F)
         val fixedFirstYOffset: Float = -firstYOffset.coerceAtMost(0F)
         val fixedLastXOffset: Float = -lastXOffset.coerceAtMost(0F)
@@ -214,7 +215,10 @@ internal class PagesLoader(private val pdfView: PDFView) {
             }
             renderRanges.add(range)
         }
-        return renderRanges
+        renderRanges
+    } catch (e: Exception) {
+        pdfView.onPageError(PageRenderingException(-1, e.cause ?: Throwable(e.message)))
+        emptyList()
     }
 
     private fun loadVisible() {

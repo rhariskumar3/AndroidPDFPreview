@@ -72,6 +72,8 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
         val tvlp =
             LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         tvlp.addRule(CENTER_IN_PARENT, TRUE)
+        if (textView.parent != null)
+            (textView.parent as ViewGroup).removeView(textView)
         addView(textView, tvlp)
         lp.addRule(align)
         pdfView?.addView(this, lp)
