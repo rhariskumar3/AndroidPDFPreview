@@ -1,9 +1,15 @@
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
-
 version: 2
 updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10  # Limit open pull requests to 10
+    target-branch: "main"        # Target the main branch for updates
+    reviewers: # Assign reviewers for pull requests
+      - "rhariskumar3"
+    labels: # Add labels for easy tracking
+      - "dependencies"
+      - "automated"
+    assignees: # Assign assignees for pull requests
+      - "rhariskumar3"
