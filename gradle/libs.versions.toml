@@ -1,6 +1,6 @@
 [versions]
 agp = "8.2.0"
-dokka = "1.8.10"
+dokka = "1.9.10"
 gradleMavenPublishPlugin = "0.26.0"
 kotlin = "1.8.10"
 coreKtx = "1.8.0"
