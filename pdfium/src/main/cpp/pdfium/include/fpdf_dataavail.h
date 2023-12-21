@@ -31,24 +31,24 @@ extern "C" {
 
 // Interface for checking whether sections of the file are available.
 typedef struct _FX_FILEAVAIL {
-  // Version number of the interface. Must be 1.
-  int version;
+    // Version number of the interface. Must be 1.
+    int version;
 
-  // Reports if the specified data section is currently available. A section is
-  // available if all bytes in the section are available.
-  //
-  // Interface Version: 1
-  // Implementation Required: Yes
-  //
-  //   pThis  - pointer to the interface structure.
-  //   offset - the offset of the data section in the file.
-  //   size   - the size of the data section.
-  //
-  // Returns true if the specified data section at |offset| of |size|
-  // is available.
-  FPDF_BOOL (*IsDataAvail)(struct _FX_FILEAVAIL* pThis,
-                           size_t offset,
-                           size_t size);
+    // Reports if the specified data section is currently available. A section is
+    // available if all bytes in the section are available.
+    //
+    // Interface Version: 1
+    // Implementation Required: Yes
+    //
+    //   pThis  - pointer to the interface structure.
+    //   offset - the offset of the data section in the file.
+    //   size   - the size of the data section.
+    //
+    // Returns true if the specified data section at |offset| of |size|
+    // is available.
+    FPDF_BOOL (*IsDataAvail)(struct _FX_FILEAVAIL *pThis,
+                             size_t offset,
+                             size_t size);
 } FX_FILEAVAIL;
 
 // Create a document availability provider.
@@ -59,8 +59,8 @@ typedef struct _FX_FILEAVAIL {
 // Returns a handle to the document availability provider, or NULL on error.
 //
 // FPDFAvail_Destroy() must be called when done with the availability provider.
-FPDF_EXPORT FPDF_AVAIL FPDF_CALLCONV FPDFAvail_Create(FX_FILEAVAIL* file_avail,
-                                                      FPDF_FILEACCESS* file);
+FPDF_EXPORT FPDF_AVAIL FPDF_CALLCONV FPDFAvail_Create(FX_FILEAVAIL *file_avail,
+                                                      FPDF_FILEACCESS *file);
 
 // Destroy the |avail| document availability provider.
 //
@@ -69,24 +69,24 @@ FPDF_EXPORT void FPDF_CALLCONV FPDFAvail_Destroy(FPDF_AVAIL avail);
 
 // Download hints interface. Used to receive hints for further downloading.
 typedef struct _FX_DOWNLOADHINTS {
-  // Version number of the interface. Must be 1.
-  int version;
+    // Version number of the interface. Must be 1.
+    int version;
 
-  // Add a section to be downloaded.
-  //
-  // Interface Version: 1
-  // Implementation Required: Yes
-  //
-  //   pThis  - pointer to the interface structure.
-  //   offset - the offset of the hint reported to be downloaded.
-  //   size   - the size of the hint reported to be downloaded.
-  //
-  // The |offset| and |size| of the section may not be unique. Part of the
-  // section might be already available. The download manager must deal with
-  // overlapping sections.
-  void (*AddSegment)(struct _FX_DOWNLOADHINTS* pThis,
-                     size_t offset,
-                     size_t size);
+    // Add a section to be downloaded.
+    //
+    // Interface Version: 1
+    // Implementation Required: Yes
+    //
+    //   pThis  - pointer to the interface structure.
+    //   offset - the offset of the hint reported to be downloaded.
+    //   size   - the size of the hint reported to be downloaded.
+    //
+    // The |offset| and |size| of the section may not be unique. Part of the
+    // section might be already available. The download manager must deal with
+    // overlapping sections.
+    void (*AddSegment)(struct _FX_DOWNLOADHINTS *pThis,
+                       size_t offset,
+                       size_t size);
 } FX_DOWNLOADHINTS;
 
 // Checks if the document is ready for loading, if not, gets download hints.
@@ -107,7 +107,7 @@ typedef struct _FX_DOWNLOADHINTS {
 // Once all data is available, call FPDFAvail_GetDocument() to get a document
 // handle.
 FPDF_EXPORT int FPDF_CALLCONV FPDFAvail_IsDocAvail(FPDF_AVAIL avail,
-                                                   FX_DOWNLOADHINTS* hints);
+                                                   FX_DOWNLOADHINTS *hints);
 
 // Get document from the availability provider.
 //
@@ -156,7 +156,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFAvail_GetFirstPageNum(FPDF_DOCUMENT doc);
 // specified page.
 FPDF_EXPORT int FPDF_CALLCONV FPDFAvail_IsPageAvail(FPDF_AVAIL avail,
                                                     int page_index,
-                                                    FX_DOWNLOADHINTS* hints);
+                                                    FX_DOWNLOADHINTS *hints);
 
 // Check if form data is ready for initialization, if not, get the
 // |FX_DOWNLOADHINTS|.
@@ -180,7 +180,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFAvail_IsPageAvail(FPDF_AVAIL avail,
 // Applications can then perform page loading. It is recommend to call
 // FPDFDOC_InitFormFillEnvironment() when |PDF_FORM_AVAIL| is returned.
 FPDF_EXPORT int FPDF_CALLCONV FPDFAvail_IsFormAvail(FPDF_AVAIL avail,
-                                                    FX_DOWNLOADHINTS* hints);
+                                                    FX_DOWNLOADHINTS *hints);
 
 // Check whether a document is a linearized PDF.
 //

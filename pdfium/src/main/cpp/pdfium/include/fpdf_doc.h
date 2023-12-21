@@ -41,8 +41,8 @@ extern "C" {
 // The file identifier entry type. See section 14.4 "File Identifiers" of the
 // ISO 32000-1:2008 spec.
 typedef enum {
-  FILEIDTYPE_PERMANENT = 0,
-  FILEIDTYPE_CHANGING = 1
+    FILEIDTYPE_PERMANENT = 0,
+    FILEIDTYPE_CHANGING = 1
 } FPDF_FILEIDTYPE;
 
 // Get the first child of |bookmark|, or the first top-level bookmark item.
@@ -86,7 +86,7 @@ FPDFBookmark_GetNextSibling(FPDF_DOCUMENT document, FPDF_BOOKMARK bookmark);
 // required length, or |buffer| is NULL, |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFBookmark_GetTitle(FPDF_BOOKMARK bookmark,
-                      void* buffer,
+                      void *buffer,
                       unsigned long buflen);
 
 // Experimental API.
@@ -178,7 +178,7 @@ FPDF_EXPORT FPDF_DEST FPDF_CALLCONV FPDFAction_GetDest(FPDF_DOCUMENT document,
 // If |buflen| is less than the returned length, or |buffer| is NULL, |buffer|
 // will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
-FPDFAction_GetFilePath(FPDF_ACTION action, void* buffer, unsigned long buflen);
+FPDFAction_GetFilePath(FPDF_ACTION action, void *buffer, unsigned long buflen);
 
 // Get the URI path of |action|.
 //
@@ -206,7 +206,7 @@ FPDFAction_GetFilePath(FPDF_ACTION action, void* buffer, unsigned long buflen);
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFAction_GetURIPath(FPDF_DOCUMENT document,
                       FPDF_ACTION action,
-                      void* buffer,
+                      void *buffer,
                       unsigned long buflen);
 
 // Get the page index of |dest|.
@@ -228,7 +228,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFDest_GetDestPageIndex(FPDF_DOCUMENT document,
 // Returns one of the PDFDEST_VIEW_* constants, PDFDEST_VIEW_UNKNOWN_MODE if
 // |dest| does not specify a view.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
-FPDFDest_GetView(FPDF_DEST dest, unsigned long* pNumParams, FS_FLOAT* pParams);
+FPDFDest_GetView(FPDF_DEST dest, unsigned long *pNumParams, FS_FLOAT *pParams);
 
 // Get the (x, y, zoom) location of |dest| in the destination page, if the
 // destination is in [page /XYZ x y zoom] syntax.
@@ -246,12 +246,12 @@ FPDFDest_GetView(FPDF_DEST dest, unsigned long* pNumParams, FS_FLOAT* pParams);
 // hasYVal or hasZoomVal flags are true.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFDest_GetLocationInPage(FPDF_DEST dest,
-                           FPDF_BOOL* hasXVal,
-                           FPDF_BOOL* hasYVal,
-                           FPDF_BOOL* hasZoomVal,
-                           FS_FLOAT* x,
-                           FS_FLOAT* y,
-                           FS_FLOAT* zoom);
+                           FPDF_BOOL *hasXVal,
+                           FPDF_BOOL *hasYVal,
+                           FPDF_BOOL *hasZoomVal,
+                           FS_FLOAT *x,
+                           FS_FLOAT *y,
+                           FS_FLOAT *zoom);
 
 // Find a link at point (|x|,|y|) on |page|.
 //
@@ -311,8 +311,8 @@ FPDF_EXPORT FPDF_ACTION FPDF_CALLCONV FPDFLink_GetAction(FPDF_LINK link);
 //
 // Returns TRUE on success.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFLink_Enumerate(FPDF_PAGE page,
-                                                       int* start_pos,
-                                                       FPDF_LINK* link_annot);
+                                                       int *start_pos,
+                                                       FPDF_LINK *link_annot);
 
 // Experimental API.
 // Gets FPDF_ANNOTATION object for |link_annot|.
@@ -332,7 +332,7 @@ FPDFLink_GetAnnot(FPDF_PAGE page, FPDF_LINK link_annot);
 //
 // Returns true on success.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFLink_GetAnnotRect(FPDF_LINK link_annot,
-                                                          FS_RECTF* rect);
+                                                          FS_RECTF *rect);
 
 // Get the count of quadrilateral points to the |link_annot|.
 //
@@ -351,7 +351,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFLink_CountQuadPoints(FPDF_LINK link_annot);
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFLink_GetQuadPoints(FPDF_LINK link_annot,
                        int quad_index,
-                       FS_QUADPOINTSF* quad_points);
+                       FS_QUADPOINTSF *quad_points);
 
 // Experimental API
 // Gets an additional-action from |page|.
@@ -384,7 +384,7 @@ FPDF_EXPORT FPDF_ACTION FPDF_CALLCONV FPDF_GetPageAAction(FPDF_PAGE page,
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_GetFileIdentifier(FPDF_DOCUMENT document,
                        FPDF_FILEIDTYPE id_type,
-                       void* buffer,
+                       void *buffer,
                        unsigned long buflen);
 
 // Get meta-data |tag| content from |document|.
@@ -410,7 +410,7 @@ FPDF_GetFileIdentifier(FPDF_DOCUMENT document,
 // is no guarantee the metadata has been loaded.
 FPDF_EXPORT unsigned long FPDF_CALLCONV FPDF_GetMetaText(FPDF_DOCUMENT document,
                                                          FPDF_BYTESTRING tag,
-                                                         void* buffer,
+                                                         void *buffer,
                                                          unsigned long buflen);
 
 // Get the page label for |page_index| from |document|.
@@ -428,7 +428,7 @@ FPDF_EXPORT unsigned long FPDF_CALLCONV FPDF_GetMetaText(FPDF_DOCUMENT document,
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_GetPageLabel(FPDF_DOCUMENT document,
                   int page_index,
-                  void* buffer,
+                  void *buffer,
                   unsigned long buflen);
 
 #ifdef __cplusplus

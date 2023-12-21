@@ -4,6 +4,15 @@ plugins {
     alias(libs.plugins.kotlinKapt)
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 android {
     namespace = "com.harissk.androidpdfpreview"
     compileSdk = (property("compileSdk") as String).toInt()
@@ -27,13 +36,6 @@ android {
     }
     buildFeatures {
         dataBinding = true
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
     }
 }
 

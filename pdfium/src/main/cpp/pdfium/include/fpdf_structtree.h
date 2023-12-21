@@ -72,7 +72,7 @@ FPDF_StructTree_GetChildAtIndex(FPDF_STRUCTTREE struct_tree, int index);
 //          |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetAltText(FPDF_STRUCTELEMENT struct_element,
-                              void* buffer,
+                              void *buffer,
                               unsigned long buflen);
 
 // Experimental API.
@@ -93,7 +93,7 @@ FPDF_StructElement_GetAltText(FPDF_STRUCTELEMENT struct_element,
 //          |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetActualText(FPDF_STRUCTELEMENT struct_element,
-                                 void* buffer,
+                                 void *buffer,
                                  unsigned long buflen);
 
 // Function: FPDF_StructElement_GetID
@@ -113,7 +113,7 @@ FPDF_StructElement_GetActualText(FPDF_STRUCTELEMENT struct_element,
 //          |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetID(FPDF_STRUCTELEMENT struct_element,
-                         void* buffer,
+                         void *buffer,
                          unsigned long buflen);
 
 // Experimental API.
@@ -134,7 +134,7 @@ FPDF_StructElement_GetID(FPDF_STRUCTELEMENT struct_element,
 //          |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetLang(FPDF_STRUCTELEMENT struct_element,
-                           void* buffer,
+                           void *buffer,
                            unsigned long buflen);
 
 // Experimental API.
@@ -157,7 +157,7 @@ FPDF_StructElement_GetLang(FPDF_STRUCTELEMENT struct_element,
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetStringAttribute(FPDF_STRUCTELEMENT struct_element,
                                       FPDF_BYTESTRING attr_name,
-                                      void* buffer,
+                                      void *buffer,
                                       unsigned long buflen);
 
 // Function: FPDF_StructElement_GetMarkedContentID
@@ -187,7 +187,7 @@ FPDF_StructElement_GetMarkedContentID(FPDF_STRUCTELEMENT struct_element);
 //           |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetType(FPDF_STRUCTELEMENT struct_element,
-                           void* buffer,
+                           void *buffer,
                            unsigned long buflen);
 
 // Experimental API.
@@ -208,7 +208,7 @@ FPDF_StructElement_GetType(FPDF_STRUCTELEMENT struct_element,
 //           |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetObjType(FPDF_STRUCTELEMENT struct_element,
-                              void* buffer,
+                              void *buffer,
                               unsigned long buflen);
 
 // Function: FPDF_StructElement_GetTitle
@@ -228,7 +228,7 @@ FPDF_StructElement_GetObjType(FPDF_STRUCTELEMENT struct_element,
 //           |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDF_StructElement_GetTitle(FPDF_STRUCTELEMENT struct_element,
-                            void* buffer,
+                            void *buffer,
                             unsigned long buflen);
 
 // Function: FPDF_StructElement_CountChildren
@@ -338,9 +338,9 @@ FPDF_StructElement_Attr_GetCount(FPDF_STRUCTELEMENT_ATTR struct_attribute);
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDF_StructElement_Attr_GetName(FPDF_STRUCTELEMENT_ATTR struct_attribute,
                                 int index,
-                                void* buffer,
+                                void *buffer,
                                 unsigned long buflen,
-                                unsigned long* out_buflen);
+                                unsigned long *out_buflen);
 
 // Experimental API.
 // Function: FPDF_StructElement_Attr_GetType
@@ -369,9 +369,9 @@ FPDF_StructElement_Attr_GetType(FPDF_STRUCTELEMENT_ATTR struct_attribute,
 //          Returns TRUE if the name maps to a boolean value, FALSE otherwise.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDF_StructElement_Attr_GetBooleanValue(
-    FPDF_STRUCTELEMENT_ATTR struct_attribute,
-    FPDF_BYTESTRING name,
-    FPDF_BOOL* out_value);
+        FPDF_STRUCTELEMENT_ATTR struct_attribute,
+        FPDF_BYTESTRING name,
+        FPDF_BOOL *out_value);
 
 // Experimental API.
 // Function: FPDF_StructElement_Attr_GetNumberValue
@@ -388,7 +388,7 @@ FPDF_StructElement_Attr_GetBooleanValue(
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDF_StructElement_Attr_GetNumberValue(FPDF_STRUCTELEMENT_ATTR struct_attribute,
                                        FPDF_BYTESTRING name,
-                                       float* out_value);
+                                       float *out_value);
 
 // Experimental API.
 // Function: FPDF_StructElement_Attr_GetStringValue
@@ -412,9 +412,9 @@ FPDF_StructElement_Attr_GetNumberValue(FPDF_STRUCTELEMENT_ATTR struct_attribute,
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDF_StructElement_Attr_GetStringValue(FPDF_STRUCTELEMENT_ATTR struct_attribute,
                                        FPDF_BYTESTRING name,
-                                       void* buffer,
+                                       void *buffer,
                                        unsigned long buflen,
-                                       unsigned long* out_buflen);
+                                       unsigned long *out_buflen);
 
 // Experimental API.
 // Function: FPDF_StructElement_Attr_GetBlobValue
@@ -437,9 +437,9 @@ FPDF_StructElement_Attr_GetStringValue(FPDF_STRUCTELEMENT_ATTR struct_attribute,
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDF_StructElement_Attr_GetBlobValue(FPDF_STRUCTELEMENT_ATTR struct_attribute,
                                      FPDF_BYTESTRING name,
-                                     void* buffer,
+                                     void *buffer,
                                      unsigned long buflen,
-                                     unsigned long* out_buflen);
+                                     unsigned long *out_buflen);
 
 // Experimental API.
 // Function: FPDF_StructElement_GetMarkedContentIdCount

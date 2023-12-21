@@ -15,12 +15,17 @@
  */
 #ifndef _LIBS_UTILS_MUTEX_H
 #define _LIBS_UTILS_MUTEX_H
+
 #include <stdint.h>
 #include <sys/types.h>
 #include <time.h>
+
 #if !defined(_WIN32)
+
 # include <pthread.h>
+
 #endif
+
 #include "Timers.h"
 #include "Errors.h"
 // Enable thread safety attributes only with clang.
@@ -54,6 +59,7 @@
 namespace android {
 // ---------------------------------------------------------------------------
     class Condition;
+
 /*
  * NOTE: This class is for code that builds on Win32.  Its usage is
  * deprecated for code which doesn't build for Win32.  New code which
@@ -70,16 +76,25 @@ namespace android {
             PRIVATE = 0,
             SHARED = 1
         };
+
         Mutex();
-        explicit Mutex(const char* name);
-        explicit Mutex(int type, const char* name = NULL);
+
+        explicit Mutex(const char *name);
+
+        explicit Mutex(int type, const char *name = NULL);
+
         ~Mutex();
+
         // lock or unlock the mutex
         status_t lock() ACQUIRE();
+
         void unlock() RELEASE();
+
         // lock if possible; returns 0 on success, error otherwise
         status_t tryLock() TRY_ACQUIRE(true);
+
 #if defined(__ANDROID__)
+
         // Lock the mutex, but don't wait longer than timeoutNs (relative time).
         // Returns 0 on success, TIMED_OUT for failure due to timeout expiration.
         //
@@ -92,25 +107,36 @@ namespace android {
         // so a timeout may occur even though no processes could run.
         // Not holding a partial wakelock may lead to a system suspend.
         status_t timedLock(nsecs_t timeoutNs) TRY_ACQUIRE(true);
+
 #endif
+
         // Manages the mutex automatically. It'll be locked when Autolock is
         // constructed and released when Autolock goes out of scope.
         class SCOPED_CAPABILITY Autolock {
         public:
-            inline explicit Autolock(Mutex& mutex) ACQUIRE(mutex) : mLock(mutex) { mLock.lock(); }
-            inline explicit Autolock(Mutex* mutex) ACQUIRE(mutex) : mLock(*mutex) { mLock.lock(); }
+            inline explicit Autolock(Mutex &mutex) ACQUIRE(mutex): mLock(mutex) { mLock.lock(); }
+
+            inline explicit Autolock(Mutex *mutex) ACQUIRE(mutex): mLock(*mutex) { mLock.lock(); }
+
             inline ~Autolock() RELEASE() { mLock.unlock(); }
+
         private:
-            Mutex& mLock;
+            Mutex &mLock;
+
             // Cannot be copied or moved - declarations only
-            Autolock(const Autolock&);
-            Autolock& operator=(const Autolock&);
+            Autolock(const Autolock &);
+
+            Autolock &operator=(const Autolock &);
         };
+
     private:
         friend class Condition;
+
         // A mutex cannot be copied
-        Mutex(const Mutex&);
-        Mutex& operator=(const Mutex&);
+        Mutex(const Mutex &);
+
+        Mutex &operator=(const Mutex &);
+
 #if !defined(_WIN32)
         pthread_mutex_t mMutex;
 #else
@@ -120,13 +146,16 @@ namespace android {
     };
 // ---------------------------------------------------------------------------
 #if !defined(_WIN32)
+
     inline Mutex::Mutex() {
         pthread_mutex_init(&mMutex, NULL);
     }
-    inline Mutex::Mutex(__attribute__((unused)) const char* name) {
+
+    inline Mutex::Mutex(__attribute__((unused)) const char *name) {
         pthread_mutex_init(&mMutex, NULL);
     }
-    inline Mutex::Mutex(int type, __attribute__((unused)) const char* name) {
+
+    inline Mutex::Mutex(int type, __attribute__((unused)) const char *name) {
         if (type == SHARED) {
             pthread_mutexattr_t attr;
             pthread_mutexattr_init(&attr);
@@ -137,19 +166,25 @@ namespace android {
             pthread_mutex_init(&mMutex, NULL);
         }
     }
+
     inline Mutex::~Mutex() {
         pthread_mutex_destroy(&mMutex);
     }
+
     inline status_t Mutex::lock() {
         return -pthread_mutex_lock(&mMutex);
     }
+
     inline void Mutex::unlock() {
         pthread_mutex_unlock(&mMutex);
     }
+
     inline status_t Mutex::tryLock() {
         return -pthread_mutex_trylock(&mMutex);
     }
+
 #if defined(__ANDROID__)
+
     inline status_t Mutex::timedLock(nsecs_t timeoutNs) {
         timeoutNs += systemTime(SYSTEM_TIME_REALTIME);
         const struct timespec ts = {
@@ -158,6 +193,7 @@ namespace android {
         };
         return -pthread_mutex_timedlock(&mMutex, &ts);
     }
+
 #endif
 #endif // !defined(_WIN32)
 // ---------------------------------------------------------------------------

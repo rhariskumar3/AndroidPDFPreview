@@ -15,7 +15,9 @@
  */
 #ifndef __LIB_UTILS_COMPAT_H
 #define __LIB_UTILS_COMPAT_H
+
 #include <unistd.h>
+
 #if defined(__APPLE__)
 /* Mac OS has always had a 64-bit off_t, so it doesn't have off64_t. */
 typedef off_t off64_t;

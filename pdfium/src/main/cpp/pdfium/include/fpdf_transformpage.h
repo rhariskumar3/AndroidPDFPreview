@@ -102,10 +102,10 @@ FPDF_EXPORT void FPDF_CALLCONV FPDFPage_SetArtBox(FPDF_PAGE page,
  * false and leave the out parameters unmodified.
  */
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetMediaBox(FPDF_PAGE page,
-                                                         float* left,
-                                                         float* bottom,
-                                                         float* right,
-                                                         float* top);
+                                                         float *left,
+                                                         float *bottom,
+                                                         float *right,
+                                                         float *top);
 
 /**
  * Get "CropBox" entry from the page dictionary.
@@ -120,10 +120,10 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetMediaBox(FPDF_PAGE page,
  * false and leave the out parameters unmodified.
  */
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetCropBox(FPDF_PAGE page,
-                                                        float* left,
-                                                        float* bottom,
-                                                        float* right,
-                                                        float* top);
+                                                        float *left,
+                                                        float *bottom,
+                                                        float *right,
+                                                        float *top);
 
 /**
  * Get "BleedBox" entry from the page dictionary.
@@ -138,10 +138,10 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetCropBox(FPDF_PAGE page,
  * false and leave the out parameters unmodified.
  */
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetBleedBox(FPDF_PAGE page,
-                                                         float* left,
-                                                         float* bottom,
-                                                         float* right,
-                                                         float* top);
+                                                         float *left,
+                                                         float *bottom,
+                                                         float *right,
+                                                         float *top);
 
 /**
  * Get "TrimBox" entry from the page dictionary.
@@ -156,10 +156,10 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetBleedBox(FPDF_PAGE page,
  * false and leave the out parameters unmodified.
  */
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetTrimBox(FPDF_PAGE page,
-                                                        float* left,
-                                                        float* bottom,
-                                                        float* right,
-                                                        float* top);
+                                                        float *left,
+                                                        float *bottom,
+                                                        float *right,
+                                                        float *top);
 
 /**
  * Get "ArtBox" entry from the page dictionary.
@@ -174,10 +174,10 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetTrimBox(FPDF_PAGE page,
  * false and leave the out parameters unmodified.
  */
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetArtBox(FPDF_PAGE page,
-                                                       float* left,
-                                                       float* bottom,
-                                                       float* right,
-                                                       float* top);
+                                                       float *left,
+                                                       float *bottom,
+                                                       float *right,
+                                                       float *top);
 
 /**
  * Apply transforms to |page|.
@@ -196,8 +196,8 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GetArtBox(FPDF_PAGE page,
  */
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFPage_TransFormWithClip(FPDF_PAGE page,
-                           const FS_MATRIX* matrix,
-                           const FS_RECTF* clipRect);
+                           const FS_MATRIX *matrix,
+                           const FS_RECTF *clipRect);
 
 /**
  * Transform (scale, rotate, shear, move) the clip path of page object.
