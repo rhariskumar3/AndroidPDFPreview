@@ -1,13 +1,13 @@
 ![AndroidPDFPreview](logo.png)
 
-AndroidPDFPreview is a lightweight and easy-to-use SDK that enables you to display and interact with PDF documents in your Android apps. Built upon PdfiumAndroid for decoding PDF files and barteksc/AndroidPdfViewer for rendering, AndroidPDFPreview provides a seamless and user-friendly experience for viewing PDFs on Android devices. With support for gestures, zoom, and double tap, AndroidPDFPreview offers a comprehensive solution for integrating PDF preview functionality into your Android apps.
+AndroidPDFPreview is a lightweight and easy-to-use library for displaying and interacting with PDFs in your Android applications. Built on top of PdfiumAndroid for decoding and AndroidPdfViewer for rendering, it delivers a smooth and user-friendly experience.
 
 ## Features
 
 * Display and interact with PDF documents
 * Support for gestures, zoom, and double tap
 * Lightweight and easy to integrate into your Android apps
-* Compatible with Android versions 4.1 and above
+* Compatible with Android versions 5.1 and above
 
 ## Installation
 
@@ -15,46 +15,74 @@ To install AndroidPDFPreview, add the following dependency to your project's Gra
 
 ```
 dependencies {
-    implementation 'io.github.rhariskumar3:androidpdfpreview:1.0.0'
+    implementation 'io.github.rhariskumar3:androidpdfpreview:1.0.0-SNAPSHOT'
 }
 ```
 
-## Usage
+## Quick Start
 
-To use AndroidPDFPreview, simply create a PDFView instance and pass it the path to the PDF file you want to display. For example:
+1. Add a `PDFView` to your layout:
 
-XML
+    XML
+    
+    ```
+    <com.harissk.pdfpreview.PDFView
+        android:id="@+id/pdf_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+    ```
 
-```
-<com.harissk.pdfpreview.PDFView
-    android:id="@+id/pdf_view"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent" />
-```
+2. Load a PDF in your code:
+
+    Kotlin
+    ```
+    binding.pdfView.load(file) {
+        defaultPage(0)
+        swipeHorizontal(true)
+        enableAnnotationRendering(true)
+        spacing(10F) // in dp
+    
+        // Listeners
+        documentLoadListener(...)
+        renderingEventListener(...)
+        pageNavigationEventListener(...)
+        gestureEventListener(...)
+        linkHandler(...)
+    }
+    ```
 
 Use code with caution. Learn more
+
+### Going Further:
+
+* Asset
+* File
+* Uri
+* ByteArray
+* InputStream
+* DocumentSource (custom)
 
 ## Additional Features
 
 AndroidPDFPreview supports a number of additional features, including:
 
 * Page navigation
-* Search
+* Search (coming soon)
 * Table of contents
 * Bookmarks
-* Annotations
+* Annotations (coming soon)
 
 ## Contributing
 
-We welcome contributions to AndroidPDFPreview. Please feel free to submit pull requests or file issues on GitHub.
+We welcome contributions! Raise pull requests or file issues on GitHub.
 
 ## Contact
 
-If you have any questions or feedback, please feel free to contact us at [email protected]
+Have questions or feedback? Reach out to us at [email protected]
 
 ## Acknowledgements
 
-We would like to thank the following projects for their contributions to AndroidPDFPreview:
+Thanks to these projects:
 
 * [Pre-compiled binaries of PDFium](https://github.com/bblanchon/pdfium-binaries)
 * [AndroidPdfViewer](https://github.com/barteksc/AndroidPdfViewer)
