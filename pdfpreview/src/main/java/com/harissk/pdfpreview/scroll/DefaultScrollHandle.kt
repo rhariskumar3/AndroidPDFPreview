@@ -2,13 +2,13 @@ package com.harissk.pdfpreview.scroll
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import com.harissk.pdfpreview.PDFView
 import com.harissk.pdfpreview.R
@@ -39,34 +39,42 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
         val align: Int
         val width: Float
         val height: Float
-        val background: Drawable?
+        @DrawableRes val background: Int
         // determine handler position, default is right (when scrolling vertically) or bottom (when scrolling horizontally)
-        if (pdfView?.isSwipeVertical == true) {
-            width = HANDLE_LONG
-            height = HANDLE_SHORT
-            if (inverted) { // left
-                align = ALIGN_PARENT_LEFT
-                background =
-                    ContextCompat.getDrawable(context, R.drawable.default_scroll_handle_left)
-            } else { // right
-                align = ALIGN_PARENT_RIGHT
-                background =
-                    ContextCompat.getDrawable(context, R.drawable.default_scroll_handle_right)
+        when (pdfView?.isSwipeVertical) {
+            true -> {
+                width = HANDLE_LONG
+                height = HANDLE_SHORT
+                when {
+                    inverted -> { // left
+                        align = ALIGN_PARENT_LEFT
+                        background = R.drawable.default_scroll_handle_left
+                    }
+
+                    else -> { // right
+                        align = ALIGN_PARENT_RIGHT
+                        background = R.drawable.default_scroll_handle_right
+                    }
+                }
             }
-        } else {
-            width = HANDLE_SHORT
-            height = HANDLE_LONG
-            if (inverted) { // top
-                align = ALIGN_PARENT_TOP
-                background =
-                    ContextCompat.getDrawable(context, R.drawable.default_scroll_handle_top)
-            } else { // bottom
-                align = ALIGN_PARENT_BOTTOM
-                background =
-                    ContextCompat.getDrawable(context, R.drawable.default_scroll_handle_bottom)
+
+            else -> {
+                width = HANDLE_SHORT
+                height = HANDLE_LONG
+                when {
+                    inverted -> { // top
+                        align = ALIGN_PARENT_TOP
+                        background = R.drawable.default_scroll_handle_top
+                    }
+
+                    else -> { // bottom
+                        align = ALIGN_PARENT_BOTTOM
+                        background = R.drawable.default_scroll_handle_bottom
+                    }
+                }
             }
         }
-        setBackground(background)
+        setBackground(ContextCompat.getDrawable(context, background))
         val lp = LayoutParams(context.toPx(width), context.toPx(height))
         lp.setMargins(0, 0, 0, 0)
         val tvlp =
@@ -89,31 +97,26 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
             shown -> handler.removeCallbacks(hidePageScrollerRunnable)
             else -> show()
         }
-        if (pdfView != null) {
+        if (pdfView != null)
             setPosition((if (pdfView!!.isSwipeVertical) pdfView!!.height else pdfView!!.width) * position)
-        }
     }
 
     private fun setPosition(pos: Float) {
-        var pos = pos
-        if (java.lang.Float.isInfinite(pos) || java.lang.Float.isNaN(pos)) {
-            return
+        var v = pos
+        if (java.lang.Float.isInfinite(v) || java.lang.Float.isNaN(v)) return
+        val pdfViewSize: Float = when {
+            pdfView!!.isSwipeVertical -> pdfView!!.height.toFloat()
+            else -> pdfView!!.width.toFloat()
         }
-        val pdfViewSize: Float = if (pdfView!!.isSwipeVertical) {
-            pdfView!!.height.toFloat()
-        } else {
-            pdfView!!.width.toFloat()
+        v -= relativeHandlerMiddle
+        when {
+            v < 0 -> v = 0f
+            v > pdfViewSize - context.toPx(HANDLE_SHORT) -> v =
+                pdfViewSize - context.toPx(HANDLE_SHORT)
         }
-        pos -= relativeHandlerMiddle
-        if (pos < 0) {
-            pos = 0f
-        } else if (pos > pdfViewSize - context.toPx(HANDLE_SHORT)) {
-            pos = pdfViewSize - context.toPx(HANDLE_SHORT)
-        }
-        if (pdfView!!.isSwipeVertical) {
-            y = pos
-        } else {
-            x = pos
+        when (pdfView?.isSwipeVertical) {
+            true -> y = v
+            else -> x = v
         }
         calculateMiddle()
         invalidate()
@@ -123,14 +126,18 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
         val pos: Float
         val viewSize: Float
         val pdfViewSize: Float
-        if (pdfView!!.isSwipeVertical) {
-            pos = y
-            viewSize = height.toFloat()
-            pdfViewSize = pdfView!!.height.toFloat()
-        } else {
-            pos = x
-            viewSize = width.toFloat()
-            pdfViewSize = pdfView!!.width.toFloat()
+        when (pdfView?.isSwipeVertical) {
+            true -> {
+                pos = y
+                viewSize = height.toFloat()
+                pdfViewSize = pdfView!!.height.toFloat()
+            }
+
+            else -> {
+                pos = x
+                viewSize = width.toFloat()
+                pdfViewSize = pdfView!!.width.toFloat()
+            }
         }
         relativeHandlerMiddle = (pos + relativeHandlerMiddle) / pdfViewSize * viewSize
     }
@@ -141,9 +148,7 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
 
     override fun setPageNum(pageNum: Int) {
         val text = pageNum.toString()
-        if (textView.getText() != text) {
-            textView.text = text
-        }
+        if (textView.getText() != text) textView.text = text
     }
 
     override val shown: Boolean
@@ -157,9 +162,7 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
         visibility = INVISIBLE
     }
 
-    fun setTextColor(color: Int) {
-        textView.setTextColor(color)
-    }
+    fun setTextColor(color: Int) = textView.setTextColor(color)
 
     /**
      * @param size text size in dp
@@ -168,47 +171,51 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size.toFloat())
     }
 
-    private fun isPDFViewReady(): Boolean {
-        return pdfView != null && pdfView!!.pageCount > 0 && !pdfView!!.documentFitsView()
-    }
+    private fun isPDFViewReady(): Boolean =
+        pdfView != null && pdfView!!.pageCount > 0 && !pdfView!!.documentFitsView()
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (!isPDFViewReady()) {
-            return super.onTouchEvent(event)
-        }
+        if (!isPDFViewReady()) return super.onTouchEvent(event)
         when (event.action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 pdfView!!.stopFling()
                 handler.removeCallbacks(hidePageScrollerRunnable)
-                currentPos = if (pdfView!!.isSwipeVertical) {
-                    event.rawY - y
-                } else {
-                    event.rawX - x
+                currentPos = when (pdfView?.isSwipeVertical) {
+                    true -> event.rawY - y
+                    else -> event.rawX - x
                 }
-                if (pdfView!!.isSwipeVertical) {
-                    setPosition(event.rawY - currentPos + relativeHandlerMiddle)
-                    pdfView!!.setPositionOffset(relativeHandlerMiddle / height.toFloat(), false)
-                } else {
-                    setPosition(event.rawX - currentPos + relativeHandlerMiddle)
-                    pdfView!!.setPositionOffset(relativeHandlerMiddle / width.toFloat(), false)
+                when (pdfView?.isSwipeVertical) {
+                    true -> {
+                        setPosition(event.rawY - currentPos + relativeHandlerMiddle)
+                        pdfView?.setPositionOffset(relativeHandlerMiddle / height.toFloat(), false)
+                    }
+
+                    else -> {
+                        setPosition(event.rawX - currentPos + relativeHandlerMiddle)
+                        pdfView?.setPositionOffset(relativeHandlerMiddle / width.toFloat(), false)
+                    }
                 }
                 return true
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (pdfView!!.isSwipeVertical) {
-                    setPosition(event.rawY - currentPos + relativeHandlerMiddle)
-                    pdfView!!.setPositionOffset(relativeHandlerMiddle / height.toFloat(), false)
-                } else {
-                    setPosition(event.rawX - currentPos + relativeHandlerMiddle)
-                    pdfView!!.setPositionOffset(relativeHandlerMiddle / width.toFloat(), false)
+                when (pdfView?.isSwipeVertical) {
+                    true -> {
+                        setPosition(event.rawY - currentPos + relativeHandlerMiddle)
+                        pdfView?.setPositionOffset(relativeHandlerMiddle / height.toFloat(), false)
+                    }
+
+                    else -> {
+                        setPosition(event.rawX - currentPos + relativeHandlerMiddle)
+                        pdfView?.setPositionOffset(relativeHandlerMiddle / width.toFloat(), false)
+                    }
                 }
                 return true
             }
 
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 hideDelayed()
-                pdfView!!.performPageSnap()
+                pdfView?.performPageSnap()
                 return true
             }
         }

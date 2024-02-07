@@ -340,7 +340,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      * @param moveHandle whether to move scroll handle
      * @see PDFView.positionOffset
      */
-    fun setPositionOffset(progress: Float, moveHandle: Boolean) {
+    fun setPositionOffset(progress: Float, moveHandle: Boolean = false) {
         when {
             isSwipeVertical -> moveTo(
                 currentXOffset,
