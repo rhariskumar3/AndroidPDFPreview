@@ -1,8 +1,10 @@
 package com.harissk.pdfpreview.scroll
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.os.Handler
+import android.util.Log
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -19,6 +21,7 @@ import com.harissk.pdfpreview.utils.toPx
  * Created by Harishkumar on 25/11/23.
  */
 
+@SuppressLint("ViewConstructor")
 class DefaultScrollHandle(private val context: Context, private val inverted: Boolean = false) :
     RelativeLayout(context), ScrollHandle {
 
@@ -75,16 +78,23 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
             }
         }
         setBackground(ContextCompat.getDrawable(context, background))
-        val lp = LayoutParams(context.toPx(width), context.toPx(height))
-        lp.setMargins(0, 0, 0, 0)
-        val tvlp =
-            LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        tvlp.addRule(CENTER_IN_PARENT, TRUE)
-        if (textView.parent != null)
-            (textView.parent as ViewGroup).removeView(textView)
-        addView(textView, tvlp)
-        lp.addRule(align)
-        pdfView?.addView(this, lp)
+        try {
+            val lp = LayoutParams(context.toPx(width), context.toPx(height))
+            lp.setMargins(0, 0, 0, 0)
+            val tvlp =
+                LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            tvlp.addRule(CENTER_IN_PARENT, TRUE)
+            if (textView.parent != null)
+                (textView.parent as ViewGroup).removeView(textView)
+            addView(textView, tvlp)
+            lp.addRule(align)
+            pdfView?.addView(this, lp)
+        } catch (e: Exception) {
+            Log.e(javaClass.simpleName, "Add Scroll Handle to PDF", e)
+        }
         this.pdfView = pdfView
     }
 
@@ -104,8 +114,8 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
     private fun setPosition(pos: Float) {
         var v = pos
         if (java.lang.Float.isInfinite(v) || java.lang.Float.isNaN(v)) return
-        val pdfViewSize: Float = when {
-            pdfView!!.isSwipeVertical -> pdfView!!.height.toFloat()
+        val pdfViewSize: Float = when (pdfView?.isSwipeVertical) {
+            true -> pdfView!!.height.toFloat()
             else -> pdfView!!.width.toFloat()
         }
         v -= relativeHandlerMiddle
@@ -174,6 +184,7 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
     private fun isPDFViewReady(): Boolean =
         pdfView != null && pdfView!!.pageCount > 0 && !pdfView!!.documentFitsView()
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!isPDFViewReady()) return super.onTouchEvent(event)
         when (event.action) {

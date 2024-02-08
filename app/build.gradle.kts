@@ -33,6 +33,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+        getByName("debug") {
+            isMinifyEnabled = true
+        }
     }
     buildFeatures {
         dataBinding = true
