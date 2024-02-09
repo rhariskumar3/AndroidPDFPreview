@@ -6,8 +6,8 @@
 
 ![GitHub License](https://img.shields.io/github/license/rhariskumar3/AndroidPDFPreview)
 ![Maven Central Version](https://img.shields.io/maven-central/v/io.github.rhariskumar3/pdfpreview)
-[![Kotlin](https://img.shields.io/badge/kotlin-1.9.20-orange.svg)](http://kotlinlang.org/)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/rhariskumar3/AndroidPDFPreview/android)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.8.10-orange.svg)](http://kotlinlang.org/)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/rhariskumar3/AndroidPDFPreview/android.yml)
 ![GitHub Issues](https://img.shields.io/github/issues/rhariskumar3/AndroidPDFPreview)
 
 AndroidPDFPreview is a lightweight and easy-to-use library for displaying and interacting with PDFs
