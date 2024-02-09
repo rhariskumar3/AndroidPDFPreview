@@ -1,6 +1,18 @@
-![AndroidPDFPreview](logo.png)
+<p align="center">
+   <a href="https://rhariskumar3.github.io/AndroidPDFPreview/">
+     <img alt="AndroidPDFPreview" src=".github/logo.png" />
+   </a>
+</p>
 
-AndroidPDFPreview is a lightweight and easy-to-use library for displaying and interacting with PDFs in your Android applications. Built on top of PdfiumAndroid for decoding and AndroidPdfViewer for rendering, it delivers a smooth and user-friendly experience.
+![GitHub License](https://img.shields.io/github/license/rhariskumar3/AndroidPDFPreview)
+![Maven Central Version](https://img.shields.io/maven-central/v/io.github.rhariskumar3/pdfpreview)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.9.20-orange.svg)](http://kotlinlang.org/)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/rhariskumar3/AndroidPDFPreview/android)
+![GitHub Issues](https://img.shields.io/github/issues/rhariskumar3/AndroidPDFPreview)
+
+AndroidPDFPreview is a lightweight and easy-to-use library for displaying and interacting with PDFs
+in your Android applications. Built on top of PdfiumAndroid for decoding and AndroidPdfViewer for
+rendering, it delivers a smooth and user-friendly experience.
 
 ## Features
 
@@ -23,8 +35,8 @@ dependencies {
 
 1. Add a `PDFView` to your layout:
 
-    XML
-    
+   XML
+
     ```
     <com.harissk.pdfpreview.PDFView
         android:id="@+id/pdf_view"
@@ -34,7 +46,7 @@ dependencies {
 
 2. Load a PDF in your code:
 
-    Kotlin
+   Kotlin
     ```
     binding.pdfView.load(file) {
         defaultPage(0)
@@ -78,7 +90,7 @@ We welcome contributions! Raise pull requests or file issues on GitHub.
 
 ## Contact
 
-Have questions or feedback? Reach out to us at [email protected]
+Have questions or feedback? Reach out to us at [https://github.com/rhariskumar3/pdfpreview]
 
 ## Acknowledgements
 
