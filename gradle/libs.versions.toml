@@ -6,7 +6,7 @@ kotlin = "1.8.10"
 coreKtx = "1.8.0"
 kotlinxCoroutines = "1.7.3"
 material = "1.10.0"
-activity = "1.8.1"
+activity = "1.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
