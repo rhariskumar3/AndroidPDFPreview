@@ -4,7 +4,7 @@ dokka = "1.8.10"
 gradleMavenPublishPlugin = "0.27.0"
 kotlin = "1.8.10"
 coreKtx = "1.8.0"
-kotlinxCoroutines = "1.7.3"
+kotlinxCoroutines = "1.8.1"
 material = "1.10.0"
 activity = "1.8.1"
 
