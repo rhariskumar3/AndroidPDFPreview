@@ -3,26 +3,39 @@ package com.harissk.pdfpreview.listener
 import androidx.annotation.MainThread
 
 /**
- * Created by Harishkumar on 05/12/23.
- */
+ * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * */
+
 /**
- * For PDF page navigation events
+ * Interface for listening to page navigation events in a PDF previewer.
  */
 interface PageNavigationEventListener {
     /**
-     * Called when the user use swipe to change page
+     * Called when the user swipes to change pages.
      *
-     * @param newPage      the new page displayed, starting from 0
-     * @param pageCount the total page count
+     * @param newPage  The new page being displayed, starting from 0.
+     * @param pageCount The total number of pages in the document.
      */
     @MainThread
     fun onPageChanged(newPage: Int, pageCount: Int)
 
     /**
-     * Called on every move while scrolling
+     * Called on every move while scrolling.
      *
-     * @param page current page index
-     * @param positionOffset
+     * @param page             The current page index.
+     * @param positionOffset The offset of the current scroll position within the current page.
      */
     @MainThread
     fun onPageScrolled(page: Int, positionOffset: Float)

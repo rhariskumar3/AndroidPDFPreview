@@ -39,42 +39,46 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withContext
 
+/**
+ * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * */
 
 /**
- * Created by Harishkumar on 25/11/23.
- */
-/**
- * Supports animations, zoom, cache, and swipe.
+ * A view for displaying and interacting with PDF documents. It supports features like animation, zoom,
+ * caching, and swiping.
  *
- * To fully understand this class you must know its principles:
- * - The PDF document is seen as if we always want to draw all the pages.
- * - The thing is that we only draw the visible parts.
- * - All parts are the same size, this is because we can't interrupt a native page rendering,
- * so we need these renderings to be as fast as possible, and be able to interrupt them
- * as soon as we can.
- * - The parts are loaded when the current offset or the current zoom level changes
- *
- * Important:
- * - DocumentPage = A page of the PDF document.
- * - UserPage = A page as defined by the user.
- * By default, they're the same. But the user can change the pages order
- * using [.load]. In this
- * particular case, a userPage of 5 can refer to a documentPage of 17.
+ * The PDF document is rendered as if we want to draw all pages side-by-side, with only the visible
+ * portions actually drawn on the screen. All parts are rendered at the same size to optimize
+ * performance and allow for interruption of native rendering. Parts are loaded when the offset or
+ * zoom level changes.
  */
-class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, set) {
-
+class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context, attrs) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var pdfRequest: PdfRequest? = null
 
     private var _pdfFile: PdfFile? = null
-    val pdfFile: PdfFile get() = _pdfFile ?: throw IllegalStateException("PDF not decoded")
+    val pdfFile: PdfFile
+        get() = _pdfFile ?: throw IllegalStateException("PDF not decoded")
 
-    val renderOptions get() = pdfRequest?.renderOptions ?: RenderOptions.DEFAULT
+    val renderOptions: RenderOptions
+        get() = pdfRequest?.renderOptions ?: RenderOptions.DEFAULT
 
-    val minZoom = DEFAULT_MIN_SCALE
-    val midZoom = DEFAULT_MID_SCALE
-    val maxZoom = DEFAULT_MAX_SCALE
+    val minZoom: Float = DEFAULT_MIN_SCALE
+    val midZoom: Float = DEFAULT_MID_SCALE
+    val maxZoom: Float = DEFAULT_MAX_SCALE
 
     /**
      * START - scrolling in first page direction
@@ -87,7 +91,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         END
     }
 
-    private var scrollDir = ScrollDir.NONE
+    private var scrollDir: ScrollDir = ScrollDir.NONE
 
     /** Rendered parts go to the cache manager  */
     internal val cacheManager = CacheManager(renderOptions)
@@ -103,23 +107,21 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         private set
 
     /**
-     * If you picture all the pages side by side in their optimal width,
-     * and taking into account the zoom level, the current offset is the
-     * position of the left border of the screen in this big picture
+     * If you picture all the pages side by side in their optimal width, and taking into account the zoom
+     * level, the current offset is the position of the left border of the screen in this big picture
      */
     var currentXOffset = 0f
         private set
 
     /**
-     * If you picture all the pages side by side in their optimal width,
-     * and taking into account the zoom level, the current offset is the
-     * position of the left border of the screen in this big picture
+     * If you picture all the pages side by side in their optimal width, and taking into account the zoom
+     * level, the current offset is the position of the left border of the screen in this big picture
      */
     var currentYOffset = 0f
         private set
 
     /** The zoom level, always >= 1  */
-    var zoom = 1f
+    var zoom: Float = 1f
         private set
 
     /** True if the PDFView has been Recycling  */
@@ -131,7 +133,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         private set
 
     /** Current state of the view  */
-    private var state = State.DEFAULT
+    private var state: State = State.DEFAULT
 
     /** The thread [.renderingHandler] will run on  */
     private var renderingHandlerThread: HandlerThread?
@@ -147,72 +149,72 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     private val debugPaint: Paint = Paint()
 
     /** Policy for fitting pages to screen  */
-    var pageFitPolicy = FitPolicy.WIDTH
+    var pageFitPolicy: FitPolicy = FitPolicy.WIDTH
         private set
-    var isFitEachPage = false
+    var isFitEachPage: Boolean = false
         private set
     private var defaultPage = 0
 
     /** True if should scroll through pages vertically instead of horizontally  */
-    var isSwipeVertical = true
+    var isSwipeVertical: Boolean = true
         private set
-    var isSwipeEnabled = true
-    var isDoubleTapEnabled = true
+    var isSwipeEnabled: Boolean = true
+    var isDoubleTapEnabled: Boolean = true
         private set
-    private var nightMode = false
-    var isPageSnap = true
+    private var nightMode: Boolean = false
+    var isPageSnap: Boolean = true
 
     /** Pdfium core for loading and rendering PDFs  */
     private val pdfiumCore: PdfiumCore = PdfiumCore()
     var scrollHandle: ScrollHandle? = null
         private set
-    private var isScrollHandleInit = false
+    private var isScrollHandleInit: Boolean = false
 
     /**
      * True if bitmap should use ARGB_8888 format and take more memory
      * False if bitmap should be compressed by using RGB_565 format and take less memory
      */
-    var isBestQuality = false
+    var isBestQuality: Boolean = false
         private set
 
     /**
      * True if annotations should be rendered
      * False otherwise
      */
-    var isAnnotationRendering = false
+    var isAnnotationRendering: Boolean = false
         private set
 
     /**
      * True if the view should render during scaling<br></br>
-     * Can not be forced on older API versions (< Build.VERSION_CODES.KITKAT) as the GestureDetector does
-     * not detect scrolling while scaling.<br></br>
+     * Can not be forced on older API versions (< Build.VERSION_CODES.KITKAT) as the GestureDetector
+     * does not detect scrolling while scaling.<br></br>
      * False otherwise
      */
-    private var renderDuringScale = false
+    private var renderDuringScale: Boolean = false
 
     /** Antialiasing and bitmap filtering  */
-    var isAntialiasing = true
+    var isAntialiasing: Boolean = true
         private set
     private val antialiasFilter =
         PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
     /** Spacing between pages, in px  */
-    var spacingPx = 0
+    var spacingPx: Int = 0
         private set
 
     /** Add dynamic spacing to fit each page separately on the screen.  */
-    var isAutoSpacingEnabled = false
+    var isAutoSpacingEnabled: Boolean = false
         private set
 
     /** Fling a single page at a time  */
-    var isPageFlingEnabled = true
+    var isPageFlingEnabled: Boolean = true
         private set
 
     /** Pages numbers used when calling onDrawAllListener  */
-    private val onDrawPagesNumbers: MutableList<Int> = ArrayList(10)
+    private val onDrawPagesNumbers: ArrayList<Int> = ArrayList(10)
 
     /** Holds info whether view has been added to layout and has width and height  */
-    private var hasSize = false
+    private var hasSize: Boolean = false
 
     /** Construct the initial view  */
     init {
@@ -240,8 +242,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
         isPageSnap = pdfRequest.pageSnap
         isPageFlingEnabled = pdfRequest.pageFling
         isBestQuality = false
-        if (pdfRequest.disableLongPress)
-            dragPinchManager.disableLongPress()
+        if (pdfRequest.disableLongPress) dragPinchManager.disableLongPress()
 
         if (!hasSize) return
         scope.async(Dispatchers.Main.immediate) {
@@ -313,8 +314,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     fun showPage(pageNb: Int) {
         if (isRecycled) return
 
-        // Check the page number and makes the
-        // difference between UserPages and DocumentPages
+        // Check the page number and makes the difference between UserPages and DocumentPages
         val userPage = pdfFile.determineValidPageNumberFrom(pageNb)
         currentPage = userPage
         loadPages()
@@ -323,8 +323,8 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
     }
 
     /**
-     * Get current position as ratio of document length to visible area.
-     * 0 means that document start is visible, 1 that document end is visible
+     * Get current position as ratio of document length to visible area. 0 means that document start
+     * is visible, 1 that document end is visible
      *
      * @return offset between 0 and 1
      */
@@ -537,9 +537,9 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
 
         // Draws background
         if (isAntialiasing) canvas.setDrawFilter(antialiasFilter)
-        when (val bg = background) {
+        when (background) {
             null -> canvas.drawColor(if (nightMode) Color.BLACK else Color.WHITE)
-            else -> bg.draw(canvas)
+            else -> background.draw(canvas)
         }
         if (state != State.SHOWN) return
 
@@ -605,10 +605,7 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
             localTranslationY = toCurrentScale(pdfFile.maxPageHeight - size.height) / 2
         }
         canvas.translate(localTranslationX, localTranslationY)
-        val srcRect = Rect(
-            0, 0, renderedBitmap.getWidth(),
-            renderedBitmap.getHeight()
-        )
+        val srcRect = Rect(0, 0, renderedBitmap.width, renderedBitmap.height)
         val offsetX = toCurrentScale(pageRelativeBounds.left * size.width)
         val offsetY = toCurrentScale(pageRelativeBounds.top * size.height)
         val width = toCurrentScale(pageRelativeBounds.width() * size.width)
@@ -649,7 +646,6 @@ class PDFView(context: Context?, set: AttributeSet?) : RelativeLayout(context, s
      */
     fun loadPages() {
         if (_pdfFile == null || renderingHandler == null) return
-
         // Cancel all current tasks
         renderingHandler?.removeMessages(RenderingHandler.MSG_RENDER_TASK)
         cacheManager.makeANewSet()

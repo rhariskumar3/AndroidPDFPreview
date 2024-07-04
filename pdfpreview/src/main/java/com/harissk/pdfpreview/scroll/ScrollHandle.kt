@@ -3,58 +3,73 @@ package com.harissk.pdfpreview.scroll
 import com.harissk.pdfpreview.PDFView
 
 /**
- * Created by Harishkumar on 25/11/23.
- */
+ * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * */
 
+/**
+ * An interface representing a scroll handle in a PDF previewer.
+ */
 interface ScrollHandle {
     /**
-     * Used to move the handle, called internally by PDFView
+     * Used to move the handle, called internally by PDFView.
      *
-     * @param position current scroll ratio between 0 and 1
+     * @param position Current scroll ratio between 0 and 1.
      */
     fun setScroll(position: Float)
 
     /**
-     * Method called by PDFView after setting scroll handle.
+     * Method called by PDFView after setting the scroll handle.
      * Do not call this method manually.
-     * For usage sample see [DefaultScrollHandle]
+     * For usage sample see [DefaultScrollHandle].
      *
-     * @param pdfView PDFView instance
+     * @param pdfView The PDFView instance.
      */
     fun setupLayout(pdfView: PDFView?)
 
     /**
-     * Method called by PDFView when handle should be removed from layout
+     * Method called by PDFView when the handle should be removed from layout.
      * Do not call this method manually.
      */
     fun destroyLayout()
 
     /**
-     * Set page number displayed on handle
+     * Set the page number displayed on the handle.
      *
-     * @param pageNum page number
+     * @param pageNum The page number.
      */
     fun setPageNum(pageNum: Int)
 
     /**
-     * Get handle visibility
+     * Get handle visibility.
      *
-     * @return true if handle is visible, false otherwise
+     * @return true if the handle is visible, false otherwise.
      */
     val shown: Boolean
 
     /**
-     * Show handle
+     * Show the handle.
      */
     fun show()
 
     /**
-     * Hide handle immediately
+     * Hide the handle immediately.
      */
     fun hide()
 
     /**
-     * Hide handle after some time (defined by implementation)
+     * Hide the handle after some time (defined by the implementation).
      */
     fun hideDelayed()
 }

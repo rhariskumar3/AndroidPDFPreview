@@ -3,14 +3,13 @@ package com.harissk.pdfpreview.link
 import com.harissk.pdfpreview.model.LinkTapEvent
 
 /**
- * Created by Harishkumar on 25/11/23.
+ * An interface representing a handler for link tap events in a PDF previewer.
  */
-
-fun interface LinkHandler {
+interface LinkHandler {
     /**
-     * Called when link was tapped by user
+     * Called when a link is tapped by the user.
      *
-     * @param event current event
+     * @param event The current link tap event.
      */
     fun handleLinkEvent(event: LinkTapEvent)
 }

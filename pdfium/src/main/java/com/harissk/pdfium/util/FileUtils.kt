@@ -5,7 +5,7 @@ import java.io.FileDescriptor
 import java.lang.reflect.Field
 
 /**
- * Created by Harishkumar on 26/11/23.
+ * Utility class for file-related operations.
  */
 object FileUtils {
     private val mFdField: Field by lazy {
@@ -14,6 +14,12 @@ object FileUtils {
         }
     }
 
+    /**
+     * Retrieves the file descriptor number from a {@link ParcelFileDescriptor}.
+     *
+     * @param fdObj The {@link ParcelFileDescriptor} to get the file descriptor from.
+     * @return The file descriptor number, or -1 if an error occurred.
+     */
     fun getNumFd(fdObj: ParcelFileDescriptor?): Int = try {
         mFdField.getInt(fdObj?.fileDescriptor ?: throw NullPointerException())
     } catch (e: Exception) {

@@ -24,9 +24,7 @@ import com.harissk.pdfpreview.utils.FitPolicy
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  * */
-/**
- * Created by Harishkumar on 03/12/23.
- */
+
 /**
  * Represents a configuration request for loading and rendering a PDF document.
  */
@@ -56,7 +54,6 @@ data class PdfRequest(
     val gestureEventListener: GestureEventListener? = null,
     val linkHandler: LinkHandler? = null,
 ) {
-
     class Builder(private val source: DocumentSource) {
         private var pageNumbers: List<Int>? = null
         private var enableSwipe: Boolean = true
@@ -82,97 +79,121 @@ data class PdfRequest(
         private var gestureEventListener: GestureEventListener? = null
         private var linkHandler: LinkHandler? = null
 
-        fun pages(vararg pageNumbers: Int) = apply {
-            this.pageNumbers = pageNumbers.asList()
+        fun pages(vararg pageNumbers: Int): Builder {
+            this.pageNumbers = pageNumbers.toList()
+            return this
         }
 
-        fun enableSwipe(enableSwipe: Boolean) = apply {
+        fun enableSwipe(enableSwipe: Boolean): Builder {
             this.enableSwipe = enableSwipe
+            return this
         }
 
-        fun enableDoubleTap(doubleTap: Boolean) = apply {
+        fun enableDoubleTap(doubleTap: Boolean): Builder {
             this.enableDoubleTap = doubleTap
+            return this
         }
 
-        fun enableAnnotationRendering(annotationRendering: Boolean) = apply {
+        fun enableAnnotationRendering(annotationRendering: Boolean): Builder {
             this.annotationRendering = annotationRendering
+            return this
         }
 
-        fun defaultPage(defaultPage: Int) = apply {
+        fun defaultPage(defaultPage: Int): Builder {
             this.defaultPage = defaultPage
+            return this
         }
 
-        fun swipeHorizontal(swipeHorizontal: Boolean) = apply {
+        fun swipeHorizontal(swipeHorizontal: Boolean): Builder {
             this.swipeHorizontal = swipeHorizontal
+            return this
         }
 
-        fun password(password: String?) = apply {
+        fun password(password: String?): Builder {
             this.password = password
+            return this
         }
 
-        fun scrollHandle(scrollHandle: ScrollHandle?) = apply {
+        fun scrollHandle(scrollHandle: ScrollHandle?): Builder {
             this.scrollHandle = scrollHandle
+            return this
         }
 
-        fun enableAntialiasing(antialiasing: Boolean) = apply {
+        fun enableAntialiasing(antialiasing: Boolean): Builder {
             this.antialiasing = antialiasing
+            return this
         }
 
-        fun spacing(spacing: Float) = apply {
+        fun spacing(spacing: Float): Builder {
             this.spacing = spacing
+            return this
         }
 
-        fun autoSpacing(autoSpacing: Boolean) = apply {
+        fun autoSpacing(autoSpacing: Boolean): Builder {
             this.autoSpacing = autoSpacing
+            return this
         }
 
-        fun pageFitPolicy(pageFitPolicy: FitPolicy) = apply {
+        fun pageFitPolicy(pageFitPolicy: FitPolicy): Builder {
             this.pageFitPolicy = pageFitPolicy
+            return this
         }
 
-        fun fitEachPage(fitEachPage: Boolean) = apply {
+        fun fitEachPage(fitEachPage: Boolean): Builder {
             this.fitEachPage = fitEachPage
+            return this
         }
 
-        fun pageSnap(pageSnap: Boolean) = apply {
+        fun pageSnap(pageSnap: Boolean): Builder {
             this.pageSnap = pageSnap
+            return this
         }
 
-        fun pageFling(pageFling: Boolean) = apply {
+        fun pageFling(pageFling: Boolean): Builder {
             this.pageFling = pageFling
+            return this
         }
 
-        fun nightMode(nightMode: Boolean) = apply {
+        fun nightMode(nightMode: Boolean): Builder {
             this.nightMode = nightMode
+            return this
         }
 
-        fun disableLongPress() = apply {
+        fun disableLongPress(): Builder {
             this.disableLongPress = true
+            return this
         }
 
-        fun renderOptions(renderOptions: RenderOptions) = apply {
+        fun renderOptions(renderOptions: RenderOptions): Builder {
             this.renderOptions = renderOptions
+            return this
         }
 
-        fun documentLoadListener(documentLoadListener: DocumentLoadListener) = apply {
+        fun documentLoadListener(documentLoadListener: DocumentLoadListener): Builder {
             this.documentLoadListener = documentLoadListener
+            return this
         }
 
-        fun renderingEventListener(renderingEventListener: RenderingEventListener) = apply {
+        fun renderingEventListener(renderingEventListener: RenderingEventListener): Builder {
             this.renderingEventListener = renderingEventListener
+            return this
         }
 
-        fun pageNavigationEventListener(pageNavigationEventListener: PageNavigationEventListener) =
-            apply {
-                this.pageNavigationEventListener = pageNavigationEventListener
-            }
+        fun pageNavigationEventListener(
+            pageNavigationEventListener: PageNavigationEventListener
+        ): Builder {
+            this.pageNavigationEventListener = pageNavigationEventListener
+            return this
+        }
 
-        fun gestureEventListener(gestureEventListener: GestureEventListener) = apply {
+        fun gestureEventListener(gestureEventListener: GestureEventListener): Builder {
             this.gestureEventListener = gestureEventListener
+            return this
         }
 
-        fun linkHandler(linkHandler: LinkHandler) = apply {
+        fun linkHandler(linkHandler: LinkHandler): Builder {
             this.linkHandler = linkHandler
+            return this
         }
 
         /**

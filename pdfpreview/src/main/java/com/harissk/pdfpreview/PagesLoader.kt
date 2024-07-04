@@ -10,11 +10,25 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
+/**
+ * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * */
 
 /**
- * Created by Harishkumar on 25/11/23.
+ * Handles page loading for a PDF view, pre-loading and caching parts of the document.
  */
-
 internal class PagesLoader(private val pdfView: PDFView) {
 
     private var cacheOrder = 0
@@ -62,7 +76,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
     }
 
     /**
-     * calculate the render range of each page
+     * Calculates the render range of each page.
      */
     private fun getRenderRangeList(
         firstXOffset: Float,
@@ -160,7 +174,6 @@ internal class PagesLoader(private val pdfView: PDFView) {
             val scaledPageSize = pdfView.pdfFile.getScaledPageSize(range.page, pdfView.zoom)
             val rowHeight: Float = scaledPageSize.height / range.gridSize.rows
             val colWidth: Float = scaledPageSize.width / range.gridSize.cols
-
 
             // get the page offset int the whole file
             // ---------------------------------------

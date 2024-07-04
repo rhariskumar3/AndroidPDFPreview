@@ -18,23 +18,36 @@ import java.util.LinkedList
 import java.util.Queue
 import kotlin.math.max
 
-
 /**
- * Created by Harishkumar on 25/11/23.
- */
+ * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * */
+
 /**
  * Manages PDF document and its pages.
  *
- * @param pdfiumCore The PdfiumCore instance used to interact with the PDF document.
- * @param pageFitPolicy The policy used to fit pages to the view.
- * @param viewSize The size of the view where the PDF document is displayed.
- * @param originalUserPages The original user-defined page order (optional).
- * @param isVertical True if scrolling is vertical, else it's horizontal.
- * @param spacingPx Fixed spacing between pages in pixels.
- * @param autoSpacing Calculate spacing automatically so each page fits on its own in the center of the view.
- * @param fitEachPage True if every page should fit separately according to the FitPolicy,
+ * @param pdfiumCore           The {@link PdfiumCore} instance used to interact with the PDF document.
+ * @param pageFitPolicy        The policy used to fit pages to the view.
+ * @param viewSize             The size of the view where the PDF document is displayed.
+ * @param originalUserPages   The original user-defined page order (optional).
+ * @param isVertical           True if scrolling is vertical, else it's horizontal.
+ * @param spacingPx            Fixed spacing between pages in pixels.
+ * @param autoSpacing          Calculate spacing automatically so each page fits on its own in the
+ * center of the view.
+ * @param fitEachPage          True if every page should fit separately according to the {@link
+ * FitPolicy}, else the largest page fits and other pages scale relatively.
  * @param maxPageCacheSize The maximum number of pages that can be kept in the view
- * else the largest page fits and other pages scale relatively.
  */
 class PdfFile(
     private val pdfiumCore: PdfiumCore,
@@ -84,8 +97,7 @@ class PdfFile(
     private var documentLength = 0f
 
     /**
-     * The pages the user want to display in order
-     * (ex: 0, 2, 2, 8, 8, 1, 1, 1)
+     * The pages the user want to display in order (ex: 0, 2, 2, 8, 8, 1, 1, 1)
      */
     private var originalUserPages: List<Int>?
 
@@ -336,8 +348,8 @@ class PdfFile(
     }
 
     /**
-     * Ensures the given user-specified page number is within the valid range,
-     * considering the original user-defined page order if provided.
+     * Ensures the given user-specified page number is within the valid range, considering the
+     * original user-defined page order if provided.
      *
      * @param userPage The user-specified page number.
      * @return The valid page number within the document's range.
@@ -348,7 +360,8 @@ class PdfFile(
         when {
             originalUserPages != null -> {
                 // Validate userPage within the original user-defined page order
-                if (userPage >= originalUserPages!!.size) return originalUserPages!!.size - 1
+                if (userPage >= originalUserPages!!.size)
+                    return originalUserPages!!.size - 1
             }
 
             else -> {
@@ -356,7 +369,6 @@ class PdfFile(
                 if (userPage >= pagesCount) return pagesCount - 1
             }
         }
-
         return userPage  // UserPage is already valid
     }
 
@@ -370,7 +382,6 @@ class PdfFile(
             // Use the userPage directly for the actual document's page count
             else -> userPage
         }
-
         // Check if the resulting documentPage is valid
         return when (documentPage) {
             in 0 until pagesCount -> documentPage

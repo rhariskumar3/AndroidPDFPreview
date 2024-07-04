@@ -17,10 +17,10 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
- * Created by Harishkumar on 26/11/23.
+ * Core class for interacting with the Pdfium library.
  */
-
 class PdfiumCore {
+
     private var mCurrentDpi: Int = 72 // pdfium has default dpi set to 72
     private val mNativePagesPtr: MutableMap<Int, Long> = ArrayMap()
     private val mNativeTextPagesPtr: MutableMap<Int, Long> = ArrayMap()
@@ -28,6 +28,7 @@ class PdfiumCore {
     private var mNativeDocPtr: Long = 0
     private var mFileDescriptor: ParcelFileDescriptor? = null
 
+    // Native methods
     private external fun nativeOpenDocument(fd: Int, password: String?): Long
     private external fun nativeOpenMemDocument(data: ByteArray, password: String?): Long
     private external fun nativeCloseDocument(docPtr: Long)

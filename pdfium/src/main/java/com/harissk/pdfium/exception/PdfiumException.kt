@@ -1,28 +1,56 @@
 package com.harissk.pdfium.exception
 
 /**
- * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- * */
-/**
- * Created by Harishkumar on 12/12/23.
+ * A base class for exceptions that can occur when using the Pdfium library.
  */
 sealed class PdfiumException : Exception()
-class FileNotFoundException : PdfiumException()
-class InvalidFormatException : PdfiumException()
-class IncorrectPasswordException : PdfiumException()
-class UnsupportedSecurityException : PdfiumException()
 
-class PageNotFoundException : PdfiumException()
-class UnknownException(private val error: String)
+/**
+ * Thrown when a PDF file is not found.
+ */
+class FileNotFoundException : PdfiumException() {
+    override val message: String
+        get() = "PDF file not found."
+}
+
+/**
+ * Thrown when the PDF file is not in a valid format.
+ */
+class InvalidFormatException : PdfiumException() {
+    override val message: String
+        get() = "Invalid PDF file format."
+}
+
+/**
+ * Thrown when the provided password is incorrect.
+ */
+class IncorrectPasswordException : PdfiumException() {
+    override val message: String
+        get() = "Incorrect password."
+}
+
+/**
+ * Thrown when the PDF file uses an unsupported security method.
+ */
+class UnsupportedSecurityException : PdfiumException() {
+    override val message: String
+        get() = "Unsupported security method."
+}
+
+/**
+ * Thrown when a requested page is not found in the PDF document.
+ */
+class PageNotFoundException : PdfiumException() {
+    override val message: String
+        get() = "Page not found."
+}
+
+/**
+ * Thrown when an unknown error occurs during PDF processing.
+ *
+ * @param error The error message.
+ */
+class UnknownException(private val error: String) : PdfiumException() {
+    override val message: String
+        get() = "Unknown error: $error"
+}

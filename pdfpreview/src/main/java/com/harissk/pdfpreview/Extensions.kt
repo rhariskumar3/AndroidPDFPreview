@@ -21,11 +21,21 @@ import java.io.InputStream
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  * */
+
 /**
  * Created by Harishkumar on 03/12/23.
  */
 
-/** Use custom source as pdf source  */
+/**
+ * Load PDF using custom [DocumentSource].
+ *
+ * @param source The {@link DocumentSource} to use for loading the PDF document.
+ * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
+ * instance.
+ *
+ * @see [DocumentSource]
+ * @see [PdfRequest.Builder]
+ */
 inline fun PDFView.load(
     source: DocumentSource,
     builder: PdfRequest.Builder.() -> Unit = {},
@@ -37,31 +47,72 @@ inline fun PDFView.load(
     )
 }
 
-/** Use an asset file as the pdf source  */
+/**
+ * Load PDF from the assets file.
+ *
+ * @param assetName The name of the asset file containing the PDF document.
+ * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
+ * instance.
+ *
+ * @see [PdfRequest.Builder]
+ */
 inline fun PDFView.load(
     assetName: String,
     builder: PdfRequest.Builder.() -> Unit = {},
 ) = load(DocumentSource.toDocumentSource(assetName), builder)
 
-/** Use a file as the pdf source  */
+/**
+ * Load PDF from a file.
+ *
+ * @param file     The {@link File} containing the PDF document.
+ * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
+ * instance.
+ *
+ * @see [PdfRequest.Builder]
+ */
 inline fun PDFView.load(
     file: File,
     builder: PdfRequest.Builder.() -> Unit = {},
 ) = load(DocumentSource.toDocumentSource(file), builder)
 
-/** Use URI as the pdf source, for use with content providers  */
+/**
+ * Load PDF from a URI. Useful for content providers.
+ *
+ * @param uri      The {@link Uri} pointing to the PDF document.
+ * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
+ * instance.
+ *
+ * @see [PdfRequest.Builder]
+ */
 inline fun PDFView.load(
     uri: Uri,
     builder: PdfRequest.Builder.() -> Unit = {},
 ) = load(DocumentSource.toDocumentSource(uri), builder)
 
-/** Use bytearray as the pdf source, documents is not saved  */
+/**
+ * Load PDF from a byte array. Document is not saved on disk.
+ *
+ * @param bytes   The byte array containing the PDF document content.
+ * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
+ * instance.
+ *
+ * @see [PdfRequest.Builder]
+ */
 inline fun PDFView.load(
     bytes: ByteArray,
     builder: PdfRequest.Builder.() -> Unit = {},
 ) = load(DocumentSource.toDocumentSource(bytes), builder)
 
-/** Use stream as the pdf source. Stream will be written to bytearray, because native code does not support Java Streams  */
+/**
+ * Load PDF from an {@link InputStream}. The stream is converted to a byte array, since native
+ * code does not support direct stream handling.
+ *
+ * @param stream The {@link InputStream} containing the PDF document content.
+ * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
+ * instance.
+ *
+ * @see [PdfRequest.Builder]
+ */
 inline fun PDFView.load(
     stream: InputStream,
     builder: PdfRequest.Builder.() -> Unit = {},

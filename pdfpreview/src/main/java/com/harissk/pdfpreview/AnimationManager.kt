@@ -9,15 +9,25 @@ import android.graphics.PointF
 import android.view.animation.DecelerateInterpolator
 import android.widget.OverScroller
 
+/**
+ * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * */
 
 /**
- * Created by Harishkumar on 25/11/23.
- */
-/**
- * Handles animations for the PDFView.
- *
- * Utilizes the ValueAnimator introduced in API 11 to initiate animations and
- * update the PDFView's position based on animation updates.
+ * Handles animations for the PDFView. Utilizes the ValueAnimator introduced in API 11 to initiate
+ * animations and update the PDFView's position based on animation updates.
  */
 internal class AnimationManager(private val pdfView: PDFView) {
 
@@ -55,7 +65,8 @@ internal class AnimationManager(private val pdfView: PDFView) {
     }
 
     /**
-     * Initiates an animation that zooms the PDFView around the specified center point (`centerX`, `centerY`) from `zoomFrom` to `zoomTo`.
+     * Initiates an animation that zooms the PDFView around the specified center point (`centerX`,
+     * `centerY`) from `zoomFrom` to `zoomTo`.
      */
     fun startZoomAnimation(centerX: Float, centerY: Float, zoomFrom: Float, zoomTo: Float) {
         stopAll()
@@ -69,7 +80,8 @@ internal class AnimationManager(private val pdfView: PDFView) {
     }
 
     /**
-     * Initiates a fling animation that transitions the PDFView's position based on the specified initial velocity and scroll constraints.
+     * Initiates a fling animation that transitions the PDFView's position based on the specified
+     * initial velocity and scroll constraints.
      */
     fun startFlingAnimation(
         startX: Int,
@@ -87,7 +99,8 @@ internal class AnimationManager(private val pdfView: PDFView) {
     }
 
     /**
-     * Initiates a page-flipping animation that transitions the PDFView's position to the specified target offset.
+     * Initiates a page-flipping animation that transitions the PDFView's position to the specified
+     * target offset.
      */
     fun startPageFlingAnimation(targetOffset: Float) {
         when {
@@ -181,7 +194,12 @@ internal class AnimationManager(private val pdfView: PDFView) {
             pdfView.scrollHandle?.hideDelayed()
         }
 
-        override fun onAnimationRepeat(animation: Animator) = Unit
-        override fun onAnimationStart(animation: Animator) = Unit
+        override fun onAnimationRepeat(animation: Animator) {
+            // NO-OP
+        }
+
+        override fun onAnimationStart(animation: Animator) {
+            // NO-OP
+        }
     }
 }
