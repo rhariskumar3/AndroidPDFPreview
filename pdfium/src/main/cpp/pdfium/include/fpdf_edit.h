@@ -179,26 +179,28 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFPage_GetRotation(FPDF_PAGE page);
 //              3 - Rotated 270 degrees clockwise.
 FPDF_EXPORT void FPDF_CALLCONV FPDFPage_SetRotation(FPDF_PAGE page, int rotate);
 
-// Insert |page_obj| into |page|.
+// Insert |page_object| into |page|.
 //
-//   page     - handle to a page
-//   page_obj - handle to a page object. The |page_obj| will be automatically
-//              freed.
-FPDF_EXPORT void FPDF_CALLCONV FPDFPage_InsertObject(FPDF_PAGE page,
-                                                     FPDF_PAGEOBJECT page_obj);
+//   page        - handle to a page
+//   page_object - handle to a page object. The |page_object| will be
+//                 automatically freed.
+FPDF_EXPORT void FPDF_CALLCONV
+FPDFPage_InsertObject(FPDF_PAGE page, FPDF_PAGEOBJECT page_object);
 
 // Experimental API.
-// Remove |page_obj| from |page|.
+// Remove |page_object| from |page|.
 //
-//   page     - handle to a page
-//   page_obj - handle to a page object to be removed.
+//   page        - handle to a page
+//   page_object - handle to a page object to be removed.
 //
 // Returns TRUE on success.
 //
 // Ownership is transferred to the caller. Call FPDFPageObj_Destroy() to free
 // it.
+// Note that when removing a |page_object| of type FPDF_PAGEOBJ_TEXT, all
+// FPDF_TEXTPAGE handles for |page| are no longer valid.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
-FPDFPage_RemoveObject(FPDF_PAGE page, FPDF_PAGEOBJECT page_obj);
+FPDFPage_RemoveObject(FPDF_PAGE page, FPDF_PAGEOBJECT page_object);
 
 // Get number of page objects inside |page|.
 //
@@ -233,14 +235,14 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_HasTransparency(FPDF_PAGE page);
 // |FPDFPage_GenerateContent| or any changes to |page| will be lost.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPage_GenerateContent(FPDF_PAGE page);
 
-// Destroy |page_obj| by releasing its resources. |page_obj| must have been
-// created by FPDFPageObj_CreateNew{Path|Rect}() or
+// Destroy |page_object| by releasing its resources. |page_object| must have
+// been created by FPDFPageObj_CreateNew{Path|Rect}() or
 // FPDFPageObj_New{Text|Image}Obj(). This function must be called on
 // newly-created objects if they are not added to a page through
 // FPDFPage_InsertObject() or to an annotation through FPDFAnnot_AppendObject().
 //
-//   page_obj - handle to a page object.
-FPDF_EXPORT void FPDF_CALLCONV FPDFPageObj_Destroy(FPDF_PAGEOBJECT page_obj);
+//   page_object - handle to a page object.
+FPDF_EXPORT void FPDF_CALLCONV FPDFPageObj_Destroy(FPDF_PAGEOBJECT page_object);
 
 // Checks if |page_object| contains transparency.
 //
@@ -292,6 +294,11 @@ FPDFPageObj_Transform(FPDF_PAGEOBJECT page_object,
 //   |b d f|
 // and used to scale, rotate, shear and translate the page object.
 //
+// For page objects outside form objects, the matrix values are relative to the
+// page that contains it.
+// For page objects inside form objects, the matrix values are relative to the
+// form that contains it.
+//
 // Returns TRUE on success.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFPageObj_GetMatrix(FPDF_PAGEOBJECT page_object, FS_MATRIX *matrix);
@@ -309,7 +316,7 @@ FPDFPageObj_GetMatrix(FPDF_PAGEOBJECT page_object, FS_MATRIX *matrix);
 //
 // Returns TRUE on success.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
-FPDFPageObj_SetMatrix(FPDF_PAGEOBJECT path, const FS_MATRIX *matrix);
+FPDFPageObj_SetMatrix(FPDF_PAGEOBJECT page_object, const FS_MATRIX *matrix);
 
 // Transform all annotations in |page|.
 //
@@ -1183,16 +1190,16 @@ FPDFText_SetCharcodes(FPDF_PAGEOBJECT text_object,
                       size_t count);
 
 // Returns a font object loaded from a stream of data. The font is loaded
-// into the document.
+// into the document. Various font data structures, such as the ToUnicode data,
+// are auto-generated based on the inputs.
 //
-// document   - handle to the document.
-// data       - the stream of data, which will be copied by the font object.
-// size       - size of the stream, in bytes.
-// font_type  - FPDF_FONT_TYPE1 or FPDF_FONT_TRUETYPE depending on the font
-// type.
-// cid        - a boolean specifying if the font is a CID font or not.
+// document  - handle to the document.
+// data      - the stream of font data, which will be copied by the font object.
+// size      - the size of the font data, in bytes.
+// font_type - FPDF_FONT_TYPE1 or FPDF_FONT_TRUETYPE depending on the font type.
+// cid       - a boolean specifying if the font is a CID font or not.
 //
-// The loaded font can be closed using FPDFFont_Close.
+// The loaded font can be closed using FPDFFont_Close().
 //
 // Returns NULL on failure
 FPDF_EXPORT FPDF_FONT FPDF_CALLCONV FPDFText_LoadFont(FPDF_DOCUMENT document,
@@ -1209,11 +1216,35 @@ FPDF_EXPORT FPDF_FONT FPDF_CALLCONV FPDFText_LoadFont(FPDF_DOCUMENT document,
 // document   - handle to the document.
 // font       - string containing the font name, without spaces.
 //
-// The loaded font can be closed using FPDFFont_Close.
+// The loaded font can be closed using FPDFFont_Close().
 //
 // Returns NULL on failure.
 FPDF_EXPORT FPDF_FONT FPDF_CALLCONV
 FPDFText_LoadStandardFont(FPDF_DOCUMENT document, FPDF_BYTESTRING font);
+
+// Experimental API.
+// Returns a font object loaded from a stream of data for a type 2 CID font. The
+// font is loaded into the document. Unlike FPDFText_LoadFont(), the ToUnicode
+// data and the CIDToGIDMap data are caller provided, instead of auto-generated.
+//
+// document                 - handle to the document.
+// font_data                - the stream of font data, which will be copied by
+//                            the font object.
+// font_data_size           - the size of the font data, in bytes.
+// to_unicode_cmap          - the ToUnicode data.
+// cid_to_gid_map_data      - the stream of CIDToGIDMap data.
+// cid_to_gid_map_data_size - the size of the CIDToGIDMap data, in bytes.
+//
+// The loaded font can be closed using FPDFFont_Close().
+//
+// Returns NULL on failure.
+FPDF_EXPORT FPDF_FONT FPDF_CALLCONV
+FPDFText_LoadCidType2Font(FPDF_DOCUMENT document,
+                          const uint8_t *font_data,
+                          uint32_t font_data_size,
+                          FPDF_BYTESTRING to_unicode_cmap,
+                          const uint8_t *cid_to_gid_map_data,
+                          uint32_t cid_to_gid_map_data_size);
 
 // Get the font size of a text object.
 //
