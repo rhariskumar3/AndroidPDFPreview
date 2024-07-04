@@ -21,11 +21,6 @@ import java.io.InputStream
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  * */
-
-/**
- * Created by Harishkumar on 03/12/23.
- */
-
 /**
  * Load PDF using custom [DocumentSource].
  *

@@ -658,9 +658,13 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         if (isRecycling) return
         state = State.LOADED
         _pdfFile = pdfFile
-        if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
-        renderingHandler = RenderingHandler(renderingHandlerThread!!.getLooper(), this)
-        renderingHandler?.start()
+
+        // If a ScrollHandle is provided in the PdfRequest
+        if (pdfRequest?.scrollHandle != null) {
+            if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
+            renderingHandler = RenderingHandler(renderingHandlerThread!!.getLooper(), this)
+            renderingHandler?.start()
+        }
         if (scrollHandle != null) {
             scrollHandle?.setupLayout(this)
             isScrollHandleInit = true
