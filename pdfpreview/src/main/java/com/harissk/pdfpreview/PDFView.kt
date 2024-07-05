@@ -71,7 +71,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     private var _pdfFile: PdfFile? = null
     val pdfFile: PdfFile
-        get() = _pdfFile ?: throw IllegalStateException("PDF not decoded")
+        get() = when (_pdfFile) {
+            null -> loadError(IllegalStateException("PDF not decoded"))
+            else -> _pdfFile
+        } ?: throw IllegalStateException("PDF not decoded")
 
     val renderOptions: RenderOptions
         get() = pdfRequest?.renderOptions ?: RenderOptions.DEFAULT
@@ -660,26 +663,31 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         _pdfFile = pdfFile
 
         // If a ScrollHandle is provided in the PdfRequest
-        if (pdfRequest?.scrollHandle != null) {
-            if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
-            renderingHandler = RenderingHandler(renderingHandlerThread!!.getLooper(), this)
-            renderingHandler?.start()
+        try {
+            if (pdfRequest?.scrollHandle != null) {
+                if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
+                renderingHandler = RenderingHandler(renderingHandlerThread!!.getLooper(), this)
+                renderingHandler?.start()
+            }
+            if (scrollHandle != null) {
+                scrollHandle?.setupLayout(this)
+                isScrollHandleInit = true
+            }
+            dragPinchManager.enable()
+            pdfRequest?.documentLoadListener?.onDocumentLoaded(pageCount)
+            jumpTo(defaultPage, false)
+        } catch (e: Exception) {
+            loadError(e)
         }
-        if (scrollHandle != null) {
-            scrollHandle?.setupLayout(this)
-            isScrollHandleInit = true
-        }
-        dragPinchManager.enable()
-        pdfRequest?.documentLoadListener?.onDocumentLoaded(pageCount)
-        jumpTo(defaultPage, false)
     }
 
-    private fun loadError(t: Throwable) {
-        if (isRecycling) return
+    private fun loadError(t: Throwable): Nothing? {
+        if (isRecycling) return null
         state = State.ERROR
         pdfRequest?.documentLoadListener?.onDocumentLoadError(t)
         recycle()
         invalidate()
+        return null
     }
 
     fun redraw() {
