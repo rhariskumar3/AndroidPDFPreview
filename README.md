@@ -5,7 +5,7 @@
 </p>
 
 ![GitHub License](https://img.shields.io/github/license/rhariskumar3/AndroidPDFPreview)
-![Maven Central Version](https://img.shields.io/maven-central/v/io.github.rhariskumar3/pdfpreview)
+[![Maven Central Version](https://img.shields.io/maven-central/v/io.github.rhariskumar3/pdfpreview)](https://central.sonatype.com/artifact/io.github.rhariskumar3/pdfpreview)
 [![Kotlin](https://img.shields.io/badge/kotlin-1.8.10-orange.svg)](http://kotlinlang.org/)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/rhariskumar3/AndroidPDFPreview/android.yml)
 ![GitHub Issues](https://img.shields.io/github/issues/rhariskumar3/AndroidPDFPreview)
@@ -27,7 +27,7 @@ To install AndroidPDFPreview, add the following dependency to your project's Gra
 
 ```
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.0.0'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.0.1'
 }
 ```
 
@@ -103,7 +103,7 @@ We hope you find AndroidPDFPreview to be a valuable tool for developing your And
 
 ## License
 
-    Copyright 2023 AndroidPDFPreview Contributors
+    Copyright 2024 AndroidPDFPreview Contributors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
