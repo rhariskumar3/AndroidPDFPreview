@@ -103,7 +103,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     private val animationManager: AnimationManager = AnimationManager(this)
 
     /** Drag manager manage all touch events  */
-    private val dragPinchManager: DragPinchManager = DragPinchManager(this, animationManager)
+    private val dragPinchManager = DragPinchManager(this, animationManager)
 
     /** The index of the current sequence  */
     var currentPage = 0
@@ -911,7 +911,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      */
     fun zoomCenteredTo(zoom: Float, pivot: PointF) {
         val dzoom = zoom / this.zoom
-        zoomTo(zoom)
+        this.zoom = zoom
         var baseX = currentXOffset * dzoom
         var baseY = currentYOffset * dzoom
         baseX += pivot.x - pivot.x * dzoom
