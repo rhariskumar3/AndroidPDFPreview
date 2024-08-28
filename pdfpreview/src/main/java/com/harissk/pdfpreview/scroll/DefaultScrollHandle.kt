@@ -12,6 +12,7 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import com.harissk.pdfpreview.PDFView
 import com.harissk.pdfpreview.R
 import com.harissk.pdfpreview.utils.toPx
@@ -108,6 +109,13 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
                 (textView.parent as? ViewGroup)?.removeView(textView)
             addView(textView, tvlp)
             lp.addRule(align)
+
+            pdfView?.let { safePdfView ->
+                safePdfView.children.filterIsInstance<DefaultScrollHandle>()
+                    .forEach { scrollHandle ->
+                        safePdfView.removeView(scrollHandle)
+                    }
+            }
             pdfView?.addView(this, lp)
         } catch (e: Exception) {
             Log.e(javaClass.simpleName, "Add Scroll Handle to PDF", e)
