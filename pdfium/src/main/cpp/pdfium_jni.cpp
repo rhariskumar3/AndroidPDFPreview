@@ -220,6 +220,10 @@ void throwPdfiumException(JNIEnv *env, long errorNum) {
     }
 }
 
+void throwPdfiumException1(JNIEnv *env, const char *message) {
+    jniThrowException(env, "com/harissk/pdfium/exception/UnknownException", message);
+}
+
 
 JNI_FUNC(jlong, PdfiumCore, nativeOpenDocument)(JNI_ARGS, jint fd, jstring password) {
 
@@ -321,8 +325,7 @@ static jlong loadPageInternal(JNIEnv *env, DocumentFile *doc, int pageIndex) {
     } catch (const char *msg) {
         LOGE("%s", msg);
 
-        jniThrowException(env, "java/lang/IllegalStateException",
-                          "cannot load page");
+        throwPdfiumException1(env, "cannot load page");
 
         return -1;
     }
@@ -386,8 +389,7 @@ JNI_FUNC(jobject, PdfiumCore, nativeGetPageSizeByIndex)(JNI_ARGS, jlong docPtr, 
     if (doc == NULL) {
         LOGE("Document is null");
 
-        jniThrowException(env, "java/lang/IllegalStateException",
-                          "Document is null");
+        throwPdfiumException1(env, "Document is null");
         return NULL;
     }
 
@@ -481,83 +483,88 @@ JNI_FUNC(void, PdfiumCore, nativeRenderPageBitmap)(JNI_ARGS, jlong pagePtr, jobj
                                                    jint startX, jint startY,
                                                    jint drawSizeHor, jint drawSizeVer,
                                                    jboolean renderAnnot) {
+    try {
+        FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
 
-    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+        if (page == NULL || bitmap == NULL) {
+            LOGE("Render page pointers invalid");
+            return;
+        }
 
-    if (page == NULL || bitmap == NULL) {
-        LOGE("Render page pointers invalid");
-        return;
+        AndroidBitmapInfo info;
+        int ret;
+        if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
+            LOGE("Fetching bitmap info failed: %s", strerror(ret * -1));
+            return;
+        }
+
+        int canvasHorSize = info.width;
+        int canvasVerSize = info.height;
+
+        if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 &&
+            info.format != ANDROID_BITMAP_FORMAT_RGB_565) {
+            LOGE("Bitmap format must be RGBA_8888 or RGB_565");
+            return;
+        }
+
+        void *addr;
+        if ((ret = AndroidBitmap_lockPixels(env, bitmap, &addr)) != 0) {
+            LOGE("Locking bitmap failed: %s", strerror(ret * -1));
+            return;
+        }
+
+        void *tmp;
+        int format;
+        int sourceStride;
+        if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
+            tmp = malloc(canvasVerSize * canvasHorSize * sizeof(rgb));
+            sourceStride = canvasHorSize * sizeof(rgb);
+            format = FPDFBitmap_BGR;
+        } else {
+            tmp = addr;
+            sourceStride = info.stride;
+            format = FPDFBitmap_BGRA;
+        }
+
+        FPDF_BITMAP pdfBitmap = FPDFBitmap_CreateEx(canvasHorSize, canvasVerSize,
+                                                    format, tmp, sourceStride);
+
+        if (drawSizeHor < canvasHorSize || drawSizeVer < canvasVerSize) {
+            FPDFBitmap_FillRect(pdfBitmap, 0, 0, canvasHorSize, canvasVerSize,
+                                0x848484FF); //Gray
+        }
+
+        int baseHorSize = (canvasHorSize < drawSizeHor) ? canvasHorSize : (int) drawSizeHor;
+        int baseVerSize = (canvasVerSize < drawSizeVer) ? canvasVerSize : (int) drawSizeVer;
+        int baseX = (startX < 0) ? 0 : (int) startX;
+        int baseY = (startY < 0) ? 0 : (int) startY;
+        int flags = FPDF_REVERSE_BYTE_ORDER;
+
+        if (renderAnnot) {
+            flags |= FPDF_ANNOT;
+        }
+
+        if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
+            FPDFBitmap_FillRect(pdfBitmap, baseX, baseY, baseHorSize, baseVerSize,
+                                0xFFFFFFFF); //White
+        }
+
+        FPDF_RenderPageBitmap(pdfBitmap, page,
+                              startX, startY,
+                              (int) drawSizeHor, (int) drawSizeVer,
+                              0, flags);
+
+        if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
+            rgbBitmapTo565(tmp, sourceStride, addr, &info);
+            free(tmp);
+        }
+
+        AndroidBitmap_unlockPixels(env, bitmap);
+    } catch (const char *msg) {
+        LOGE("%s", msg);
+
+        throwPdfiumException1(env, "cannot render page bitmap");
     }
-
-    AndroidBitmapInfo info;
-    int ret;
-    if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        LOGE("Fetching bitmap info failed: %s", strerror(ret * -1));
-        return;
-    }
-
-    int canvasHorSize = info.width;
-    int canvasVerSize = info.height;
-
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 &&
-        info.format != ANDROID_BITMAP_FORMAT_RGB_565) {
-        LOGE("Bitmap format must be RGBA_8888 or RGB_565");
-        return;
-    }
-
-    void *addr;
-    if ((ret = AndroidBitmap_lockPixels(env, bitmap, &addr)) != 0) {
-        LOGE("Locking bitmap failed: %s", strerror(ret * -1));
-        return;
-    }
-
-    void *tmp;
-    int format;
-    int sourceStride;
-    if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
-        tmp = malloc(canvasVerSize * canvasHorSize * sizeof(rgb));
-        sourceStride = canvasHorSize * sizeof(rgb);
-        format = FPDFBitmap_BGR;
-    } else {
-        tmp = addr;
-        sourceStride = info.stride;
-        format = FPDFBitmap_BGRA;
-    }
-
-    FPDF_BITMAP pdfBitmap = FPDFBitmap_CreateEx(canvasHorSize, canvasVerSize,
-                                                format, tmp, sourceStride);
-
-    if (drawSizeHor < canvasHorSize || drawSizeVer < canvasVerSize) {
-        FPDFBitmap_FillRect(pdfBitmap, 0, 0, canvasHorSize, canvasVerSize,
-                            0x848484FF); //Gray
-    }
-
-    int baseHorSize = (canvasHorSize < drawSizeHor) ? canvasHorSize : (int) drawSizeHor;
-    int baseVerSize = (canvasVerSize < drawSizeVer) ? canvasVerSize : (int) drawSizeVer;
-    int baseX = (startX < 0) ? 0 : (int) startX;
-    int baseY = (startY < 0) ? 0 : (int) startY;
-    int flags = FPDF_REVERSE_BYTE_ORDER;
-
-    if (renderAnnot) {
-        flags |= FPDF_ANNOT;
-    }
-
-    if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
-        FPDFBitmap_FillRect(pdfBitmap, baseX, baseY, baseHorSize, baseVerSize,
-                            0xFFFFFFFF); //White
-    }
-
-    FPDF_RenderPageBitmap(pdfBitmap, page,
-                          startX, startY,
-                          (int) drawSizeHor, (int) drawSizeVer,
-                          0, flags);
-
-    if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
-        rgbBitmapTo565(tmp, sourceStride, addr, &info);
-        free(tmp);
-    }
-
-    AndroidBitmap_unlockPixels(env, bitmap);
 }
 
 JNI_FUNC(jstring, PdfiumCore, nativeGetDocumentMetaText)(JNI_ARGS, jlong docPtr, jstring tag) {
@@ -736,8 +743,7 @@ static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, int textPageIn
     } catch (const char *msg) {
         LOGE("%s", msg);
 
-        jniThrowException(env, "java/lang/IllegalStateException",
-                          "cannot load text page");
+        throwPdfiumException1(env, "cannot load text page");
 
         return -1;
     }
