@@ -57,7 +57,7 @@ android {
 mavenPublishing {
     configure(AndroidSingleVariantLibrary())
     pomFromGradleProperties()
-    publishToMavenCentral(SonatypeHost.S01)
+    publishToMavenCentral(host = SonatypeHost.S01, automaticRelease = true)
     signAllPublications()
     coordinates(
         groupId = project.property("POM_GROUP_ID").toString(),
