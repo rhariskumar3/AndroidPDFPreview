@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.os.Handler
-import android.util.Log
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -118,7 +117,7 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
             }
             pdfView?.addView(this, lp)
         } catch (e: Exception) {
-            Log.e(javaClass.simpleName, "Add Scroll Handle to PDF", e)
+            pdfView?.logWriter?.writeLog(e, javaClass.simpleName)
         }
         this.pdfView = pdfView
     }

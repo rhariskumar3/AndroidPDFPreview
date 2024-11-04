@@ -16,6 +16,7 @@ import androidx.core.net.toFile
 import androidx.databinding.DataBindingUtil
 import com.harissk.androidpdfpreview.databinding.ActivityMainBinding
 import com.harissk.pdfium.Meta
+import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.link.LinkHandler
 import com.harissk.pdfpreview.listener.DocumentLoadListener
@@ -30,7 +31,7 @@ import kotlin.random.Random
 
 
 class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventListener,
-    PageNavigationEventListener, GestureEventListener, LinkHandler {
+    PageNavigationEventListener, GestureEventListener, LinkHandler, LogWriter {
 
     private var _binding: ActivityMainBinding? = null
     private val binding get() = _binding!!
@@ -70,6 +71,7 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
             pageNavigationEventListener(this@MainActivity)
             gestureEventListener(this@MainActivity)
             linkHandler(this@MainActivity)
+            logWriter(this@MainActivity)
         }
     }
 
@@ -87,6 +89,7 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
             pageNavigationEventListener(this@MainActivity)
             gestureEventListener(this@MainActivity)
             linkHandler(this@MainActivity)
+            logWriter(this@MainActivity)
         }
     }
 
@@ -104,6 +107,7 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
             pageNavigationEventListener(this@MainActivity)
             gestureEventListener(this@MainActivity)
             linkHandler(this@MainActivity)
+            logWriter(this@MainActivity)
         }
     }
 
@@ -220,5 +224,13 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
 
     override fun handleLinkEvent(event: LinkTapEvent) {
         Log.d("=====>", "handleLinkEvent() called with: event = $event")
+    }
+
+    override fun writeLog(message: String, tag: String) {
+        Log.d("=====>", "writeLog() called with: message = $message, tag = $tag")
+    }
+
+    override fun writeLog(throwable: Throwable, tag: String) {
+        Log.d("=====>", "writeLog() called with: throwable = $throwable, tag = $tag")
     }
 }

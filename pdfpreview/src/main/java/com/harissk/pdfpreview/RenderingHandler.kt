@@ -7,7 +7,6 @@ import android.graphics.RectF
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.util.Log
 import com.harissk.pdfpreview.RenderingHandler.RenderingTask
 import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.model.PagePart
@@ -96,7 +95,7 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
                 }
             )
         } catch (e: IllegalArgumentException) {
-            Log.e(TAG, "Cannot create bitmap", e)
+            pdfView.logWriter?.writeLog("Cannot create bitmap", TAG)
             return null
         }
         calculateBounds(w, h, renderingTask.bounds ?: RectF())

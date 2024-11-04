@@ -12,13 +12,13 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.os.HandlerThread
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.widget.RelativeLayout
 import com.harissk.pdfium.Bookmark
 import com.harissk.pdfium.Link
 import com.harissk.pdfium.Meta
 import com.harissk.pdfium.PdfiumCore
+import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfium.util.Size
 import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.exception.PageRenderingException
@@ -219,6 +219,9 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     /** Holds info whether view has been added to layout and has width and height  */
     private var hasSize: Boolean = false
 
+    val logWriter: LogWriter?
+        get() = pdfRequest?.logWriter
+
     /** Construct the initial view  */
     init {
         renderingHandlerThread = HandlerThread("PDF renderer")
@@ -226,6 +229,16 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             debugPaint.style = Paint.Style.STROKE
             setWillNotDraw(false)
         }
+        pdfiumCore.setLogWriter(logWriter = object : LogWriter {
+            override fun writeLog(message: String, tag: String) {
+                logWriter?.writeLog(message, tag)
+            }
+
+            override fun writeLog(throwable: Throwable, tag: String) {
+                logWriter?.writeLog(throwable, tag)
+            }
+
+        })
     }
 
     fun enqueue(pdfRequest: PdfRequest) {
@@ -259,6 +272,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         password: String?,
         userPages: List<Int>? = null,
     ) {
+        logWriter?.writeLog("Loading PDF document")
         check(isRecycled) { "Don't call load on a PDF View without recycling it first." }
         isRecycling = false
         isRecycled = false
@@ -391,6 +405,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun recycle() = recycle(true)
 
     private fun recycle(isRemoveRequest: Boolean = true) {
+        logWriter?.writeLog("Recycling PDFView")
+
         isRecycling = true
 
         if (isRemoveRequest) pdfRequest = null
@@ -658,6 +674,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     /** Called when the PDF is loaded  */
     private fun loadComplete(pdfFile: PdfFile) {
+        logWriter?.writeLog("PDF document loaded")
+
         if (isRecycling) return
         state = State.LOADED
         _pdfFile = pdfFile
@@ -941,7 +959,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     fun fitToWidth(page: Int) {
         if (state != State.SHOWN) {
-            Log.e(TAG, "Cannot fit, document not rendered yet")
+            logWriter?.writeLog("Cannot fit, document not rendered yet", TAG)
             return
         }
         zoomTo(width / pdfFile.getPageSize(page)?.width!!)

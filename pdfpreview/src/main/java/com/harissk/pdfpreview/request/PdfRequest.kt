@@ -1,5 +1,6 @@
 package com.harissk.pdfpreview.request
 
+import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfpreview.link.LinkHandler
 import com.harissk.pdfpreview.listener.DocumentLoadListener
 import com.harissk.pdfpreview.listener.GestureEventListener
@@ -53,6 +54,7 @@ data class PdfRequest(
     val pageNavigationEventListener: PageNavigationEventListener? = null,
     val gestureEventListener: GestureEventListener? = null,
     val linkHandler: LinkHandler? = null,
+    val logWriter: LogWriter? = null,
 ) {
     class Builder(private val source: DocumentSource) {
         private var pageNumbers: List<Int>? = null
@@ -78,6 +80,7 @@ data class PdfRequest(
         private var pageNavigationEventListener: PageNavigationEventListener? = null
         private var gestureEventListener: GestureEventListener? = null
         private var linkHandler: LinkHandler? = null
+        private var logWriter: LogWriter? = null
 
         fun pages(vararg pageNumbers: Int): Builder {
             this.pageNumbers = pageNumbers.toList()
@@ -180,7 +183,7 @@ data class PdfRequest(
         }
 
         fun pageNavigationEventListener(
-            pageNavigationEventListener: PageNavigationEventListener
+            pageNavigationEventListener: PageNavigationEventListener,
         ): Builder {
             this.pageNavigationEventListener = pageNavigationEventListener
             return this
@@ -193,6 +196,11 @@ data class PdfRequest(
 
         fun linkHandler(linkHandler: LinkHandler): Builder {
             this.linkHandler = linkHandler
+            return this
+        }
+
+        fun logWriter(logWriter: LogWriter): Builder {
+            this.logWriter = logWriter
             return this
         }
 
@@ -224,6 +232,7 @@ data class PdfRequest(
             pageNavigationEventListener = pageNavigationEventListener,
             gestureEventListener = gestureEventListener,
             linkHandler = linkHandler,
+            logWriter = logWriter,
         )
     }
 

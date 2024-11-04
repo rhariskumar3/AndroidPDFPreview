@@ -6,8 +6,8 @@ import android.graphics.PointF
 import android.graphics.RectF
 import android.os.ParcelFileDescriptor
 import android.util.ArrayMap
-import android.util.Log
 import android.view.Surface
+import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfium.search.FPDFTextSearchContext
 import com.harissk.pdfium.search.TextSearchContext
 import com.harissk.pdfium.util.FileUtils
@@ -275,9 +275,9 @@ class PdfiumCore {
                 startX, startY, drawSizeX, drawSizeY, renderAnnot
             )
         } catch (e: NullPointerException) {
-            Log.e(TAG, "mContext may be null")
+            logWriter?.writeLog("mContext may be null", TAG)
         } catch (e: Exception) {
-            Log.e(TAG, "Exception throw from native")
+            logWriter?.writeLog("Exception throw from native", TAG)
         }
     }
 
@@ -299,9 +299,9 @@ class PdfiumCore {
                 startX, startY, drawSizeX, drawSizeY, renderAnnot
             )
         } catch (e: NullPointerException) {
-            Log.e(TAG, "mContext may be null")
+            logWriter?.writeLog("mContext may be null", TAG)
         } catch (e: Exception) {
-            Log.e(TAG, "Exception throw from native")
+            logWriter?.writeLog("Exception throw from native", TAG)
         }
     }
 
@@ -334,6 +334,7 @@ class PdfiumCore {
             try {
                 it.close()
             } catch (ignored: IOException) {
+                logWriter?.writeLog("Error closing file descriptor", TAG)
             } finally {
                 mFileDescriptor = null
             }
@@ -582,6 +583,7 @@ class PdfiumCore {
             else -> 0
         }
     } catch (e: Exception) {
+        logWriter?.writeLog("Error counting characters on page", TAG)
         0
     }
 
@@ -609,6 +611,7 @@ class PdfiumCore {
             else -> null
         }
     } catch (e: Exception) {
+        logWriter?.writeLog("Error extracting characters from page", TAG)
         null
     }
 
@@ -623,6 +626,7 @@ class PdfiumCore {
         val ptr = ensureTextPage(pageIndex)
         if (validPtr(ptr)) nativeTextGetUnicode(ptr, index) else 0
     } catch (e: Exception) {
+        logWriter?.writeLog("Error extracting character from page", TAG)
         0
     }.toChar()
 
@@ -644,6 +648,7 @@ class PdfiumCore {
             else -> null
         }
     } catch (e: Exception) {
+        logWriter?.writeLog("Error measuring character box", TAG)
         null
     }
 
@@ -667,6 +672,7 @@ class PdfiumCore {
         val ptr = ensureTextPage(pageIndex)
         if (validPtr(ptr)) nativeTextGetCharIndexAtPos(ptr, x, y, xTolerance, yTolerance) else -1
     } catch (e: Exception) {
+        logWriter?.writeLog("Error getting character index", TAG)
         -1
     }
 
@@ -688,6 +694,7 @@ class PdfiumCore {
         val ptr = ensureTextPage(pageIndex)
         if (validPtr(ptr)) nativeTextCountRects(ptr, charIndex, count) else -1
     } catch (e: Exception) {
+        logWriter?.writeLog("Error counting text rectangles", TAG)
         -1
     }
 
@@ -709,6 +716,7 @@ class PdfiumCore {
             else -> null
         }
     } catch (e: Exception) {
+        logWriter?.writeLog("Error getting text rectangle", TAG)
         null
     }
 
@@ -755,6 +763,7 @@ class PdfiumCore {
             for (i in 0 until r - 1) bb.putShort(buf[i])
             String(bytes, charset("UTF-16LE"))
         } catch (e: Exception) {
+            logWriter?.writeLog("Error extracting text", TAG)
             null
         }
     }
@@ -838,6 +847,21 @@ class PdfiumCore {
     fun hasTextPage(index: Int): Boolean = mNativeTextPagesPtr.containsKey(index)
 
     fun hasSearchHandle(index: Int): Boolean = mNativeSearchHandlePtr.containsKey(index)
+
+    private var logWriter: LogWriter? = null
+
+    /**
+     * Sets the [LogWriter] instance to be used for logging.
+     *
+     * This function allows you to configure the logger with a custom implementation
+     * of the `LogWriter` interface.
+     *
+     * @param logWriter The [LogWriter] instance to use for logging.
+     *                  This writer will be responsible for handling log messages.
+     */
+    fun setLogWriter(logWriter: LogWriter) {
+        this.logWriter = logWriter
+    }
 
     companion object {
         private const val TAG = "PdfiumCore"
