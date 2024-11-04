@@ -263,11 +263,12 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         if (!hasSize) return
         scope.async(Dispatchers.Main.immediate) {
             recycle(false)
-            load(pdfRequest.source, pdfRequest.password, pdfRequest.pageNumbers)
+            load(this@PDFView, pdfRequest.source, pdfRequest.password, pdfRequest.pageNumbers)
         }
     }
 
     private suspend fun load(
+        pdfView: PDFView,
         docSource: DocumentSource,
         password: String?,
         userPages: List<Int>? = null,
@@ -281,11 +282,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         try {
             pdfRequest?.documentLoadListener?.onDocumentLoadingStart()
             val pdfFile = withContext(Dispatchers.IO) {
-                docSource.createDocument(this@PDFView.context, pdfiumCore, password)
+                docSource.createDocument(pdfView.context, pdfiumCore, password)
                 PdfFile(
                     pdfiumCore = pdfiumCore,
                     pageFitPolicy = pageFitPolicy,
-                    viewSize = Size(this@PDFView.width, this@PDFView.height),
+                    viewSize = Size(pdfView.width, pdfView.height),
                     originalUserPages = userPages,
                     isVertical = isSwipeVertical,
                     spacingPx = spacingPx,
@@ -296,11 +297,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             }
 
             withContext(Dispatchers.Main) {
-                this@PDFView.loadComplete(pdfFile)
+                pdfView.loadComplete(pdfFile)
             }
         } catch (t: Throwable) {
             withContext(Dispatchers.Main) {
-                this@PDFView.loadError(t)
+                pdfView.loadError(t)
             }
         }
     }
