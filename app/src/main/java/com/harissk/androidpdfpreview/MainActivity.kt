@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
     }
 
     private fun displayFromUri(uri: Uri) {
+        binding.pdfView.recycle()
         fileName = uri.fileName()
         binding.pdfView.load(uri) {
             defaultPage(0)
@@ -94,6 +95,7 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
     }
 
     private fun displayFromFile(file: File) {
+        binding.pdfView.recycle()
         fileName = file.nameWithoutExtension
         binding.pdfView.load(file) {
             defaultPage(0)
