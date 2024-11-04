@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity(), DocumentLoadListener, RenderingEventLi
         _binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         setSupportActionBar(binding.toolbar)
 
-        binding.pdfView.setBackgroundColor(Color.LTGRAY);
+        binding.pdfView.setBackgroundColor(Color.LTGRAY)
         displayFromAsset("pdf_bookmark_sample.pdf")
     }
 

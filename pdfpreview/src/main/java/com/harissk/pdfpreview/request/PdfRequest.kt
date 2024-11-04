@@ -28,6 +28,36 @@ import com.harissk.pdfpreview.utils.FitPolicy
 
 /**
  * Represents a configuration request for loading and rendering a PDF document.
+ *
+ * This class encapsulates all the settings and options that can be applied when loading and displaying a PDF.
+ * It's used to customize the behavior of the PDF viewer, such as enabling/disabling features,
+ * setting the initial page, defining the page fit policy, and more.
+ *
+ * @property source The source of the PDF document to load (e.g., file, asset, URI).
+ * @property pageNumbers An optional list of specific page numbers to load. If null, all pages are loaded.
+ * @property enableSwipe Enables or disables swipe gestures for page navigation. Defaults to true.
+ * @property enableDoubleTap Enables or disables double tap gestures for zooming. Defaults to true.
+ * @property defaultPage The initial page number to display when the document is loaded. Defaults to 0 (the first page).
+ * @property swipeHorizontal If true, swipe gestures will navigate horizontally instead of vertically. Defaults to false.
+ * @property annotationRendering Enables or disables rendering of PDF annotations. Defaults to false.
+ * @property password The password to use if the PDF document is encrypted. Defaults to null.
+ * @property scrollHandle The type of scroll handle to display. Defaults to null (no scroll handle).
+ * @property antialiasing Enables or disables anti-aliasing for smoother rendering. Defaults to true.
+ * @property spacing The spacing between pages in pixels. Defaults to 0F.
+ * @property autoSpacing If true, automatically adjusts spacing between pages based on screen size. Defaults to false.
+ * @property pageFitPolicy The policy to use for fitting the page content to the screen. Defaults to [FitPolicy.WIDTH].
+ * @property fitEachPage If true, each page will be individually fitted to the screen. Defaults to false.
+ * @property pageFling Enables or disables page flinging for faster navigation. Defaults to false.
+ * @property pageSnap Enables or disables page snapping, where pages will snap to the screen edges. Defaults to false.
+ * @property nightMode Enables or disables night mode, which inverts the colors for better readability in low-light conditions. Defaults to false.
+ * @property disableLongPress Disables long press gestures on the PDF view. Defaults to false.
+ * @property renderOptions Custom rendering options for the PDF document. Defaults to [RenderOptions.DEFAULT].
+ * @property documentLoadListener A listener to be notified when the document is loaded and ready for rendering. Defaults to null.
+ * @property renderingEventListener A listener to be notified of rendering events (e.g., when a page is rendered). Defaults to null.
+ * @property pageNavigationEventListener A listener to be notified of page navigation events (e.g., when a page is changed). Defaults to null.
+ * @property gestureEventListener A listener to be notified of gesture events (e.g., when a gesture is detected). Defaults to null.
+ * @property linkHandler A handler for processing link clicks in the PDF document. Defaults to null.
+ * @property logWriter A writer for logging messages and errors. Defaults to null.
  */
 data class PdfRequest(
     val source: DocumentSource,
