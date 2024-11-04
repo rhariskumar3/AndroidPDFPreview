@@ -226,4 +226,6 @@ data class PdfRequest(
             linkHandler = linkHandler,
         )
     }
+
+    override fun toString(): String = source.toString()
 }
