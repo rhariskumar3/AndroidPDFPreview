@@ -100,10 +100,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     internal val cacheManager = CacheManager(renderOptions)
 
     /** Animation manager manage all offset and zoom animation  */
-    private val animationManager: AnimationManager = AnimationManager(this)
+    private val pdfAnimator: PdfAnimator = PdfAnimator(this)
 
     /** Drag manager manage all touch events  */
-    private val dragPinchManager = DragPinchManager(this, animationManager)
+    private val dragPinchManager = DragPinchManager(this, pdfAnimator)
 
     /** The index of the current sequence  */
     var currentPage = 0
@@ -317,12 +317,12 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         val offset: Float = if (userPage == 0) 0F else -pdfFile.getPageOffset(userPage, zoom)
         when {
             isSwipeVertical -> when {
-                withAnimation -> animationManager.startYAnimation(currentYOffset, offset)
+                withAnimation -> pdfAnimator.animateVertical(currentYOffset, offset)
                 else -> moveTo(currentXOffset, offset)
             }
 
             else -> when {
-                withAnimation -> animationManager.startXAnimation(currentXOffset, offset)
+                withAnimation -> pdfAnimator.animateHorizontal(currentXOffset, offset)
                 else -> moveTo(offset, currentYOffset)
             }
         }
@@ -375,7 +375,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         loadPageByOffset()
     }
 
-    fun stopFling() = animationManager.stopFling()
+    fun stopFling() = pdfAnimator.cancelFling()
 
     val pageCount: Int
         get() = _pdfFile?.pagesCount ?: 0
@@ -412,7 +412,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         if (isRemoveRequest) pdfRequest = null
 
-        animationManager.stopAll()
+        pdfAnimator.cancelAllAnimations()
         dragPinchManager.disable()
 
         // Stop tasks
@@ -441,7 +441,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     override fun computeScroll() {
         super.computeScroll()
         if (isInEditMode) return
-        animationManager.computeFling()
+        pdfAnimator.performFling()
     }
 
     override fun onDetachedFromWindow() {
@@ -476,7 +476,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                     centerPointInStripYOffset / pdfFile.maxPageHeight
             }
         }
-        animationManager.stopAll()
+        pdfAnimator.cancelAllAnimations()
         pdfFile.recalculatePageSizes(Size(w, h))
         if (isSwipeVertical) {
             currentXOffset = -relativeCenterPointInStripXOffset * pdfFile.maxPageWidth + w * 0.5f
@@ -844,8 +844,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         if (edge === SnapEdge.NONE) return
         val offset = snapOffsetForPage(centerPage, edge)
         when {
-            isSwipeVertical -> animationManager.startYAnimation(currentYOffset, -offset)
-            else -> animationManager.startXAnimation(currentXOffset, -offset)
+            isSwipeVertical -> pdfAnimator.animateVertical(currentYOffset, -offset)
+            else -> pdfAnimator.animateHorizontal(currentXOffset, -offset)
         }
     }
 
@@ -981,14 +981,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun resetZoomWithAnimation() = zoomWithAnimation(minZoom)
 
     fun zoomWithAnimation(centerX: Float, centerY: Float, scale: Float) =
-        animationManager.startZoomAnimation(centerX, centerY, zoom, scale)
+        pdfAnimator.zoomToPoint(centerX, centerY, zoom, scale)
 
     fun zoomWithAnimation(scale: Float) {
-        animationManager.startZoomAnimation(
-            centerX = (width / 2).toFloat(),
-            centerY = (height / 2).toFloat(),
-            zoomFrom = zoom,
-            zoomTo = scale
+        pdfAnimator.zoomToPoint(
+            zoomCenterX = (width / 2).toFloat(),
+            zoomCenterY = (height / 2).toFloat(),
+            startZoom = zoom,
+            targetZoom = scale
         )
     }
 

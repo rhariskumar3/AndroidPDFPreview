@@ -34,7 +34,7 @@ import kotlin.math.min
  */
 internal class DragPinchManager(
     private val pdfView: PDFView,
-    private val animationManager: AnimationManager,
+    private val pdfAnimator: PdfAnimator,
 ) : GestureDetector.OnGestureListener,
     GestureDetector.OnDoubleTapListener,
     OnScaleGestureListener,
@@ -144,7 +144,7 @@ internal class DragPinchManager(
         val offsetY = pdfView.currentYOffset - delta * pdfView.zoom
         val startingPage: Int = pdfView.findFocusPage(offsetX, offsetY)
         val targetPage = max(0, min(pdfView.pageCount - 1, startingPage + direction))
-        animationManager.startPageFlingAnimation(
+        pdfAnimator.flingToPage(
             -pdfView.snapOffsetForPage(
                 targetPage,
                 pdfView.findSnapEdge(targetPage)
@@ -165,7 +165,7 @@ internal class DragPinchManager(
     override fun onDoubleTapEvent(e: MotionEvent) = false
 
     override fun onDown(e: MotionEvent): Boolean {
-        animationManager.stopFling()
+        pdfAnimator.cancelFling()
         return true
     }
 
@@ -191,7 +191,7 @@ internal class DragPinchManager(
     private fun onScrollEnd() {
         pdfView.loadPages()
         hideHandle()
-        if (!animationManager.isFlinging) pdfView.performPageSnap()
+        if (!pdfAnimator.isFlinging) pdfView.performPageSnap()
     }
 
     override fun onLongPress(e: MotionEvent) = pdfView.callOnLongPress(e)
@@ -209,21 +209,21 @@ internal class DragPinchManager(
                 else -> e1?.let { startPageFling(it, e2, velocityX, velocityY) }
             }
 
-            else -> animationManager.startFlingAnimation(
-                startX = pdfView.currentXOffset.toInt(),
-                startY = pdfView.currentYOffset.toInt(),
-                velocityX = velocityX.toInt(),
-                velocityY = velocityY.toInt(),
-                minX = when {
+            else -> pdfAnimator.animateFling(
+                flingStartX = pdfView.currentXOffset.toInt(),
+                flingStartY = pdfView.currentYOffset.toInt(),
+                flingVelocityX = velocityX.toInt(),
+                flingVelocityY = velocityY.toInt(),
+                flingMinX = when {
                     pdfView.isSwipeVertical -> -(pdfView.toCurrentScale(pdfView.pdfFile.maxPageWidth) - pdfView.width)
                     else -> -(pdfView.pdfFile.getDocLen(pdfView.zoom) - pdfView.width)
                 }.toInt(),
-                maxX = 0,
-                minY = when {
+                flingMaxX = 0,
+                flingMinY = when {
                     pdfView.isSwipeVertical -> -(pdfView.pdfFile.getDocLen(pdfView.zoom) - pdfView.height)
                     else -> -(pdfView.toCurrentScale(pdfView.pdfFile.maxPageHeight) - pdfView.height)
                 }.toInt(),
-                maxY = 0
+                flingMaxY = 0
             )
         }
         return true
@@ -262,15 +262,15 @@ internal class DragPinchManager(
                 maxY = 0f
             }
         }
-        animationManager.startFlingAnimation(
-            startX = xOffset.toInt(),
-            startY = yOffset.toInt(),
-            velocityX = velocityX.toInt(),
-            velocityY = velocityY.toInt(),
-            minX = minX.toInt(),
-            maxX = maxX.toInt(),
-            minY = minY.toInt(),
-            maxY = maxY.toInt()
+        pdfAnimator.animateFling(
+            flingStartX = xOffset.toInt(),
+            flingStartY = yOffset.toInt(),
+            flingVelocityX = velocityX.toInt(),
+            flingVelocityY = velocityY.toInt(),
+            flingMinX = minX.toInt(),
+            flingMaxX = maxX.toInt(),
+            flingMinY = minY.toInt(),
+            flingMaxY = maxY.toInt()
         )
     }
 
