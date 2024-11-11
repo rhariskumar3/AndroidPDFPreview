@@ -229,8 +229,9 @@ JNI_FUNC(jlong, PdfiumCore, nativeOpenDocument)(JNI_ARGS, jint fd, jstring passw
 
     size_t fileLength = (size_t) getFileSize(fd);
     if (fileLength <= 0) {
-        throwPdfiumException(env, 7);
-        return -1;
+        jniThrowException(env, "java/io/IOException", "Empty PDF file");
+        const long errorNum = FPDF_ERR_FILE;
+        return errorNum;
     }
 
     DocumentFile *docFile = new DocumentFile();
@@ -303,8 +304,7 @@ JNI_FUNC(jint, PdfiumCore, nativeGetPageCount)(JNI_ARGS, jlong documentPtr) {
 }
 
 JNI_FUNC(void, PdfiumCore, nativeCloseDocument)(JNI_ARGS, jlong documentPtr) {
-    DocumentFile *doc = reinterpret_cast<DocumentFile *>(documentPtr);
-    delete doc;
+    delete reinterpret_cast<DocumentFile *>(documentPtr);
 }
 
 static jlong loadPageInternal(JNIEnv *env, DocumentFile *doc, int pageIndex) {
@@ -337,7 +337,21 @@ static void closePageInternal(jlong pagePtr) {
 
 JNI_FUNC(jlong, PdfiumCore, nativeLoadPage)(JNI_ARGS, jlong docPtr, jint pageIndex) {
     DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
-    return loadPageInternal(env, doc, (int) pageIndex);
+
+    if (!doc) {
+        const long errorNum = FPDF_ERR_FILE;
+        throwPdfiumException(env, errorNum);
+        return -1;
+    }
+
+    jlong pagePtr = loadPageInternal(env, doc, (int) pageIndex);
+    if (pagePtr == -1) {
+        const long errorNum = FPDF_GetLastError();
+        throwPdfiumException(env, errorNum);
+        return -1;
+    }
+
+    return pagePtr;
 }
 JNI_FUNC(jlongArray, PdfiumCore, nativeLoadPages)(JNI_ARGS, jlong docPtr, jint fromIndex,
                                                   jint toIndex) {
@@ -1032,6 +1046,42 @@ JNI_FUNC(jlong, PdfiumCore, nativeAddTextAnnotation)(JNI_ARGS, jlong docPtr, int
     env->CallObjectMethod(thiz, callback, page_index, pagePtr);
 
     return reinterpret_cast<jlong>(annot);
+}
+
+const char *getPdfiumErrorMessage(int errCode) {
+    switch (errCode) {
+        case FPDF_ERR_SUCCESS:
+            return "No error";
+        case FPDF_ERR_UNKNOWN:
+            return "Unknown error";
+        case FPDF_ERR_FILE:
+            return "File not found or could not be opened";
+        case FPDF_ERR_FORMAT:
+            return "File not in PDF format or corrupted";
+        case FPDF_ERR_PASSWORD:
+            return "Incorrect password";
+        case FPDF_ERR_SECURITY:
+            return "Unsupported security scheme";
+        case FPDF_ERR_PAGE:
+            return "Page not found or content error";
+        default:
+            return "Unknown PDF error";
+    }
+}
+
+JNI_FUNC(jint, PdfiumCore, nativeGetLastError)(JNI_ARGS, jlong documentPtr) {
+
+    // Cast to the correct DocumentFile pointer first. This might be incorrect in your existing code.
+    DocumentFile *docFile = reinterpret_cast<DocumentFile *>(documentPtr);
+
+    return FPDF_GetLastError();
+}
+
+
+JNI_FUNC(jstring, PdfiumCore, nativeGetErrorMessage)(JNI_ARGS, jint errorCode) {
+
+    const char *errorMsg = getPdfiumErrorMessage(errorCode);
+    return env->NewStringUTF(errorMsg);
 }
 
 }//extern C

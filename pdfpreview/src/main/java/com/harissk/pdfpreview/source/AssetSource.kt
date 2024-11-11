@@ -32,11 +32,11 @@ internal class AssetSource(private val assetName: String) : DocumentSource {
         context: Context,
         core: PdfiumCore,
         password: String?,
-    ) {
+    ): Long {
         val outFile = File(context.cacheDir, "$assetName-pdfview.pdf")
         if (assetName.contains("/")) outFile.parentFile?.mkdirs()
         context.assets.open(assetName).buffered().copyTo(outFile.outputStream().buffered())
-        core.newDocument(
+        return core.newDocument(
             fd = ParcelFileDescriptor.open(outFile, ParcelFileDescriptor.MODE_READ_ONLY),
             password = password
         )

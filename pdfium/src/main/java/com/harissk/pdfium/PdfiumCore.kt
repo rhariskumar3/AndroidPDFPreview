@@ -7,6 +7,7 @@ import android.graphics.RectF
 import android.os.ParcelFileDescriptor
 import android.util.ArrayMap
 import android.view.Surface
+import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfium.search.FPDFTextSearchContext
 import com.harissk.pdfium.search.TextSearchContext
@@ -18,6 +19,41 @@ import java.nio.ByteOrder
 
 /**
  * Core class for interacting with the Pdfium library.
+ *
+ * This class provides a Java interface to the native Pdfium library, allowing
+ * you to open, read, render, and interact with PDF documents.
+ *
+ * **Key functionalities:**
+ * - Opening PDF documents from files or byte arrays.
+ * - Retrieving document metadata, such as title, author, and page count.
+ * - Accessing and navigating through the document's table of contents (bookmarks).
+ * - Rendering pages to surfaces or bitmaps for display.
+ * - Extracting text from pages, including character positions and bounding boxes.
+ * - Searching for text within pages.
+ * - Handling annotations (limited functionality).
+ * - Managing native resources and closing documents.
+ *
+ * **Usage:**
+ * 1. Create a new `PdfiumCore` instance.
+ * 2. Open a PDF document using `newDocument()`.
+ * 3. Perform desired operations, such as rendering pages or extracting text.
+ * 4. Close the document using `closeDocument()` to release native resources.
+ *
+ * **Example:**
+ * ```java
+ * PdfiumCore pdfiumCore = new PdfiumCore();
+ * try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)) {
+ *     pdfiumCore.newDocument(fd);
+ *     int pageCount = pdfiumCore.getPageCount();
+ *     // ... perform operations on the document ...
+ * } finally {
+ *     pdfiumCore.closeDocument();
+ * }
+ * ```
+ *
+ * **Note:** This class interacts with native code through JNI. Ensure that the
+ * necessary native libraries (pdfium and pdfium_jni) are loaded before using
+ * this class.
  */
 class PdfiumCore {
 
@@ -153,6 +189,10 @@ class PdfiumCore {
     private fun onAnnotationAdded(pageIndex: Int, pageNewPtr: Long) {}
     private fun onAnnotationUpdated(pageIndex: Int, pageNewPtr: Long) {}
     private fun onAnnotationRemoved(pageIndex: Int, pageNewPtr: Long) {}
+
+    private external fun nativeGetLastError(docPtr: Long): Int
+    private external fun nativeGetErrorMessage(errorCode: Int): String
+
     ///////////////////////////////////////
     // PDF SDK functions
     ///////////
@@ -160,7 +200,7 @@ class PdfiumCore {
      * Create new document from file
      */
     @Throws(IOException::class)
-    fun newDocument(fd: ParcelFileDescriptor?) {
+    fun newDocument(fd: ParcelFileDescriptor) {
         newDocument(fd, null)
     }
 
@@ -169,10 +209,19 @@ class PdfiumCore {
      */
     @Synchronized
     @Throws(IOException::class)
-    fun newDocument(fd: ParcelFileDescriptor?, password: String?) {
+    fun newDocument(fd: ParcelFileDescriptor, password: String?): Long {
         mFileDescriptor = fd
         val numFd: Int = FileUtils.getNumFd(fd)
-        mNativeDocPtr = nativeOpenDocument(numFd, password)
+
+        val docPtr = nativeOpenDocument(numFd, password)
+        if (!isValidPointer(docPtr)) {
+            val errorCode: Int = nativeGetLastError(mNativeDocPtr)
+            val errorMessage: String = nativeGetErrorMessage(errorCode)
+            closeDocument()
+            throw IOException("Error opening PDF document. Code: $errorCode, Message: $errorMessage")
+        }
+        mNativeDocPtr = docPtr
+        return docPtr
     }
 
     /**
@@ -180,8 +229,16 @@ class PdfiumCore {
      */
     @Synchronized
     @Throws(IOException::class)
-    fun newDocument(bytes: ByteArray, password: String?) {
-        mNativeDocPtr = nativeOpenMemDocument(bytes, password)
+    fun newDocument(bytes: ByteArray, password: String?): Long {
+        val docPtr = nativeOpenMemDocument(bytes, password)
+        if (!isValidPointer(docPtr)) {
+            val errorCode: Int = nativeGetLastError(mNativeDocPtr)
+            val errorMessage: String = nativeGetErrorMessage(errorCode)
+            closeDocument()
+            throw IOException("Error opening PDF document. Code: $errorCode, Message: $errorMessage")
+        }
+        mNativeDocPtr = docPtr
+        return docPtr
     }
 
     /**
@@ -193,8 +250,19 @@ class PdfiumCore {
     /**
      * Open page and store native pointer
      */
+    @Throws(PageRenderingException::class)
     fun openPage(pageIndex: Int): Long {
         val pagePtr: Long = nativeLoadPage(mNativeDocPtr, pageIndex)
+
+        if (!isValidPointer(pagePtr)) {
+            val errorCode: Int = nativeGetLastError(pagePtr)
+            val errorMessage: String = nativeGetErrorMessage(errorCode)
+            throw PageRenderingException(
+                page = pageIndex,
+                throwable = Throwable(message = "Error loading page. Code: $errorCode, Message: $errorMessage")
+            )
+        }
+
         mNativePagesPtr[pageIndex] = pagePtr
         prepareTextInfo(pageIndex)
         return pagePtr
@@ -315,29 +383,57 @@ class PdfiumCore {
     }
 
     /**
+     * Gets the last occurred error code. Should be called after a native function has failed.
+     * @param docPtr The document pointer.
+     * @return The last error code, of 0 if no error occurred.
+     */
+    @Synchronized
+    fun getLastError(docPtr: Long): Int = nativeGetLastError(docPtr)
+
+
+    /**
+     * Gets the error message from a specific error code.
+     * @param errorCode The error code.
+     * @return The corresponding error message.
+     */
+    @Synchronized
+    fun getErrorMessage(errorCode: Int): String? = nativeGetErrorMessage(errorCode)
+
+    /**
+     * Closes the PDF document and releases resources.
+     */
+
+
+    @Synchronized
+    fun close() {
+        closeDocument()
+    }
+
+
+    /**
      * Release native resources and opened file
      */
-    fun closeDocument() {
+    @Synchronized
+    private fun closeDocument() = try {
         // Close all native pages
         mNativePagesPtr.forEach { nativeClosePage(it.value) }
-        mNativePagesPtr.clear()
 
         // Close all native text pages
         mNativeTextPagesPtr.forEach { nativeCloseTextPage(it.value) }
-        mNativeTextPagesPtr.clear()
 
-        // Close the native document
         nativeCloseDocument(mNativeDocPtr)
+    } finally {
+        mNativePagesPtr.clear()
+        mNativeTextPagesPtr.clear()
+        mNativeSearchHandlePtr.clear()
+        mNativeDocPtr = 0
 
-        // Close the file descriptor
-        mFileDescriptor?.let {
-            try {
-                it.close()
-            } catch (ignored: IOException) {
-                logWriter?.writeLog("Error closing file descriptor", TAG)
-            } finally {
-                mFileDescriptor = null
-            }
+        try {
+            mFileDescriptor?.close()
+        } catch (e: IOException) {
+            logWriter?.writeLog(e)
+        } finally {
+            mFileDescriptor = null
         }
     }
 
@@ -768,8 +864,6 @@ class PdfiumCore {
         }
     }
 
-    private fun validPtr(ptr: Long?): Boolean = ptr != null && ptr != -1L
-
     /**
      * A handle class for the search context. stopSearch must be called to release this handle.
      *
@@ -862,6 +956,10 @@ class PdfiumCore {
     fun setLogWriter(logWriter: LogWriter) {
         this.logWriter = logWriter
     }
+
+    private fun validPtr(ptr: Long?): Boolean = ptr != null && ptr != -1L
+    private fun validPtr(ptr: Long): Boolean = ptr != 0L
+    private fun isValidPointer(pointer: Long): Boolean = pointer != 0L
 
     companion object {
         private const val TAG = "PdfiumCore"

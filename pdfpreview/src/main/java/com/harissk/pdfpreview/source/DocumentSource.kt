@@ -39,7 +39,7 @@ interface DocumentSource {
      * @throws IOException If an error occurs during document creation.
      */
     @Throws(IOException::class)
-    fun createDocument(context: Context, core: PdfiumCore, password: String?)
+    fun createDocument(context: Context, core: PdfiumCore, password: String?): Long
 
     companion object {
         /**

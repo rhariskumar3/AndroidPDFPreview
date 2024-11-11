@@ -343,7 +343,7 @@ class PdfFile(
     )
 
     fun dispose() {
-        pdfiumCore.closeDocument()
+        pdfiumCore.close()
         originalUserPages = null
     }
 
