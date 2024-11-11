@@ -1,6 +1,7 @@
 package com.harissk.pdfpreview
 
 import android.graphics.RectF
+import android.util.LruCache
 import com.harissk.pdfpreview.model.PagePart
 import com.harissk.pdfpreview.request.RenderOptions
 import java.util.PriorityQueue
@@ -22,94 +23,95 @@ import java.util.PriorityQueue
  * */
 
 /**
- * A class for managing the cache of rendered PDF pages and thumbnails.
+ * Manages the caching of rendered PDF pages and thumbnails.
+ *
+ * This class utilizes two priority queues for caching page parts:
+ * - **activeCache:** Stores recently used page parts.
+ * - **passiveCache:** Stores less frequently used page parts.
+ *
+ * It also uses an LruCache for storing thumbnails.
+ *
+ * The cache size is determined by the `RenderOptions` provided during initialization.
+ *
+ * Cache eviction is managed by prioritizing page parts based on a `cacheOrder` property.
+ * When the cache reaches its capacity, the least recently used parts (with the lowest `cacheOrder`)
+ * are removed to make space for new ones.
  */
 internal class CacheManager(private val renderOptions: RenderOptions) {
 
     private val passiveCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(renderOptions.cacheSize, orderComparator)
+        PriorityQueue(renderOptions.cacheSize, PAGE_PART_COMPARATOR)
     }
     private val activeCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(renderOptions.cacheSize, orderComparator)
+        PriorityQueue(renderOptions.cacheSize, PAGE_PART_COMPARATOR)
     }
-    private val thumbnails = arrayListOf<PagePart>()
-    private val passiveActiveLock = Any()
-    private val orderComparator: Comparator<PagePart> = Comparator { part1, part2 ->
-        part1?.cacheOrder?.compareTo(part2.cacheOrder) ?: 0
+    private val thumbnails = LruCache<Int, PagePart>(renderOptions.thumbnailsCacheSize)
+
+    // Comparator for prioritizing page parts in the cache.  Now a constant
+    private companion object {
+        val PAGE_PART_COMPARATOR = Comparator<PagePart> { part1, part2 ->
+            (part1?.cacheOrder ?: 0).compareTo(part2?.cacheOrder ?: 0)
+        }
     }
 
     fun cachePart(part: PagePart) {
+        val bitmap = part.renderedBitmap
+        if (bitmap == null || bitmap.isRecycled) return
+
         synchronized(passiveActiveLock) {
-            // Remove and recycle bitmaps if the cache is full.
             makeAFreeSpace()
-            // Add the provided PagePart to the active cache.
             activeCache.offer(part)
         }
     }
 
-    fun makeANewSet() {
-        synchronized(passiveActiveLock) {
-            passiveCache.addAll(activeCache)
-            activeCache.clear()
-        }
+    fun makeANewSet() = synchronized(passiveActiveLock) {
+        passiveCache.addAll(activeCache)
+        activeCache.clear()
     }
 
-    /**
-     * Makes free space in the cache by removing and recycling bitmaps.
-     */
-    private fun makeAFreeSpace() {
-        synchronized(passiveActiveLock) {
-            // Remove and recycle bitmaps from both passive and active cache until the limit is reached
-            while (activeCache.size + passiveCache.size >= renderOptions.cacheSize) {
-                if (!passiveCache.isEmpty()) passiveCache.poll()?.renderedBitmap?.recycle()
-                if (!activeCache.isEmpty()) activeCache.poll()?.renderedBitmap?.recycle()
-            }
+    private fun makeAFreeSpace() = synchronized(passiveActiveLock) {
+        while ((activeCache.size + passiveCache.size) >= renderOptions.cacheSize) {
+            // Remove from passive first, then active if needed
+            passiveCache.poll()?.renderedBitmap?.recycle()
+                ?: activeCache.poll()?.renderedBitmap?.recycle()
         }
     }
 
     fun cacheThumbnail(part: PagePart) {
-        synchronized(thumbnails) {
-            try {
-                // If the thumbnail cache is full, remove and recycle the oldest thumbnails.
-                while (thumbnails.size >= renderOptions.thumbnailsCacheSize)
-                    thumbnails.removeAt(0).renderedBitmap?.recycle()
-                // Add the provided part to the cache, if not already present. Recycle its bitmap otherwise.
-                when {
-                    thumbnails.any { it == part } -> part.renderedBitmap?.recycle()
-                    else -> thumbnails.add(part)
-                }
-            } catch (_: Exception) {
-            }
-        }
+        val bitmap = part.renderedBitmap
+        if (bitmap == null || bitmap.isRecycled) return
+
+        thumbnails.put(part.page, part)
     }
 
+    // Returns true if any part of 'page' is already in the active or passive caches
     fun upPartIfContained(page: Int, pageRelativeBounds: RectF, toOrder: Int): Boolean {
         val fakePart = PagePart(page, null, pageRelativeBounds, false, 0)
+
         synchronized(passiveActiveLock) {
-            return when (val found = passiveCache.firstOrNull { it == fakePart }) {
-                // Check if the part exists in the active cache and return the result.
-                null -> activeCache.firstOrNull { it == fakePart } != null
-                // Otherwise If the part is found in the passive cache, remove it, update its cacheOrder, and add it
-                // to the active cache.
-                else -> {
-                    passiveCache.remove(found)
-                    found.cacheOrder = toOrder
-                    activeCache.offer(found)
-                    true
-                }
+            // Check if the fake part (page and bounds match) exists in the active cache.
+            // If it is found in the active cache return true, otherwise continue.
+            val partInActiveCache =
+                activeCache.firstOrNull { it.page == fakePart.page && it.pageRelativeBounds == fakePart.pageRelativeBounds }
+            if (partInActiveCache != null) return true
+
+            // If the page part is in passiveCache
+            val partInPassiveCache =
+                passiveCache.firstOrNull { it.page == fakePart.page && it.pageRelativeBounds == fakePart.pageRelativeBounds }
+            if (partInPassiveCache != null) {
+                passiveCache.remove(partInPassiveCache) // Remove the existing part
+                passiveCache.offer(fakePart.copy(cacheOrder = toOrder)) // Add it back with a new order
+                return true
             }
         }
+        return false
     }
 
-    /**
-     * Returns true if the described {@link PagePart} already exists in the thumbnail cache.
-     */
-    fun containsThumbnail(page: Int, pageRelativeBounds: RectF): Boolean {
-        val fakePart = PagePart(page, null, pageRelativeBounds, true, 0)
-        synchronized(thumbnails) { return thumbnails.any { it == fakePart }; }
+    fun containsThumbnail(page: Int, bounds: RectF): Boolean {
+        val cachedThumbnail = thumbnails[page] ?: return false
+        return cachedThumbnail.pageRelativeBounds == bounds
     }
 
-    // Return a new list combining elements from the passive and active caches.
     fun getPageParts(): List<PagePart> = synchronized(passiveActiveLock) {
         return buildList {
             addAll(passiveCache)
@@ -117,21 +119,18 @@ internal class CacheManager(private val renderOptions: RenderOptions) {
         }
     }
 
-    fun getThumbnails(): List<PagePart> = synchronized(thumbnails) { return thumbnails; }
+    fun getThumbnails(): List<PagePart> = thumbnails.snapshot().values.toList()
 
     fun recycle() {
         synchronized(passiveActiveLock) {
-            // Recycle bitmaps in both passive and active caches.
-            passiveCache.forEach { (_, renderedBitmap) -> renderedBitmap?.recycle() }
-            activeCache.forEach { (_, renderedBitmap) -> renderedBitmap?.recycle() }
-            // Clear the caches.
+            passiveCache.forEach { it.renderedBitmap?.recycle() }
             passiveCache.clear()
+            activeCache.forEach { it.renderedBitmap?.recycle() }
             activeCache.clear()
         }
-        synchronized(thumbnails) {
-            // Recycle bitmaps and clear the thumbnail cache.
-            thumbnails.forEach { (_, renderedBitmap) -> renderedBitmap?.recycle() }
-            thumbnails.clear()
-        }
+
+        thumbnails.evictAll()  // Recycle bitmaps in LruCache
     }
+
+    private val passiveActiveLock = Any()
 }
