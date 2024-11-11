@@ -276,8 +276,8 @@ internal class DragPinchManager(
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         val wantedZoom = pdfView.zoom * detector.scaleFactor
-        val minZoom = pdfView.renderOptions.pinchMinimumZoom.coerceAtMost(pdfView.minZoom)
-        val maxZoom = pdfView.renderOptions.pinchMaximumZoom.coerceAtMost(pdfView.maxZoom)
+        val minZoom = pdfView.pdfViewerConfiguration.minZoom.coerceAtMost(pdfView.minZoom)
+        val maxZoom = pdfView.pdfViewerConfiguration.maxZoom.coerceAtMost(pdfView.maxZoom)
 
         pdfView.zoomCenteredRelativeTo(
             dzoom = wantedZoom.coerceIn(minZoom, maxZoom) / pdfView.zoom,

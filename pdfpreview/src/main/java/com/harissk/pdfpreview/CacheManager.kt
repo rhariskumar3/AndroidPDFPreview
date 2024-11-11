@@ -3,7 +3,7 @@ package com.harissk.pdfpreview
 import android.graphics.RectF
 import android.util.LruCache
 import com.harissk.pdfpreview.model.PagePart
-import com.harissk.pdfpreview.request.RenderOptions
+import com.harissk.pdfpreview.request.PdfViewerConfiguration
 import java.util.PriorityQueue
 
 /**
@@ -37,15 +37,15 @@ import java.util.PriorityQueue
  * When the cache reaches its capacity, the least recently used parts (with the lowest `cacheOrder`)
  * are removed to make space for new ones.
  */
-internal class CacheManager(private val renderOptions: RenderOptions) {
+internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfiguration) {
 
     private val passiveCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(renderOptions.cacheSize, PAGE_PART_COMPARATOR)
+        PriorityQueue(pdfViewerConfiguration.maxCachedBitmaps, PAGE_PART_COMPARATOR)
     }
     private val activeCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(renderOptions.cacheSize, PAGE_PART_COMPARATOR)
+        PriorityQueue(pdfViewerConfiguration.maxCachedBitmaps, PAGE_PART_COMPARATOR)
     }
-    private val thumbnails = LruCache<Int, PagePart>(renderOptions.thumbnailsCacheSize)
+    private val thumbnails = LruCache<Int, PagePart>(pdfViewerConfiguration.maxCachedThumbnails)
 
     // Comparator for prioritizing page parts in the cache.  Now a constant
     private companion object {
@@ -70,7 +70,7 @@ internal class CacheManager(private val renderOptions: RenderOptions) {
     }
 
     private fun makeAFreeSpace() = synchronized(passiveActiveLock) {
-        while ((activeCache.size + passiveCache.size) >= renderOptions.cacheSize) {
+        while ((activeCache.size + passiveCache.size) >= pdfViewerConfiguration.maxCachedBitmaps) {
             // Remove from passive first, then active if needed
             passiveCache.poll()?.renderedBitmap?.recycle()
                 ?: activeCache.poll()?.renderedBitmap?.recycle()

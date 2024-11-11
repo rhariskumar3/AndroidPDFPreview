@@ -39,7 +39,8 @@ internal class PagesLoader(private val pdfView: PDFView) {
     private var partRenderWidth = 0f
     private var partRenderHeight = 0f
     private val thumbnailRect = RectF(0f, 0f, 1f, 1f)
-    private val preloadOffset: Int = pdfView.context.toPx(pdfView.renderOptions.preloadOffset)
+    private val preloadOffset: Int =
+        pdfView.context.toPx(pdfView.pdfViewerConfiguration.preloadMarginDp)
 
     private data class Holder(
         var row: Int = 0,
@@ -62,8 +63,9 @@ internal class PagesLoader(private val pdfView: PDFView) {
         val size: SizeF = pdfView.pdfFile.getPageSize(pageIndex) ?: return
         val ratioX: Float = 1f / size.width
         val ratioY: Float = 1f / size.height
-        val partHeight: Float = pdfView.renderOptions.renderedPartSize * ratioY / pdfView.zoom
-        val partWidth: Float = pdfView.renderOptions.renderedPartSize * ratioX / pdfView.zoom
+        val partHeight: Float =
+            pdfView.pdfViewerConfiguration.renderTileSize * ratioY / pdfView.zoom
+        val partWidth: Float = pdfView.pdfViewerConfiguration.renderTileSize * ratioX / pdfView.zoom
         grid.rows = ceil(1f / partHeight).roundToInt()
         grid.cols = ceil(1f / partWidth).roundToInt()
     }
@@ -71,8 +73,8 @@ internal class PagesLoader(private val pdfView: PDFView) {
     private fun calculatePartSize(grid: GridSize) {
         pageRelativePartWidth = 1f / grid.cols.toFloat()
         pageRelativePartHeight = 1f / grid.rows.toFloat()
-        partRenderWidth = pdfView.renderOptions.renderedPartSize / pageRelativePartWidth
-        partRenderHeight = pdfView.renderOptions.renderedPartSize / pageRelativePartHeight
+        partRenderWidth = pdfView.pdfViewerConfiguration.renderTileSize / pageRelativePartWidth
+        partRenderHeight = pdfView.pdfViewerConfiguration.renderTileSize / pageRelativePartHeight
     }
 
     /**
@@ -253,9 +255,9 @@ internal class PagesLoader(private val pdfView: PDFView) {
                 lastRow = range.rightBottom.row,
                 firstCol = range.leftTop.col,
                 lastCol = range.rightBottom.col,
-                nbOfPartsLoadable = pdfView.renderOptions.cacheSize - loadedParts
+                nbOfPartsLoadable = pdfView.pdfViewerConfiguration.maxCachedBitmaps - loadedParts
             )
-            if (loadedParts >= pdfView.renderOptions.cacheSize) break
+            if (loadedParts >= pdfView.pdfViewerConfiguration.maxCachedBitmaps) break
         }
     }
 
@@ -318,8 +320,8 @@ internal class PagesLoader(private val pdfView: PDFView) {
         if (!pdfView.cacheManager.containsThumbnail(page, thumbnailRect))
             pdfView.renderingHandler?.addRenderingTask(
                 page = page,
-                width = pageSize.width * pdfView.renderOptions.thumbnailRatio,
-                height = pageSize.height * pdfView.renderOptions.thumbnailRatio,
+                width = pageSize.width * pdfView.pdfViewerConfiguration.thumbnailQuality,
+                height = pageSize.height * pdfView.pdfViewerConfiguration.thumbnailQuality,
                 bounds = thumbnailRect,
                 thumbnail = true,
                 cacheOrder = 0,

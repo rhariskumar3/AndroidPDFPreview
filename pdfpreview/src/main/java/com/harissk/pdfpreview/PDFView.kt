@@ -26,7 +26,7 @@ import com.harissk.pdfpreview.link.DefaultLinkHandler
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.model.PagePart
 import com.harissk.pdfpreview.request.PdfRequest
-import com.harissk.pdfpreview.request.RenderOptions
+import com.harissk.pdfpreview.request.PdfViewerConfiguration
 import com.harissk.pdfpreview.scroll.ScrollHandle
 import com.harissk.pdfpreview.source.DocumentSource
 import com.harissk.pdfpreview.utils.FitPolicy
@@ -76,8 +76,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             else -> _pdfFile
         } ?: throw IllegalStateException("PDF not decoded")
 
-    val renderOptions: RenderOptions
-        get() = pdfRequest?.renderOptions ?: RenderOptions.DEFAULT
+    val pdfViewerConfiguration: PdfViewerConfiguration
+        get() = pdfRequest?.pdfViewerConfiguration ?: PdfViewerConfiguration.DEFAULT
 
     val minZoom: Float = DEFAULT_MIN_SCALE
     val midZoom: Float = DEFAULT_MID_SCALE
@@ -97,7 +97,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     private var scrollDir: ScrollDir = ScrollDir.NONE
 
     /** Rendered parts go to the cache manager  */
-    internal val cacheManager = CacheManager(renderOptions)
+    internal val cacheManager = CacheManager(pdfViewerConfiguration)
 
     /** Animation manager manage all offset and zoom animation  */
     private val pdfAnimator: PdfAnimator = PdfAnimator(this)
@@ -292,7 +292,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                     spacingPx = spacingPx,
                     autoSpacing = isAutoSpacingEnabled,
                     fitEachPage = isFitEachPage,
-                    maxPageCacheSize = renderOptions.maxPageCacheSize
+                    maxPageCacheSize = pdfViewerConfiguration.maxCachedPages
                 )
             }
 
@@ -574,7 +574,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         // Draws parts
         for (part in cacheManager.getPageParts()) drawPart(canvas, part)
         onDrawPagesNumbers.clear()
-        if (renderOptions.debugMode && pdfRequest?.renderingEventListener != null)
+        if (pdfViewerConfiguration.isDebugEnabled && pdfRequest?.renderingEventListener != null)
             drawWithListener(canvas, currentPage)
 
         // Restores the canvas position
@@ -650,7 +650,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             return
         }
         canvas.drawBitmap(renderedBitmap, srcRect, dstRect, paint)
-        if (renderOptions.debugMode) {
+        if (pdfViewerConfiguration.isDebugEnabled) {
             debugPaint.setColor(if (part.page % 2 == 0) Color.RED else Color.BLUE)
             canvas.drawRect(dstRect, debugPaint)
         }

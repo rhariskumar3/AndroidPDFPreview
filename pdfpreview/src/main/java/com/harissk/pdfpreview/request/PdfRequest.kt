@@ -51,7 +51,7 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * @property pageSnap Enables or disables page snapping, where pages will snap to the screen edges. Defaults to false.
  * @property nightMode Enables or disables night mode, which inverts the colors for better readability in low-light conditions. Defaults to false.
  * @property disableLongPress Disables long press gestures on the PDF view. Defaults to false.
- * @property renderOptions Custom rendering options for the PDF document. Defaults to [RenderOptions.DEFAULT].
+ * @property pdfViewerConfiguration Custom rendering options for the PDF document. Defaults to [PdfViewerConfiguration.DEFAULT].
  * @property documentLoadListener A listener to be notified when the document is loaded and ready for rendering. Defaults to null.
  * @property renderingEventListener A listener to be notified of rendering events (e.g., when a page is rendered). Defaults to null.
  * @property pageNavigationEventListener A listener to be notified of page navigation events (e.g., when a page is changed). Defaults to null.
@@ -78,7 +78,7 @@ data class PdfRequest(
     val pageSnap: Boolean = false,
     val nightMode: Boolean = false,
     val disableLongPress: Boolean = false,
-    val renderOptions: RenderOptions = RenderOptions.DEFAULT,
+    val pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT,
     val documentLoadListener: DocumentLoadListener? = null,
     val renderingEventListener: RenderingEventListener? = null,
     val pageNavigationEventListener: PageNavigationEventListener? = null,
@@ -104,7 +104,7 @@ data class PdfRequest(
         private var pageSnap: Boolean = false
         private var nightMode: Boolean = false
         private var disableLongPress: Boolean = false
-        private var renderOptions: RenderOptions = RenderOptions.DEFAULT
+        private var pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT
         private var documentLoadListener: DocumentLoadListener? = null
         private var renderingEventListener: RenderingEventListener? = null
         private var pageNavigationEventListener: PageNavigationEventListener? = null
@@ -197,8 +197,8 @@ data class PdfRequest(
             return this
         }
 
-        fun renderOptions(renderOptions: RenderOptions): Builder {
-            this.renderOptions = renderOptions
+        fun renderOptions(pdfViewerConfiguration: PdfViewerConfiguration): Builder {
+            this.pdfViewerConfiguration = pdfViewerConfiguration
             return this
         }
 
@@ -256,7 +256,7 @@ data class PdfRequest(
             pageFling = pageFling,
             nightMode = nightMode,
             disableLongPress = disableLongPress,
-            renderOptions = renderOptions,
+            pdfViewerConfiguration = pdfViewerConfiguration,
             documentLoadListener = documentLoadListener,
             renderingEventListener = renderingEventListener,
             pageNavigationEventListener = pageNavigationEventListener,
