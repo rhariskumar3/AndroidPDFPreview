@@ -2,8 +2,8 @@ package com.harissk.pdfpreview.listener
 
 import android.graphics.Canvas
 import androidx.annotation.MainThread
+import com.harissk.pdfium.exception.PageRenderingException
 
-import com.harissk.pdfpreview.exception.PageRenderingException
 
 /**
  * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)

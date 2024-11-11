@@ -18,10 +18,10 @@ import com.harissk.pdfium.Bookmark
 import com.harissk.pdfium.Link
 import com.harissk.pdfium.Meta
 import com.harissk.pdfium.PdfiumCore
+import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfium.util.Size
 import com.harissk.pdfium.util.SizeF
-import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.link.DefaultLinkHandler
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.model.PagePart

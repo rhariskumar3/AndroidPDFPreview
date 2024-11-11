@@ -9,9 +9,9 @@ import com.harissk.pdfium.Bookmark
 import com.harissk.pdfium.Link
 import com.harissk.pdfium.Meta
 import com.harissk.pdfium.PdfiumCore
+import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.util.Size
 import com.harissk.pdfium.util.SizeF
-import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.utils.PageSizeCalculator
 import java.util.LinkedList

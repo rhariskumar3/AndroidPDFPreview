@@ -1,8 +1,8 @@
 package com.harissk.pdfpreview
 
 import android.graphics.RectF
+import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.util.SizeF
-import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.utils.toPx
 import java.util.LinkedList
 import kotlin.math.abs

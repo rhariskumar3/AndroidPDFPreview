@@ -7,8 +7,8 @@ import android.graphics.RectF
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfpreview.RenderingHandler.RenderingTask
-import com.harissk.pdfpreview.exception.PageRenderingException
 import com.harissk.pdfpreview.model.PagePart
 
 /**
