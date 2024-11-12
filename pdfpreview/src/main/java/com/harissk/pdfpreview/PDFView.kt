@@ -681,17 +681,27 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         state = State.LOADED
         _pdfFile = pdfFile
 
-        // If a ScrollHandle is provided in the PdfRequest
+        // Create RenderingHandler
         try {
-            if (pdfRequest?.scrollHandle != null) {
-                if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
-                renderingHandler = RenderingHandler(renderingHandlerThread!!.getLooper(), this)
-                renderingHandler?.start()
-            }
-            if (scrollHandle != null) {
+            if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
+            renderingHandler = RenderingHandler(renderingHandlerThread!!.getLooper(), this)
+            renderingHandler?.start()
+        } catch (e: Exception) {
+            loadError(e)
+            return
+        }
+
+        // If a ScrollHandle is provided in the PdfRequest
+        if (scrollHandle != null)
+            try {
                 scrollHandle?.setupLayout(this)
                 isScrollHandleInit = true
+            } catch (e: Exception) {
+                logWriter?.writeLog("ScrollHandle setupLayout failed", "PDFView")
             }
+
+        // Call to the on load complete listener if any
+        try {
             dragPinchManager.enable()
             pdfRequest?.documentLoadListener?.onDocumentLoaded(pageCount)
             jumpTo(defaultPage, false)
@@ -701,6 +711,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     private fun loadError(t: Throwable): Nothing? {
+        logWriter?.writeLog("loadError: ${t.message}", "PDFView")
+
         if (isRecycling) return null
         state = State.ERROR
         pdfRequest?.documentLoadListener?.onDocumentLoadError(t)
