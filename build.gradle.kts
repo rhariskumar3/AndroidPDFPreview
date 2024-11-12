@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.kotlinKapt) apply false
     alias(libs.plugins.dokka) apply false
+//    alias(libs.plugins.kotlinCompose) apply false
 }
 
 allprojects {
