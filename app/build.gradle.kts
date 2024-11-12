@@ -23,7 +23,7 @@ android {
         minSdk = (property("minSdk") as String).toInt()
         targetSdk = (property("compileSdk") as String).toInt()
         versionCode = 1
-        versionName = "1.0.4"
+        versionName = "1.0.5"
     }
 
     buildTypes {
