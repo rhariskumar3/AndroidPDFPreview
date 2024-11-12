@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.os.Handler
+import android.os.Looper
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -47,7 +48,7 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
     private val textView = TextView(context)
     private var pdfView: PDFView? = null
     private var currentPos = 0f
-    private val handler: Handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
     private val hidePageScrollerRunnable = Runnable { hide() }
 
     init {
@@ -57,12 +58,14 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
     }
 
     override fun setupLayout(pdfView: PDFView?) {
+        if (pdfView == null || pdfView.isRecycled) return
+
         val align: Int
         val width: Float
         val height: Float
         @DrawableRes val background: Int
         // determine handler position, default is right (when scrolling vertically) or bottom (when scrolling horizontally)
-        when (pdfView?.isSwipeVertical) {
+        when (pdfView.isSwipeVertical) {
             true -> {
                 width = HANDLE_LONG
                 height = HANDLE_SHORT
@@ -109,15 +112,13 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
             addView(textView, tvlp)
             lp.addRule(align)
 
-            pdfView?.let { safePdfView ->
-                safePdfView.children.filterIsInstance<DefaultScrollHandle>()
-                    .forEach { scrollHandle ->
-                        safePdfView.removeView(scrollHandle)
-                    }
-            }
-            pdfView?.addView(this, lp)
+            pdfView.children.filterIsInstance<DefaultScrollHandle>()
+                .forEach { scrollHandle ->
+                    pdfView.removeView(scrollHandle)
+                }
+            pdfView.addView(this, lp)
         } catch (e: Exception) {
-            pdfView?.logWriter?.writeLog(e, javaClass.simpleName)
+            pdfView.logWriter?.writeLog(e, javaClass.simpleName)
         }
         this.pdfView = pdfView
     }
@@ -127,53 +128,43 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
     }
 
     override fun setScroll(position: Float) {
-        when {
-            shown -> handler.removeCallbacks(hidePageScrollerRunnable)
-            else -> show()
-        }
-        if (pdfView != null)
-            setPosition((if (pdfView!!.isSwipeVertical) pdfView!!.height else pdfView!!.width) * position)
+        pdfView?.takeUnless { it.isRecycled } ?: return
+
+        if (!shown) show()
+        handler.removeCallbacks(hidePageScrollerRunnable)
+        setPosition(
+            when (pdfView?.isSwipeVertical) {
+                true -> pdfView?.height ?: 0
+                else -> pdfView?.width ?: 0
+            } * position
+        )
     }
 
     private fun setPosition(pos: Float) {
-        var v = pos
-        if (java.lang.Float.isInfinite(v) || java.lang.Float.isNaN(v)) return
+        if (pos.isNaN() || pos.isInfinite()) return
+        pdfView ?: return
+
         val pdfViewSize: Float = when (pdfView?.isSwipeVertical) {
             true -> pdfView!!.height.toFloat()
             else -> pdfView!!.width.toFloat()
         }
-        v -= relativeHandlerMiddle
-        when {
-            v < 0 -> v = 0f
-            v > pdfViewSize - context.toPx(HANDLE_SHORT) -> v =
-                pdfViewSize - context.toPx(HANDLE_SHORT)
-        }
-        when (pdfView?.isSwipeVertical) {
-            true -> y = v
-            else -> x = v
-        }
+        var v = pos - relativeHandlerMiddle
+        v = v.coerceIn(0f, pdfViewSize - context.toPx(HANDLE_SHORT))
+
+        if (pdfView?.isSwipeVertical == true) y = v else x = v
+
         calculateMiddle()
         invalidate()
     }
 
     private fun calculateMiddle() {
-        val pos: Float
-        val viewSize: Float
-        val pdfViewSize: Float
-        when (pdfView?.isSwipeVertical) {
-            true -> {
-                pos = y
-                viewSize = height.toFloat()
-                pdfViewSize = pdfView!!.height.toFloat()
+        pdfView?.let {
+            val (pos, viewSize, pdfViewSize) = when {
+                it.isSwipeVertical -> Triple(y, height.toFloat(), it.height.toFloat())
+                else -> Triple(x, width.toFloat(), it.width.toFloat())
             }
-
-            else -> {
-                pos = x
-                viewSize = width.toFloat()
-                pdfViewSize = pdfView!!.width.toFloat()
-            }
+            relativeHandlerMiddle = (pos + relativeHandlerMiddle) / pdfViewSize * viewSize
         }
-        relativeHandlerMiddle = (pos + relativeHandlerMiddle) / pdfViewSize * viewSize
     }
 
     override fun hideDelayed() {
@@ -181,7 +172,8 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
     }
 
     override fun setPageNum(pageNum: Int) {
-        val text = pageNum.toString()
+        val totalPages = pdfView?.pageCount ?: 0
+        val text = "$pageNum/$totalPages"
         if (textView.getText() != text) textView.text = text
     }
 

@@ -7,5 +7,5 @@
     <corners
         android:bottomLeftRadius="10dp"
         android:topLeftRadius="10dp" />
-    <solid android:color="#DADFE1" />
+    <solid android:color="@color/scroll_handle_color" />
 </shape>
