@@ -55,7 +55,7 @@ import java.nio.ByteOrder
  * necessary native libraries (pdfium and pdfium_jni) are loaded before using
  * this class.
  */
-class PdfiumCore {
+class PdfiumCore : java.io.Closeable {
 
     private var mCurrentDpi: Int = 72 // pdfium has default dpi set to 72
     private val mNativePagesPtr: MutableMap<Int, Long> = ArrayMap()
@@ -115,8 +115,8 @@ class PdfiumCore {
     ///////////////////////////////////////
     // PDF TextPage api
     ///////////
-    private external fun nativeLoadTextPage(docPtr: Long, pageIndex: Int): Long
-    private external fun nativeLoadTextPages(docPtr: Long, fromIndex: Int, toIndex: Int): LongArray
+    private external fun nativeLoadTextPage(docPtr: Long, pagePtr: Long): Long
+    private external fun nativeLoadTextPages(docPtr: Long, pagePtrs: LongArray): LongArray
     private external fun nativeCloseTextPage(pagePtr: Long)
     private external fun nativeCloseTextPages(pagesPtr: LongArray)
     private external fun nativeTextCountChars(textPagePtr: Long): Int
@@ -416,10 +416,19 @@ class PdfiumCore {
     @Synchronized
     private fun closeDocument() = try {
         // Close all native pages
-        mNativePagesPtr.forEach { nativeClosePage(it.value) }
+        mNativePagesPtr.values.forEach { pagePtr ->
+            if (isValidPointer(pagePtr)) nativeClosePage(pagePtr)
+        }
 
         // Close all native text pages
-        mNativeTextPagesPtr.forEach { nativeCloseTextPage(it.value) }
+        mNativeTextPagesPtr.values.forEach { textPagePtr ->
+            if (isValidPointer(textPagePtr)) nativeCloseTextPage(textPagePtr)
+        }
+
+        // Close all search handles
+        mNativeSearchHandlePtr.values.forEach { searchHandle ->
+            if (isValidPointer(searchHandle)) nativeSearchStop(searchHandle)
+        }
 
         nativeCloseDocument(mNativeDocPtr)
     } finally {
@@ -615,8 +624,14 @@ class PdfiumCore {
      * @return A handle to the text page information structure. NULL if something goes wrong.
      */
     fun prepareTextInfo(pageIndex: Int): Long {
-        val textPagePtr = nativeLoadTextPage(mNativeDocPtr, pageIndex)
-        if (validPtr(textPagePtr)) mNativeTextPagesPtr[pageIndex] = textPagePtr
+        val pagePtr = mNativePagesPtr[pageIndex]
+        if (!isValidPointer(pagePtr)) {
+            throw IllegalStateException("Page at index $pageIndex not open. Ensure page is opened before preparing text info.")
+        }
+        val textPagePtr = nativeLoadTextPage(mNativeDocPtr, pagePtr!!) // pagePtr is checked for null by isValidPointer
+        if (isValidPointer(textPagePtr)) {
+            mNativeTextPagesPtr[pageIndex] = textPagePtr
+        }
         return textPagePtr
     }
 
@@ -639,14 +654,33 @@ class PdfiumCore {
      * @return list of handles to the text page information structure. NULL if something goes wrong.
      */
     fun prepareTextInfo(fromIndex: Int, toIndex: Int): LongArray {
-        val textPagesPtr = nativeLoadTextPages(mNativeDocPtr, fromIndex, toIndex)
-        var pageIndex = fromIndex
-        for (page in textPagesPtr) {
-            if (pageIndex > toIndex) break
-            if (validPtr(page)) mNativeTextPagesPtr[pageIndex] = page
-            pageIndex++
+        if (fromIndex > toIndex) {
+            throw IllegalArgumentException("fromIndex cannot be greater than toIndex.")
         }
-        return textPagesPtr
+        val pagePtrsList = mutableListOf<Long>()
+        for (i in fromIndex..toIndex) {
+            val pagePtr = mNativePagesPtr[i]
+            if (!isValidPointer(pagePtr)) {
+                throw IllegalStateException("Page at index $i not open. Ensure all pages in range are opened before preparing text info.")
+            }
+            pagePtrsList.add(pagePtr!!) // pagePtr is checked for null by isValidPointer
+        }
+
+        val pagePtrsArray = pagePtrsList.toLongArray()
+        val resultTextPagesPtrArray = nativeLoadTextPages(mNativeDocPtr, pagePtrsArray)
+
+        // The returned resultTextPagesPtrArray corresponds to the input pagePtrsArray.
+        // We need to map these back to their original page indices.
+        resultTextPagesPtrArray.forEachIndexed { resultIndex, textPagePtr ->
+            val originalPageIndex = fromIndex + resultIndex
+            // Ensure we don't go out of bounds if the returned array is somehow shorter (should not happen if native code is correct)
+            if (originalPageIndex <= toIndex) {
+                if (isValidPointer(textPagePtr)) {
+                    mNativeTextPagesPtr[originalPageIndex] = textPagePtr
+                }
+            }
+        }
+        return resultTextPagesPtrArray
     }
 
     /**
@@ -882,24 +916,32 @@ class PdfiumCore {
         object : FPDFTextSearchContext(pageIndex, query, matchCase, matchWholeWord) {
             private var mSearchHandlePtr: Long? = null
             override fun prepareSearch() {
-                val textPage = prepareTextInfo(pageIndex)
-                if (hasSearchHandle(pageIndex))
-                    mNativeSearchHandlePtr[pageIndex]?.let { nativeSearchStop(it) }
+                val textPage = prepareTextInfo(pageIndex) // Ensures text page is loaded
+                // Stop any existing search on this page and remove its handle from the map
+                if (this@PdfiumCore.hasSearchHandle(pageIndex)) {
+                    val oldSearchHandle = this@PdfiumCore.mNativeSearchHandlePtr.remove(pageIndex)
+                    if (isValidPointer(oldSearchHandle)) {
+                        nativeSearchStop(oldSearchHandle!!)
+                    }
+                }
                 mSearchHandlePtr = nativeSearchStart(textPage, query, matchCase, matchWholeWord)
+                if (isValidPointer(mSearchHandlePtr)) {
+                    this@PdfiumCore.mNativeSearchHandlePtr[pageIndex] = mSearchHandlePtr!!
+                }
             }
 
             override val countResult: Int
                 get() = when {
-                    validPtr(mSearchHandlePtr) -> nativeCountSearchResult(mSearchHandlePtr ?: 0)
+                    isValidPointer(mSearchHandlePtr) -> nativeCountSearchResult(mSearchHandlePtr!!)
                     else -> -1
                 }
 
             override val searchNext: RectF?
                 get() {
-                    if (validPtr(mSearchHandlePtr)) {
-                        mHasNext = nativeSearchNext(mSearchHandlePtr ?: 0)
+                    if (isValidPointer(mSearchHandlePtr)) {
+                        mHasNext = nativeSearchNext(mSearchHandlePtr!!)
                         if (mHasNext) {
-                            val index = nativeGetCharIndexOfSearchResult(mSearchHandlePtr ?: 0)
+                            val index = nativeGetCharIndexOfSearchResult(mSearchHandlePtr!!)
                             if (index > -1) return measureCharacterBox(this.pageIndex, index)
                         }
                     }
@@ -909,10 +951,10 @@ class PdfiumCore {
 
             override val searchPrev: RectF?
                 get() {
-                    if (validPtr(mSearchHandlePtr)) {
-                        mHasPrev = nativeSearchPrev(mSearchHandlePtr ?: 0)
+                    if (isValidPointer(mSearchHandlePtr)) {
+                        mHasPrev = nativeSearchPrev(mSearchHandlePtr!!)
                         if (mHasPrev) {
-                            val index = nativeGetCharIndexOfSearchResult(mSearchHandlePtr ?: 0)
+                            val index = nativeGetCharIndexOfSearchResult(mSearchHandlePtr!!)
                             if (index > -1) return measureCharacterBox(this.pageIndex, index)
                         }
                     }
@@ -922,9 +964,10 @@ class PdfiumCore {
 
             override fun stopSearch() {
                 super.stopSearch()
-                if (validPtr(mSearchHandlePtr)) {
-                    nativeSearchStop(mSearchHandlePtr ?: 0)
-                    mNativeSearchHandlePtr.remove(pageIndex)
+                if (isValidPointer(mSearchHandlePtr)) {
+                    nativeSearchStop(mSearchHandlePtr!!)
+                    this@PdfiumCore.mNativeSearchHandlePtr.remove(pageIndex) // Remove from outer class map
+                    mSearchHandlePtr = null // Clear local handle
                 }
             }
         }
@@ -957,9 +1000,9 @@ class PdfiumCore {
         this.logWriter = logWriter
     }
 
-    private fun validPtr(ptr: Long?): Boolean = ptr != null && ptr != -1L
-    private fun validPtr(ptr: Long): Boolean = ptr != 0L
-    private fun isValidPointer(pointer: Long): Boolean = pointer != 0L
+    private fun validPtr(ptr: Long?): Boolean = ptr != null && ptr != -1L && ptr != 0L // Added 0L check for consistency
+    private fun validPtr(ptr: Long): Boolean = ptr != 0L && ptr != -1L // Added -1L check for consistency
+    private fun isValidPointer(pointer: Long?): Boolean = pointer != null && pointer != 0L && pointer != -1L // Make it nullable and consistent
 
     companion object {
         private const val TAG = "PdfiumCore"
