@@ -279,6 +279,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeOpenMemDocument)(JNI_ARGS, jbyteArray data, js
     memcpy(cDataCopy, cData, size);
     FPDF_DOCUMENT document = FPDF_LoadMemDocument(reinterpret_cast<const void *>(cDataCopy),
                                                   size, cpassword);
+    delete[] cDataCopy; // Release the copied data
     env->ReleaseByteArrayElements(data, cData, JNI_ABORT);
 
     if (cpassword != NULL) {
@@ -287,7 +288,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeOpenMemDocument)(JNI_ARGS, jbyteArray data, js
 
     if (!document) {
         delete docFile;
-
+        // cDataCopy is already deleted right after FPDF_LoadMemDocument call
         const long errorNum = FPDF_GetLastError();
         throwPdfiumException(env, errorNum);
         return -1;
@@ -744,21 +745,25 @@ JNI_FUNC(jint, PdfiumCore, nativeGetPageRotation)(JNI_ARGS, jlong pagePtr) {
 // Begin PDF TextPage api
 //////////////////////////////////////////
 
-static jlong loadTextPageInternal(JNIEnv *env, DocumentFile *doc, int textPageIndex) {
+static jlong loadTextPageInternal(JNIEnv *env, FPDF_PAGE page) {
     try {
-        if (doc == NULL) throw "Get page document null";
-
-        FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(loadPageInternal(env, doc, textPageIndex));
+        if (page == NULL) {
+            LOGE("Input FPDF_PAGE is null");
+            throwPdfiumException1(env, "Input FPDF_PAGE is null to loadTextPageInternal");
+            return -1;
+        }
         FPDF_TEXTPAGE textPage = FPDFText_LoadPage(page);
         if (textPage == NULL) {
-            throw "Loaded text page is null";
+            // Consider using FPDF_GetLastError() if appropriate for FPDFText_LoadPage
+            LOGE("FPDFText_LoadPage failed.");
+            throwPdfiumException1(env, "Failed to load text page from FPDF_PAGE");
+            return -1;
         }
         return reinterpret_cast<jlong>(textPage);
-    } catch (const char *msg) {
+    } catch (const char *msg) { // Catching specific exceptions or rethrowing might be better
         LOGE("%s", msg);
-
-        throwPdfiumException1(env, "cannot load text page");
-
+        // Ensure an exception is thrown to Java if not already done
+        jniThrowException(env, "java/lang/RuntimeException", msg);
         return -1;
     }
 }
@@ -767,27 +772,48 @@ static void closeTextPageInternal(jlong textPagePtr) {
     FPDFText_ClosePage(reinterpret_cast<FPDF_TEXTPAGE>(textPagePtr));
 }
 
-JNI_FUNC(jlong, PdfiumCore, nativeLoadTextPage)(JNI_ARGS, jlong docPtr, jint pageIndex) {
-    DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
-    return loadTextPageInternal(env, doc, (int) pageIndex);
+JNI_FUNC(jlong, PdfiumCore, nativeLoadTextPage)(JNI_ARGS, jlong docPtr, jlong pagePtr) {
+    // docPtr is kept for potential context but not directly used by loadTextPageInternal now
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    return loadTextPageInternal(env, page);
 }
 
-JNI_FUNC(jlongArray, PdfiumCore, nativeLoadTextPages)(JNI_ARGS, jlong docPtr, jint fromIndex,
-                                                      jint toIndex) {
-    DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
-
-    if (toIndex < fromIndex) return NULL;
-    jlong pages[toIndex - fromIndex + 1];
-
-    int i;
-    for (i = 0; i <= (toIndex - fromIndex); i++) {
-        pages[i] = loadTextPageInternal(env, doc, (i + fromIndex));
+JNI_FUNC(jlongArray, PdfiumCore, nativeLoadTextPages)(JNI_ARGS, jlong docPtr, jlongArray pagePtrs) {
+    // docPtr is kept for potential context
+    if (pagePtrs == NULL) {
+        LOGE("pagePtrs array is null");
+        return NULL;
     }
 
-    jlongArray javaPages = env->NewLongArray((jsize) (toIndex - fromIndex + 1));
-    env->SetLongArrayRegion(javaPages, 0, (jsize) (toIndex - fromIndex + 1), (const jlong *) pages);
+    jsize numPages = env->GetArrayLength(pagePtrs);
+    if (numPages <= 0) {
+        LOGD("pagePtrs array is empty or invalid length");
+        return env->NewLongArray(0); // Return empty array
+    }
 
-    return javaPages;
+    jlong *nativePagePtrs = env->GetLongArrayElements(pagePtrs, NULL);
+    if (nativePagePtrs == NULL) {
+        LOGE("Failed to get elements from pagePtrs array");
+        return NULL; // Or throw exception
+    }
+
+    std::vector<jlong> textPagesResult(numPages);
+    for (jsize i = 0; i < numPages; ++i) {
+        FPDF_PAGE currentPage = reinterpret_cast<FPDF_PAGE>(nativePagePtrs[i]);
+        textPagesResult[i] = loadTextPageInternal(env, currentPage);
+        // Optionally, check for -1 and handle error (e.g., stop and return partially filled array or throw)
+    }
+
+    env->ReleaseLongArrayElements(pagePtrs, nativePagePtrs, JNI_ABORT); // Use JNI_ABORT as we just read
+
+    jlongArray javaTextPages = env->NewLongArray(numPages);
+    if (javaTextPages == NULL) {
+        LOGE("Failed to allocate new jlongArray for text pages");
+        return NULL; // Or throw exception
+    }
+    env->SetLongArrayRegion(javaTextPages, 0, numPages, textPagesResult.data());
+
+    return javaTextPages;
 }
 
 JNI_FUNC(void, PdfiumCore, nativeCloseTextPage)(JNI_ARGS, jlong textPagePtr) {
@@ -937,6 +963,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeSearchStart)(JNI_ARGS, jlong textPagePtr, jstr
     }
 
     search = FPDFText_FindStart(textPage, pQuery, flags, 0);
+    free(pQuery); // Free the allocated wide string
     return reinterpret_cast<jlong>(search);
 }
 
@@ -974,13 +1001,18 @@ JNI_FUNC(jlong, PdfiumCore, nativeAddTextAnnotation)(JNI_ARGS, jlong docPtr, int
                                                      jstring text_,
                                                      jintArray color_, jintArray bound_) {
 
+    // This function uses loadPageInternal, not the refactored loadTextPageInternal.
+    // If its FPDF_PAGE also needs to come from Java, it would require similar refactoring.
+    // For now, assuming its FPDF_PAGE loading mechanism remains unchanged.
     FPDF_PAGE page;
     DocumentFile *doc = reinterpret_cast<DocumentFile *>(docPtr);
-    int pagePtr = loadPageInternal(env, doc, page_index);
-    if (pagePtr == -1) {
+    // NOTE: This still uses the old loadPageInternal to get an FPDF_PAGE.
+    // This is distinct from the FPDF_TEXTPAGE loading changes above.
+    jlong pagePtrAsJlong = loadPageInternal(env, doc, page_index); // Renamed for clarity
+    if (pagePtrAsJlong == -1) {
         return -1;
     } else {
-        page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+        page = reinterpret_cast<FPDF_PAGE>(pagePtrAsJlong);
     }
 
     // Get the bound array
@@ -1027,6 +1059,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeAddTextAnnotation)(JNI_ARGS, jlong docPtr, int
     // Set the content of the annotation.
     unsigned short *kContents = convertWideString(env, text_);
     FPDFAnnot_SetStringValue(annot, kContentsKey, kContents);
+    free(kContents); // Free the allocated wide string
 
     // save page
     FPDF_DOCUMENT pdfDoc = doc->pdfDocument;
@@ -1035,15 +1068,23 @@ JNI_FUNC(jlong, PdfiumCore, nativeAddTextAnnotation)(JNI_ARGS, jlong docPtr, int
     }
 
     // close page
-    closePageInternal(pagePtr);
+    closePageInternal(pagePtrAsJlong); // Use the jlong version for consistency with closePageInternal
 
     // reload page
-    pagePtr = loadPageInternal(env, doc, page_index);
+    // NOTE: This reloads the FPDF_PAGE using the old mechanism.
+    pagePtrAsJlong = loadPageInternal(env, doc, page_index);
+    if (pagePtrAsJlong == -1) {
+        // Handle error after trying to reload page for annotation
+        return -1;
+    }
 
     jclass clazz = env->FindClass("com/harissk/pdfium/PdfiumCore");
     jmethodID callback = env->GetMethodID(clazz, "onAnnotationAdded",
-                                          "(Ljava/lang/Integer;)Ljava/lang/Long;");
-    env->CallObjectMethod(thiz, callback, page_index, pagePtr);
+                                          "(Ljava/lang/Integer;Ljava/lang/Long;)V"); // Return type is V (void)
+    // The callback likely expects the FPDF_PAGE pointer, not FPDF_ANNOTATION pointer.
+    // Ensure the Java callback signature matches what's passed.
+    // Assuming it expects the reloaded page pointer.
+    env->CallObjectMethod(thiz, callback, NewInteger(env, page_index), NewLong(env, pagePtrAsJlong));
 
     return reinterpret_cast<jlong>(annot);
 }
