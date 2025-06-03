@@ -31,7 +31,7 @@ import kotlin.math.roundToInt
  */
 internal class PagesLoader(private val pdfView: PDFView) {
 
-    private var cacheOrder = 0
+    private var currentSequentialCacheOrder: Int = 1
     private var xOffset = 0f
     private var yOffset = 0f
     private var pageRelativePartWidth = 0f
@@ -247,30 +247,36 @@ internal class PagesLoader(private val pdfView: PDFView) {
         for (range in rangeList) loadThumbnail(range.page)
 
         var loadedParts = 0
+        val centerVisiblePage = pdfView.currentPage
         for (range in rangeList) {
             calculatePartSize(range.gridSize)
+            val priorityTierOffset = if (range.page == centerVisiblePage) 0 else 10000
             loadedParts += loadPage(
                 page = range.page,
                 firstRow = range.leftTop.row,
                 lastRow = range.rightBottom.row,
                 firstCol = range.leftTop.col,
                 lastCol = range.rightBottom.col,
-                nbOfPartsLoadable = pdfView.pdfViewerConfiguration.maxCachedBitmaps - loadedParts
+                nbOfPartsLoadable = pdfView.pdfViewerConfiguration.maxCachedPages * range.gridSize.rows * range.gridSize.cols - loadedParts, // Approximate based on pages
+                priorityTierOffset = priorityTierOffset
             )
-            if (loadedParts >= pdfView.pdfViewerConfiguration.maxCachedBitmaps) break
+            // The break condition might need adjustment if maxCachedBitmaps is no longer the direct limit
+            // For now, let's assume we try to load all visible and preloaded ranges.
+            // if (loadedParts >= pdfView.pdfViewerConfiguration.maxCachedBitmaps) break
         }
     }
 
     private fun loadPage(
         page: Int, firstRow: Int, lastRow: Int, firstCol: Int, lastCol: Int,
-        nbOfPartsLoadable: Int,
+        nbOfPartsLoadable: Int, priorityTierOffset: Int
     ): Int {
         var loaded = 0
         for (row in firstRow..lastRow) {
             for (col in firstCol..lastCol) {
-                if (loadCell(page, row, col, pageRelativePartWidth, pageRelativePartHeight))
+                if (loadCell(page, row, col, pageRelativePartWidth, pageRelativePartHeight, priorityTierOffset))
                     loaded++
-                if (loaded >= nbOfPartsLoadable) return loaded
+                // The nbOfPartsLoadable check might be less relevant if cache is purely size-based
+                // if (loaded >= nbOfPartsLoadable) return loaded
             }
         }
         return loaded
@@ -282,17 +288,14 @@ internal class PagesLoader(private val pdfView: PDFView) {
         col: Int,
         pageRelativePartWidth: Float,
         pageRelativePartHeight: Float,
+        priorityTierOffset: Int
     ): Boolean {
         val relX = pageRelativePartWidth * col
         val relY = pageRelativePartHeight * row
-        val relWidth = when {
-            relX + pageRelativePartWidth > 1 -> 1 - relX
-            else -> pageRelativePartHeight
-        }
-        val relHeight = when {
-            relY + pageRelativePartHeight > 1 -> 1 - relY
-            else -> pageRelativePartHeight
-        }
+        // Adjust relWidth and relHeight calculation to be based on pageRelativePartWidth/Height
+        val relWidth = if ((relX + pageRelativePartWidth) > 1) (1f - relX) else pageRelativePartWidth
+        val relHeight = if ((relY + pageRelativePartHeight) > 1) (1f - relY) else pageRelativePartHeight
+
         val renderWidth = partRenderWidth * relWidth
         val renderHeight = partRenderHeight * relHeight
 
@@ -300,19 +303,30 @@ internal class PagesLoader(private val pdfView: PDFView) {
         if (renderWidth <= 0 || renderHeight <= 0) return false
 
         val pageRelativeBounds = RectF(relX, relY, relX + relWidth, relY + relHeight)
-        if (!pdfView.cacheManager.upPartIfContained(page, pageRelativeBounds, cacheOrder))
+        val finalCacheOrder = priorityTierOffset + currentSequentialCacheOrder
+
+        var taskAdded = false
+        if (!pdfView.cacheManager.upPartIfContained(page, pageRelativeBounds, finalCacheOrder)) {
             pdfView.renderingHandler?.addRenderingTask(
                 page = page,
                 width = renderWidth,
                 height = renderHeight,
                 bounds = pageRelativeBounds,
                 thumbnail = false,
-                cacheOrder = cacheOrder,
+                cacheOrder = finalCacheOrder,
                 bestQuality = pdfView.isBestQuality,
                 annotationRendering = pdfView.isAnnotationRendering
             )
-        cacheOrder++
-        return true
+            taskAdded = true
+        }
+        // Increment only if a new task was potentially added or an existing one was updated by upPartIfContained.
+        // upPartIfContained now handles the order update internally if found.
+        // If a new task is added, its order is finalCacheOrder.
+        // We need currentSequentialCacheOrder to provide a unique sequence number.
+        if(taskAdded) {
+            currentSequentialCacheOrder++
+        }
+        return true // Return true if cell was processed (either found in cache or task added)
     }
 
     private fun loadThumbnail(page: Int) {
@@ -331,7 +345,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
     }
 
     fun loadPages() {
-        cacheOrder = 1
+        currentSequentialCacheOrder = 1
         xOffset = -pdfView.currentXOffset.coerceIn(-Float.MAX_VALUE, 0f)
         yOffset = -pdfView.currentYOffset.coerceIn(-Float.MAX_VALUE, 0f)
         loadVisible()
