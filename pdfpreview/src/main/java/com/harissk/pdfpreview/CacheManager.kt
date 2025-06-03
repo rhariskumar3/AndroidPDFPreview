@@ -53,17 +53,25 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
     }
 
     private val thumbnails = object : LruCache<Int, PagePart>(
-        // Cap max thumbnail cache size to a reasonable Int value, e.g., 16MB if config is too large or not set.
-        // LruCache's maxSize is an Int.
-        (pdfViewerConfiguration.maxThumbnailCacheSizeBytes.takeIf { it > 0 }?.toInt()
-            ?: (16 * 1024 * 1024)).coerceAtMost(Int.MAX_VALUE / 2) // Avoid overflow issues with Int.MAX_VALUE
+        with(pdfViewerConfiguration.maxThumbnailCacheSizeBytes) {
+            val defaultMaxBytes = 4 * 1024 * 1024L // Default 4MB for thumbnails
+            val effectiveMaxBytes = if (this > 0) this else defaultMaxBytes
+            // Ensure the value fits in Int. If it's larger than Int.MAX_VALUE, cap it.
+            // This prevents overflow from toInt() if the Long is too large.
+            if (effectiveMaxBytes > Int.MAX_VALUE) {
+                Int.MAX_VALUE
+            } else {
+                effectiveMaxBytes.toInt()
+            }
+        }
     ) {
         override fun sizeOf(key: Int, value: PagePart): Int {
             return value.renderedBitmap?.byteCount ?: 0
         }
 
         override fun entryRemoved(evicted: Boolean, key: Int, oldValue: PagePart?, newValue: PagePart?) {
-            if (oldValue?.renderedBitmap?.isRecycled == false) {
+            // Keep the existing recycling logic:
+            if (oldValue?.renderedBitmap?.isRecycled == false) { // Check if it was evicted (and thus should be recycled by us) or just replaced/removed manually
                 oldValue.renderedBitmap?.recycle()
             }
         }

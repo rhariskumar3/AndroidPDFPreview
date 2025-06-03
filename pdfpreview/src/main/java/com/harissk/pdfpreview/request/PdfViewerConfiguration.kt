@@ -24,10 +24,9 @@ package com.harissk.pdfpreview.request
  * @param renderTileSize    The size of rendered parts in pixels, with a default of 256.
  * @param preloadMarginDp       The number of pages to preload above and below the currently displayed
  * page, in dp.
- * @param maxCachedBitmaps           The size of the main bitmap cache, which is the number of bitmaps to be
- * kept in memory.
+ * @param maxCacheSizeBytes           The maximum memory size of the main bitmap cache in bytes.
  * @param maxCachedPages  The maximum number of pages kept in view.
- * @param maxCachedThumbnails The size of the thumbnail bitmap cache.
+ * @param maxThumbnailCacheSizeBytes The maximum memory size of the thumbnails cache in bytes.
  * @param minZoom    The minimum zoom level allowed when pinching.
  * @param maxZoom    The maximum zoom level allowed when pinching.
  */
@@ -52,18 +51,18 @@ data class PdfViewerConfiguration(
      */
     val preloadMarginDp: Float = 20F,
     /**
-     * The size of the cache (number of bitmaps kept).
+     * The maximum memory size of the main bitmap cache in bytes.
      */
-    val maxCachedBitmaps: Int = 24,
+    val maxCacheSizeBytes: Long = 16 * 1024 * 1024L, // 16MB
     /**
      * Max pages kept in View
      * Increasing this value may cause performance decrease
      */
     val maxCachedPages: Int = 3,
     /**
-     * The size of the thumbnails cache (number of bitmaps kept).
+     * The maximum memory size of the thumbnails cache in bytes.
      */
-    val maxCachedThumbnails: Int = 4,
+    val maxThumbnailCacheSizeBytes: Long = 4 * 1024 * 1024L, // 4MB
     /**
      * Minimum zoom level.
      */
