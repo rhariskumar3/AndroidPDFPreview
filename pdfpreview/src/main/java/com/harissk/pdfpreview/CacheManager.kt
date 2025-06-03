@@ -39,15 +39,36 @@ import java.util.PriorityQueue
  */
 internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfiguration) {
 
+    private var currentCacheSizeBytes: Long = 0L
+    private val passiveActiveLock = Any() // Lock object for synchronizing access
+
+    // Default initial capacity for priority queues
+    private val initialQueueCapacity = 10
+
     private val passiveCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(pdfViewerConfiguration.maxCachedBitmaps, PAGE_PART_COMPARATOR)
+        PriorityQueue(initialQueueCapacity, PAGE_PART_COMPARATOR)
     }
     private val activeCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(pdfViewerConfiguration.maxCachedBitmaps, PAGE_PART_COMPARATOR)
+        PriorityQueue(initialQueueCapacity, PAGE_PART_COMPARATOR)
     }
-    private val thumbnails = LruCache<Int, PagePart>(pdfViewerConfiguration.maxCachedThumbnails)
 
-    // Comparator for prioritizing page parts in the cache.  Now a constant
+    private val thumbnails = object : LruCache<Int, PagePart>(
+        // Cap max thumbnail cache size to a reasonable Int value, e.g., 16MB if config is too large or not set.
+        // LruCache's maxSize is an Int.
+        (pdfViewerConfiguration.maxThumbnailCacheSizeBytes.takeIf { it > 0 }?.toInt()
+            ?: (16 * 1024 * 1024)).coerceAtMost(Int.MAX_VALUE / 2) // Avoid overflow issues with Int.MAX_VALUE
+    ) {
+        override fun sizeOf(key: Int, value: PagePart): Int {
+            return value.renderedBitmap?.byteCount ?: 0
+        }
+
+        override fun entryRemoved(evicted: Boolean, key: Int, oldValue: PagePart?, newValue: PagePart?) {
+            if (oldValue?.renderedBitmap?.isRecycled == false) {
+                oldValue.renderedBitmap?.recycle()
+            }
+        }
+    }
+
     private companion object {
         val PAGE_PART_COMPARATOR = Comparator<PagePart> { part1, part2 ->
             (part1?.cacheOrder ?: 0).compareTo(part2?.cacheOrder ?: 0)
@@ -58,9 +79,21 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
         val bitmap = part.renderedBitmap
         if (bitmap == null || bitmap.isRecycled) return
 
+        val bitmapSize = bitmap.byteCount
+        if (bitmapSize == 0) return // No point caching an empty bitmap
+
         synchronized(passiveActiveLock) {
-            makeAFreeSpace()
-            activeCache.offer(part)
+            makeSpaceFor(bitmapSize.toLong())
+
+            // After attempting to make space, check if we can add the new part
+            if ((currentCacheSizeBytes + bitmapSize) <= pdfViewerConfiguration.maxCacheSizeBytes) {
+                activeCache.offer(part)
+                currentCacheSizeBytes += bitmapSize
+            } else {
+                // Not enough space could be made, recycle the incoming part's bitmap
+                part.renderedBitmap?.recycle()
+                // Optionally log that the part could not be cached due to size constraints
+            }
         }
     }
 
@@ -69,39 +102,44 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
         activeCache.clear()
     }
 
-    private fun makeAFreeSpace() = synchronized(passiveActiveLock) {
-        while ((activeCache.size + passiveCache.size) >= pdfViewerConfiguration.maxCachedBitmaps) {
-            // Remove from passive first, then active if needed
-            passiveCache.poll()?.renderedBitmap?.recycle()
-                ?: activeCache.poll()?.renderedBitmap?.recycle()
+    private fun makeSpaceFor(requiredBitmapSizeBytes: Long) = synchronized(passiveActiveLock) {
+        while ((currentCacheSizeBytes + requiredBitmapSizeBytes) > pdfViewerConfiguration.maxCacheSizeBytes && (activeCache.isNotEmpty() || passiveCache.isNotEmpty())) {
+            val partToRecycle = passiveCache.poll() ?: activeCache.poll()
+            partToRecycle?.renderedBitmap?.let { bmp ->
+                if (!bmp.isRecycled) {
+                    currentCacheSizeBytes -= bmp.byteCount
+                    bmp.recycle()
+                }
+            }
+            // If partToRecycle is null, both queues are empty, loop will terminate.
+            if (partToRecycle == null) break
         }
     }
 
     fun cacheThumbnail(part: PagePart) {
         val bitmap = part.renderedBitmap
-        if (bitmap == null || bitmap.isRecycled) return
+        if (bitmap == null || bitmap.isRecycled || bitmap.byteCount == 0) return
 
         thumbnails.put(part.page, part)
     }
 
-    // Returns true if any part of 'page' is already in the active or passive caches
     fun upPartIfContained(page: Int, pageRelativeBounds: RectF, toOrder: Int): Boolean {
-        val fakePart = PagePart(page, null, pageRelativeBounds, false, 0)
-
         synchronized(passiveActiveLock) {
-            // Check if the fake part (page and bounds match) exists in the active cache.
-            // If it is found in the active cache return true, otherwise continue.
-            val partInActiveCache =
-                activeCache.firstOrNull { it.page == fakePart.page && it.pageRelativeBounds == fakePart.pageRelativeBounds }
-            if (partInActiveCache != null) return true
+            val partInActiveCache = activeCache.firstOrNull { it.page == page && it.pageRelativeBounds == pageRelativeBounds }
+            if (partInActiveCache != null) {
+                // Part is already in active cache, update its order and re-offer to update priority
+                activeCache.remove(partInActiveCache)
+                partInActiveCache.cacheOrder = toOrder
+                activeCache.offer(partInActiveCache)
+                return true // currentCacheSizeBytes does not change
+            }
 
-            // If the page part is in passiveCache
-            val partInPassiveCache =
-                passiveCache.firstOrNull { it.page == fakePart.page && it.pageRelativeBounds == fakePart.pageRelativeBounds }
+            val partInPassiveCache = passiveCache.firstOrNull { it.page == page && it.pageRelativeBounds == pageRelativeBounds }
             if (partInPassiveCache != null) {
-                passiveCache.remove(partInPassiveCache) // Remove the existing part
-                passiveCache.offer(fakePart.copy(cacheOrder = toOrder)) // Add it back with a new order
-                return true
+                passiveCache.remove(partInPassiveCache)
+                partInPassiveCache.cacheOrder = toOrder
+                activeCache.offer(partInPassiveCache) // Move to active cache
+                return true // currentCacheSizeBytes does not change as bitmap is already tracked
             }
         }
         return false
@@ -109,7 +147,9 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
 
     fun containsThumbnail(page: Int, bounds: RectF): Boolean {
         val cachedThumbnail = thumbnails[page] ?: return false
-        return cachedThumbnail.pageRelativeBounds == bounds
+        // Ensure the bitmap is not recycled, as LruCache might keep the entry for a short while
+        // even if sizeOf returned 0 for a recycled bitmap before actual removal.
+        return cachedThumbnail.pageRelativeBounds == bounds && cachedThumbnail.renderedBitmap?.isRecycled == false
     }
 
     fun getPageParts(): List<PagePart> = synchronized(passiveActiveLock) {
@@ -119,7 +159,7 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
         }
     }
 
-    fun getThumbnails(): List<PagePart> = thumbnails.snapshot().values.toList()
+    fun getThumbnails(): List<PagePart> = thumbnails.snapshot().values.filter { it.renderedBitmap?.isRecycled == false }.toList()
 
     fun recycle() {
         synchronized(passiveActiveLock) {
@@ -127,10 +167,8 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
             passiveCache.clear()
             activeCache.forEach { it.renderedBitmap?.recycle() }
             activeCache.clear()
+            currentCacheSizeBytes = 0L
         }
-
-        thumbnails.evictAll()  // Recycle bitmaps in LruCache
+        thumbnails.evictAll()
     }
-
-    private val passiveActiveLock = Any()
 }
