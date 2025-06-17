@@ -28,7 +28,7 @@ allprojects {
         println("DokkaTaskPartial $name ${moduleName.orNull}")
         pluginsMapConfiguration.set(mapOf("org.jetbrains.dokka.base.DokkaBase" to """{ "separateInheritedMembers": true }"""))
         dokkaSourceSets.configureEach {
-            jdkVersion.set(11)
+            jdkVersion.set(17)
             languageVersion.set(libs.versions.kotlin.get())
             suppressInheritedMembers.set(true)
             suppressObviousFunctions.set(true)

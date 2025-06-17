@@ -397,15 +397,13 @@ class PdfiumCore : java.io.Closeable {
      * @return The corresponding error message.
      */
     @Synchronized
-    fun getErrorMessage(errorCode: Int): String? = nativeGetErrorMessage(errorCode)
+    fun getErrorMessage(errorCode: Int): String = nativeGetErrorMessage(errorCode)
 
     /**
      * Closes the PDF document and releases resources.
      */
-
-
     @Synchronized
-    fun close() {
+    override fun close() {
         closeDocument()
     }
 
