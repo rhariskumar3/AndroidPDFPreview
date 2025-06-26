@@ -26,7 +26,8 @@ android {
         consumerProguardFiles("consumer-rules.pro")
         externalNativeBuild {
             cmake {
-                cppFlags("")
+                cppFlags("-std=c++11")
+                arguments("-DANDROID_PLATFORM=latest")
             }
         }
     }

@@ -19,7 +19,6 @@ set_target_properties(pdfium PROPERTIES IMPORTED_LOCATION
         ${Pdfium_DIR}/lib/${ANDROID_ABI}/libpdfium.so)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-warn-mismatch")
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -51,3 +50,33 @@ target_link_libraries( # Specifies the target library.
         android
         GLESv2
         log)
+
+# --- IMPORTANT: Add these flags for 16KB page size support ---
+# These linker flags ensure that the output shared library (pdfium_jni.so)
+# is built with segments aligned to 16KB, which is required for Android 15+
+# devices that adopt the larger page size. This applies to the library being
+# built by this CMakeLists.txt.
+
+# Log the detected ANDROID_PLATFORM_LEVEL for debugging purposes.
+message(STATUS "ANDROID_PLATFORM_LEVEL detected: ${ANDROID_PLATFORM_LEVEL}")
+
+# Apply 16KB page size linker options and --no-rosegment directly to pdfium_jni
+# as compileSdk is 35 and we intend to support 16KB page sizes.
+message(STATUS "Applying 16KB page size linker options and --no-rosegment to pdfium_jni.")
+target_link_options(pdfium_jni PRIVATE
+        "-Wl,-z,max-page-size=16384"
+        "-Wl,-z,common-page-size=16384"
+        "-Wl,--no-rosegment"  # Added for 16KB page size support
+)
+
+# Define a preprocessor macro that can be used in C/C++ code
+# to conditionally compile page-size-aware logic.
+target_compile_definitions(pdfium_jni PRIVATE ANDROID_16KB_PAGE_SIZE=1)
+
+# Custom command to verify the build result:
+# Custom command to verify the build result (Windows-compatible)
+add_custom_command(TARGET pdfium_jni POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "=== Build completed for $<TARGET_FILE_NAME:pdfium_jni> ==="
+        COMMAND ${CMAKE_COMMAND} -E echo "Library built with 16KB page size flags applied"
+        COMMENT "Build verification"
+)

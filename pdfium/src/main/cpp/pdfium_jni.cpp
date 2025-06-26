@@ -56,6 +56,13 @@ static void initLibraryIfNeed() {
     if (sLibraryReferenceCount == 0) {
         FPDF_InitLibrary();
         LOGI("PDF Library Initialized!");
+        // Log the system page size
+        long pageSize = sysconf(_SC_PAGESIZE);
+        if (pageSize == -1) {
+            LOGE("Failed to get page size.");
+        } else {
+            LOGI("System page size: %ld bytes", pageSize);
+        }
     }
     sLibraryReferenceCount++;
 }
@@ -804,7 +811,8 @@ JNI_FUNC(jlongArray, PdfiumCore, nativeLoadTextPages)(JNI_ARGS, jlong docPtr, jl
         // Optionally, check for -1 and handle error (e.g., stop and return partially filled array or throw)
     }
 
-    env->ReleaseLongArrayElements(pagePtrs, nativePagePtrs, JNI_ABORT); // Use JNI_ABORT as we just read
+    env->ReleaseLongArrayElements(pagePtrs, nativePagePtrs,
+                                  JNI_ABORT); // Use JNI_ABORT as we just read
 
     jlongArray javaTextPages = env->NewLongArray(numPages);
     if (javaTextPages == NULL) {
@@ -1068,7 +1076,8 @@ JNI_FUNC(jlong, PdfiumCore, nativeAddTextAnnotation)(JNI_ARGS, jlong docPtr, int
     }
 
     // close page
-    closePageInternal(pagePtrAsJlong); // Use the jlong version for consistency with closePageInternal
+    closePageInternal(
+            pagePtrAsJlong); // Use the jlong version for consistency with closePageInternal
 
     // reload page
     // NOTE: This reloads the FPDF_PAGE using the old mechanism.
@@ -1084,7 +1093,8 @@ JNI_FUNC(jlong, PdfiumCore, nativeAddTextAnnotation)(JNI_ARGS, jlong docPtr, int
     // The callback likely expects the FPDF_PAGE pointer, not FPDF_ANNOTATION pointer.
     // Ensure the Java callback signature matches what's passed.
     // Assuming it expects the reloaded page pointer.
-    env->CallObjectMethod(thiz, callback, NewInteger(env, page_index), NewLong(env, pagePtrAsJlong));
+    env->CallObjectMethod(thiz, callback, NewInteger(env, page_index),
+                          NewLong(env, pagePtrAsJlong));
 
     return reinterpret_cast<jlong>(annot);
 }
