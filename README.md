@@ -6,7 +6,7 @@
 
 ![GitHub License](https://img.shields.io/github/license/rhariskumar3/AndroidPDFPreview)
 [![Maven Central Version](https://img.shields.io/maven-central/v/io.github.rhariskumar3/pdfpreview)](https://central.sonatype.com/artifact/io.github.rhariskumar3/pdfpreview)
-[![Kotlin](https://img.shields.io/badge/kotlin-1.8.10-orange.svg)](http://kotlinlang.org/)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.9.23-orange.svg)](http://kotlinlang.org/)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/rhariskumar3/AndroidPDFPreview/android.yml)
 ![GitHub Issues](https://img.shields.io/github/issues/rhariskumar3/AndroidPDFPreview)
 
@@ -27,7 +27,7 @@ To install AndroidPDFPreview, add the following dependency to your project's Gra
 
 ```
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.0.5'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.0.6'
 }
 ```
 
@@ -64,6 +64,60 @@ dependencies {
     ```
 
 Use code with caution. Learn more
+
+## Jetpack Compose Usage
+
+You can also use PDFView in Jetpack Compose with `AndroidView`:
+
+```kotlin
+@Composable
+fun PDFViewCompose(
+    file: File,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            PDFView(context).apply {
+                load(file) {
+                    defaultPage(0)
+                    swipeHorizontal(true)
+                    enableAnnotationRendering(true)
+                    spacing(10F) // in dp
+                    
+                    // Listeners
+                    documentLoadListener { pages ->
+                        // Document loaded with $pages pages
+                    }
+                    renderingEventListener { page ->
+                        // Page $page rendered
+                    }
+                    pageNavigationEventListener { page, pageCount ->
+                        // Navigated to page $page of $pageCount
+                    }
+                    gestureEventListener { type ->
+                        // Gesture event: $type
+                    }
+                    linkHandler { uri ->
+                        // Handle link: $uri
+                    }
+                }
+            }
+        }
+    )
+}
+
+// Usage in your Composable
+@Composable
+fun MyScreen() {
+    val pdfFile = remember { /* your file */ }
+    
+    PDFViewCompose(
+        file = pdfFile,
+        modifier = Modifier.fillMaxSize()
+    )
+}
+```
 
 ### Going Further:
 
@@ -103,7 +157,7 @@ We hope you find AndroidPDFPreview to be a valuable tool for developing your And
 
 ## License
 
-    Copyright 2024 AndroidPDFPreview Contributors
+    Copyright 2023-2025 AndroidPDFPreview Contributors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
