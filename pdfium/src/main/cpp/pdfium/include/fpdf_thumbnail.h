@@ -26,7 +26,7 @@ extern "C" {
 //   buflen  - length of the buffer in bytes.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFPage_GetDecodedThumbnailData(FPDF_PAGE page,
-                                 void *buffer,
+                                 void* buffer,
                                  unsigned long buflen);
 
 // Experimental API.
@@ -41,7 +41,7 @@ FPDFPage_GetDecodedThumbnailData(FPDF_PAGE page,
 //   buflen  - length of the buffer in bytes.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFPage_GetRawThumbnailData(FPDF_PAGE page,
-                             void *buffer,
+                             void* buffer,
                              unsigned long buflen);
 
 // Experimental API.

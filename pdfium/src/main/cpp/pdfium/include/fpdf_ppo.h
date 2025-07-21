@@ -31,7 +31,7 @@ extern "C" {
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDF_ImportPagesByIndex(FPDF_DOCUMENT dest_doc,
                         FPDF_DOCUMENT src_doc,
-                        const int *page_indices,
+                        const int* page_indices,
                         unsigned long length,
                         int index);
 

@@ -49,16 +49,16 @@ extern "C" {
 
 // Interface for unsupported feature notifications.
 typedef struct _UNSUPPORT_INFO {
-    // Version number of the interface. Must be 1.
-    int version;
+  // Version number of the interface. Must be 1.
+  int version;
 
-    // Unsupported object notification function.
-    // Interface Version: 1
-    // Implementation Required: Yes
-    //
-    //   pThis - pointer to the interface structure.
-    //   nType - the type of unsupported object. One of the |FPDF_UNSP_*| entries.
-    void (*FSDK_UnSupport_Handler)(struct _UNSUPPORT_INFO *pThis, int nType);
+  // Unsupported object notification function.
+  // Interface Version: 1
+  // Implementation Required: Yes
+  //
+  //   pThis - pointer to the interface structure.
+  //   nType - the type of unsupported object. One of the |FPDF_UNSP_*| entries.
+  void (*FSDK_UnSupport_Handler)(struct _UNSUPPORT_INFO* pThis, int nType);
 } UNSUPPORT_INFO;
 
 // Setup an unsupported object handler.
@@ -67,7 +67,7 @@ typedef struct _UNSUPPORT_INFO {
 //
 // Returns TRUE on success.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
-FSDK_SetUnSpObjProcessHandler(UNSUPPORT_INFO *unsp_info);
+FSDK_SetUnSpObjProcessHandler(UNSUPPORT_INFO* unsp_info);
 
 // Set replacement function for calls to time().
 //
@@ -86,7 +86,7 @@ FPDF_EXPORT void FPDF_CALLCONV FSDK_SetTimeFunction(time_t (*func)());
 //   func - Function pointer to alternate implementation of localtime(), or
 //          NULL to restore to actual localtime() call itself.
 FPDF_EXPORT void FPDF_CALLCONV
-FSDK_SetLocaltimeFunction(struct tm *(*func)(const time_t *));
+FSDK_SetLocaltimeFunction(struct tm* (*func)(const time_t*));
 
 // Unknown page mode.
 #define PAGEMODE_UNKNOWN -1

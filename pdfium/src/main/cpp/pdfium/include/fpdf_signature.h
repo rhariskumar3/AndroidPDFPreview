@@ -50,7 +50,7 @@ FPDF_GetSignatureObject(FPDF_DOCUMENT document, int index);
 // |buffer| is NULL, |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFSignatureObj_GetContents(FPDF_SIGNATURE signature,
-                             void *buffer,
+                             void* buffer,
                              unsigned long length);
 
 // Experimental API.
@@ -72,7 +72,7 @@ FPDFSignatureObj_GetContents(FPDF_SIGNATURE signature,
 // |buffer| is NULL, |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFSignatureObj_GetByteRange(FPDF_SIGNATURE signature,
-                              int *buffer,
+                              int* buffer,
                               unsigned long length);
 
 // Experimental API.
@@ -91,7 +91,7 @@ FPDFSignatureObj_GetByteRange(FPDF_SIGNATURE signature,
 // returned length, or |buffer| is NULL, |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFSignatureObj_GetSubFilter(FPDF_SIGNATURE signature,
-                              char *buffer,
+                              char* buffer,
                               unsigned long length);
 
 // Experimental API.
@@ -110,7 +110,7 @@ FPDFSignatureObj_GetSubFilter(FPDF_SIGNATURE signature,
 // returned length, or |buffer| is NULL, |buffer| will not be modified.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFSignatureObj_GetReason(FPDF_SIGNATURE signature,
-                           void *buffer,
+                           void* buffer,
                            unsigned long length);
 
 // Experimental API.
@@ -134,7 +134,7 @@ FPDFSignatureObj_GetReason(FPDF_SIGNATURE signature,
 // signature.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFSignatureObj_GetTime(FPDF_SIGNATURE signature,
-                         char *buffer,
+                         char* buffer,
                          unsigned long length);
 
 // Experimental API.

@@ -170,9 +170,9 @@ FPDF_EXPORT double FPDF_CALLCONV FPDFText_GetFontSize(FPDF_TEXTPAGE text_page,
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFText_GetFontInfo(FPDF_TEXTPAGE text_page,
                      int index,
-                     void *buffer,
+                     void* buffer,
                      unsigned long buflen,
-                     int *flags);
+                     int* flags);
 
 // Experimental API.
 // Function: FPDFText_GetFontWeight
@@ -211,10 +211,10 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFText_GetFontWeight(FPDF_TEXTPAGE text_page,
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFText_GetFillColor(FPDF_TEXTPAGE text_page,
                       int index,
-                      unsigned int *R,
-                      unsigned int *G,
-                      unsigned int *B,
-                      unsigned int *A);
+                      unsigned int* R,
+                      unsigned int* G,
+                      unsigned int* B,
+                      unsigned int* A);
 
 // Experimental API.
 // Function: FPDFText_GetStrokeColor
@@ -238,10 +238,10 @@ FPDFText_GetFillColor(FPDF_TEXTPAGE text_page,
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFText_GetStrokeColor(FPDF_TEXTPAGE text_page,
                         int index,
-                        unsigned int *R,
-                        unsigned int *G,
-                        unsigned int *B,
-                        unsigned int *A);
+                        unsigned int* R,
+                        unsigned int* G,
+                        unsigned int* B,
+                        unsigned int* A);
 
 // Experimental API.
 // Function: FPDFText_GetCharAngle
@@ -281,10 +281,10 @@ FPDF_EXPORT float FPDF_CALLCONV FPDFText_GetCharAngle(FPDF_TEXTPAGE text_page,
 //
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFText_GetCharBox(FPDF_TEXTPAGE text_page,
                                                         int index,
-                                                        double *left,
-                                                        double *right,
-                                                        double *bottom,
-                                                        double *top);
+                                                        double* left,
+                                                        double* right,
+                                                        double* bottom,
+                                                        double* top);
 
 // Experimental API.
 // Function: FPDFText_GetLooseCharBox
@@ -304,7 +304,7 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFText_GetCharBox(FPDF_TEXTPAGE text_page,
 //          All positions are measured in PDF "user space".
 //
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
-FPDFText_GetLooseCharBox(FPDF_TEXTPAGE text_page, int index, FS_RECTF *rect);
+FPDFText_GetLooseCharBox(FPDF_TEXTPAGE text_page, int index, FS_RECTF* rect);
 
 // Experimental API.
 // Function: FPDFText_GetMatrix
@@ -322,7 +322,7 @@ FPDFText_GetLooseCharBox(FPDF_TEXTPAGE text_page, int index, FS_RECTF *rect);
 //
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFText_GetMatrix(FPDF_TEXTPAGE text_page,
                                                        int index,
-                                                       FS_MATRIX *matrix);
+                                                       FS_MATRIX* matrix);
 
 // Function: FPDFText_GetCharOrigin
 //          Get origin of a particular character.
@@ -342,8 +342,8 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFText_GetMatrix(FPDF_TEXTPAGE text_page,
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFText_GetCharOrigin(FPDF_TEXTPAGE text_page,
                        int index,
-                       double *x,
-                       double *y);
+                       double* x,
+                       double* y);
 
 // Function: FPDFText_GetCharIndexAtPos
 //          Get the index of a character at or nearby a certain position on the
@@ -392,7 +392,7 @@ FPDFText_GetCharIndexAtPos(FPDF_TEXTPAGE text_page,
 FPDF_EXPORT int FPDF_CALLCONV FPDFText_GetText(FPDF_TEXTPAGE text_page,
                                                int start_index,
                                                int count,
-                                               unsigned short *result);
+                                               unsigned short* result);
 
 // Function: FPDFText_CountRects
 //          Counts number of rectangular areas occupied by a segment of text,
@@ -440,10 +440,10 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFText_CountRects(FPDF_TEXTPAGE text_page,
 //
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFText_GetRect(FPDF_TEXTPAGE text_page,
                                                      int rect_index,
-                                                     double *left,
-                                                     double *top,
-                                                     double *right,
-                                                     double *bottom);
+                                                     double* left,
+                                                     double* top,
+                                                     double* right,
+                                                     double* bottom);
 
 // Function: FPDFText_GetBoundedText
 //          Extract unicode text within a rectangular boundary on the page.
@@ -474,7 +474,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFText_GetBoundedText(FPDF_TEXTPAGE text_page,
                                                       double top,
                                                       double right,
                                                       double bottom,
-                                                      unsigned short *buffer,
+                                                      unsigned short* buffer,
                                                       int buflen);
 
 // Flags used by FPDFText_FindStart function.
@@ -606,7 +606,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFLink_CountWebLinks(FPDF_PAGELINK link_page);
 //
 FPDF_EXPORT int FPDF_CALLCONV FPDFLink_GetURL(FPDF_PAGELINK link_page,
                                               int link_index,
-                                              unsigned short *buffer,
+                                              unsigned short* buffer,
                                               int buflen);
 
 // Function: FPDFLink_CountRects
@@ -644,10 +644,10 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFLink_CountRects(FPDF_PAGELINK link_page,
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFLink_GetRect(FPDF_PAGELINK link_page,
                                                      int link_index,
                                                      int rect_index,
-                                                     double *left,
-                                                     double *top,
-                                                     double *right,
-                                                     double *bottom);
+                                                     double* left,
+                                                     double* top,
+                                                     double* right,
+                                                     double* bottom);
 
 // Experimental API.
 // Function: FPDFLink_GetTextRange
@@ -666,8 +666,8 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFLink_GetRect(FPDF_PAGELINK link_page,
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFLink_GetTextRange(FPDF_PAGELINK link_page,
                       int link_index,
-                      int *start_char_index,
-                      int *char_count);
+                      int* start_char_index,
+                      int* char_count);
 
 // Function: FPDFLink_CloseWebLinks
 //          Release resources used by weblink feature.

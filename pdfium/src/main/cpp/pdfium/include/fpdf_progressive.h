@@ -23,23 +23,23 @@ extern "C" {
 
 // IFPDF_RENDERINFO interface.
 typedef struct _IFSDK_PAUSE {
-    // Version number of the interface. Currently must be 1.
-    int version;
+  // Version number of the interface. Currently must be 1.
+  int version;
 
-    // Method: NeedToPauseNow
-    //           Check if we need to pause a progressive process now.
-    // Interface Version:
-    //           1
-    // Implementation Required:
-    //           yes
-    // Parameters:
-    //           pThis       -   Pointer to the interface structure itself
-    // Return Value:
-    //           Non-zero for pause now, 0 for continue.
-    FPDF_BOOL (*NeedToPauseNow)(struct _IFSDK_PAUSE *pThis);
+  // Method: NeedToPauseNow
+  //           Check if we need to pause a progressive process now.
+  // Interface Version:
+  //           1
+  // Implementation Required:
+  //           yes
+  // Parameters:
+  //           pThis       -   Pointer to the interface structure itself
+  // Return Value:
+  //           Non-zero for pause now, 0 for continue.
+  FPDF_BOOL (*NeedToPauseNow)(struct _IFSDK_PAUSE* pThis);
 
-    // A user defined data pointer, used by user's application. Can be NULL.
-    void *user;
+  // A user defined data pointer, used by user's application. Can be NULL.
+  void* user;
 } IFSDK_PAUSE;
 
 // Experimental API.
@@ -84,8 +84,8 @@ FPDF_RenderPageBitmapWithColorScheme_Start(FPDF_BITMAP bitmap,
                                            int size_y,
                                            int rotate,
                                            int flags,
-                                           const FPDF_COLORSCHEME *color_scheme,
-                                           IFSDK_PAUSE *pause);
+                                           const FPDF_COLORSCHEME* color_scheme,
+                                           IFSDK_PAUSE* pause);
 
 // Function: FPDF_RenderPageBitmap_Start
 //          Start to render page contents to a device independent bitmap
@@ -122,7 +122,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDF_RenderPageBitmap_Start(FPDF_BITMAP bitmap,
                                                           int size_y,
                                                           int rotate,
                                                           int flags,
-                                                          IFSDK_PAUSE *pause);
+                                                          IFSDK_PAUSE* pause);
 
 // Function: FPDF_RenderPage_Continue
 //          Continue rendering a PDF page.
@@ -136,7 +136,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDF_RenderPageBitmap_Start(FPDF_BITMAP bitmap,
 //          The rendering status. See flags for progressive process status for
 //          the details.
 FPDF_EXPORT int FPDF_CALLCONV FPDF_RenderPage_Continue(FPDF_PAGE page,
-                                                       IFSDK_PAUSE *pause);
+                                                       IFSDK_PAUSE* pause);
 
 // Function: FPDF_RenderPage_Close
 //          Release the resource allocate during page rendering. Need to be

@@ -52,7 +52,7 @@ FPDFDoc_CloseJavaScriptAction(FPDF_JAVASCRIPT_ACTION javascript);
 // Returns the length of the JavaScript action name in bytes.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFJavaScriptAction_GetName(FPDF_JAVASCRIPT_ACTION javascript,
-                             FPDF_WCHAR *buffer,
+                             FPDF_WCHAR* buffer,
                              unsigned long buflen);
 
 // Experimental API.
@@ -67,7 +67,7 @@ FPDFJavaScriptAction_GetName(FPDF_JAVASCRIPT_ACTION javascript,
 // Returns the length of the JavaScript action name in bytes.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFJavaScriptAction_GetScript(FPDF_JAVASCRIPT_ACTION javascript,
-                               FPDF_WCHAR *buffer,
+                               FPDF_WCHAR* buffer,
                                unsigned long buflen);
 
 #ifdef __cplusplus
