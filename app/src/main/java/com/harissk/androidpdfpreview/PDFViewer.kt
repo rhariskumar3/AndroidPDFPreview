@@ -30,16 +30,14 @@ internal fun PDFViewer(
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
-            PDFView(context, null)
-        },
-        update = {
-            Log.d("PDFPreview", "PDFViewer: update called")
+            val pdfView = PDFView(context, null)
+            Log.d("PDFPreview", "PDFViewer: factory called")
             Log.d("PDFPreview", "PDFViewer: file = ${pdfDocument.file.absolutePath}")
-            it.load(pdfDocument.file) {
+            pdfView.load(pdfDocument.file) {
                 defaultPage(viewerSettings.defaultPage)
                 swipeHorizontal(viewerSettings.swipeHorizontal)
                 enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
-                scrollHandle(DefaultScrollHandle(it.context))
+                scrollHandle(DefaultScrollHandle(pdfView.context))
                 spacing(10F) // in dp
                 scrollOptimization(true) // Enable scroll optimization for better performance
 
@@ -52,7 +50,7 @@ internal fun PDFViewer(
                         Log.d("=====>", "onDocumentLoaded() called with: totalPages = $totalPages")
 
                         Log.d("=====>", "=============")
-                        val meta: Meta? = it.documentMeta
+                        val meta: Meta? = pdfView.documentMeta
                         Log.d("=====>", "title = ${meta?.title}")
                         Log.d("=====>", "author = ${meta?.author}")
                         Log.d("=====>", "subject = ${meta?.subject}")
@@ -64,10 +62,10 @@ internal fun PDFViewer(
                         Log.d("=====>", "=============")
 
                         Log.d("=====>", "=============")
-                        it.tableOfContents.forEach { bookmark ->
+                        pdfView.tableOfContents.forEach { bookmark ->
                             Log.d("=====>", "${bookmark.pageIdx}  - ${bookmark.title}")
-                            bookmark.children.forEach {
-                                Log.d("=====>", "${bookmark.pageIdx}:${it.pageIdx} - ${it.title}")
+                            bookmark.children.forEach { child ->
+                                Log.d("=====>", "${bookmark.pageIdx}:${child.pageIdx} - ${child.title}")
                             }
                         }
                         Log.d("=====>", "=============")
@@ -142,6 +140,7 @@ internal fun PDFViewer(
                     }
                 })
             }
+            pdfView
         }
     )
 }

@@ -34,10 +34,13 @@ import com.harissk.pdfpreview.utils.SnapEdge
 import com.harissk.pdfpreview.utils.toPx
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 
 /**
  * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
@@ -66,6 +69,11 @@ import kotlinx.coroutines.withContext
  */
 class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context, attrs) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    // Track the current loading job to prevent concurrent operations
+    private var currentLoadingJob: kotlinx.coroutines.Job? = null
+    private var lastLoadedSource: String? = null
+    private var isCurrentlyLoading: Boolean = false
 
     private var pdfRequest: PdfRequest? = null
 
@@ -131,8 +139,12 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     var isRecycling = false
         private set
 
+    /** True if the PDFView is currently loading a PDF  */
+    var isLoading = false
+        private set
+
     /** True if the PDFView has been recycled  */
-    var isRecycled = true
+    var isRecycled = false
         private set
 
     /** Current state of the view  */
@@ -172,7 +184,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     var scrollHandle: ScrollHandle? = null
         private set
     private var isScrollHandleInit: Boolean = false
-    
+
     var isScrollHandleDragging: Boolean = false
         private set
 
@@ -217,7 +229,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     private val placeholderPaint = Paint().apply {
         style = Paint.Style.FILL
     }
-    
+
     /** Paint for drawing placeholder page borders during scroll optimization */
     private val placeholderBorderPaint = Paint().apply {
         style = Paint.Style.STROKE
@@ -285,9 +297,38 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         if (pdfRequest.disableLongPress) dragPinchManager.disableLongPress()
 
         if (!hasSize) return
-        scope.async(Dispatchers.Main.immediate) {
-            recycle(false)
-            load(this@PDFView, pdfRequest.source, pdfRequest.password, pdfRequest.pageNumbers)
+
+        // Prevent multiple concurrent operations
+        if (isCurrentlyLoading) return
+
+        // Cancel any existing loading operation
+        currentLoadingJob?.cancel()
+
+        // Set global loading flag immediately
+        isCurrentlyLoading = true
+
+        try {
+            currentLoadingJob = scope.async(Dispatchers.Main.immediate) {
+                isLoading = true
+                try {
+                    recycle(false)
+                    load(
+                        this@PDFView,
+                        pdfRequest.source,
+                        pdfRequest.password,
+                        pdfRequest.pageNumbers
+                    )
+                } finally {
+                    isLoading = false
+                    isCurrentlyLoading = false
+                    currentLoadingJob = null
+                }
+            }
+        } catch (e: Exception) {
+            isLoading = false
+            isCurrentlyLoading = false
+            currentLoadingJob = null
+            logWriter?.writeLog("Error starting PDF load: ${e.message}")
         }
     }
 
@@ -297,16 +338,24 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         password: String?,
         userPages: List<Int>? = null,
     ) {
-        logWriter?.writeLog("Loading PDF document")
-        check(isRecycled) { "Don't call load on a PDF View without recycling it first." }
+        coroutineContext.ensureActive()
+        check(!isRecycled) { "Don't call load on a recycled PDF View." }
+
         isRecycling = false
         isRecycled = false
+        coroutineContext.ensureActive()
 
-        // Start decoding document
         try {
             pdfRequest?.documentLoadListener?.onDocumentLoadingStart()
             val pdfFile = withContext(Dispatchers.IO) {
+                coroutineContext.ensureActive()
+                if (isRecycling || !isCurrentlyLoading) return@withContext null
+
                 docSource.createDocument(pdfView.context, pdfiumCore, password)
+
+                coroutineContext.ensureActive()
+                if (isRecycling || !isCurrentlyLoading) return@withContext null
+
                 PdfFile(
                     pdfiumCore = pdfiumCore,
                     pageFitPolicy = pageFitPolicy,
@@ -320,7 +369,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                 )
             }
 
+            if (pdfFile == null) return
+            coroutineContext.ensureActive()
+
             withContext(Dispatchers.Main) {
+                coroutineContext.ensureActive()
                 pdfView.loadComplete(pdfFile)
             }
         } catch (t: Throwable) {
@@ -356,7 +409,6 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun showPage(pageNb: Int) {
         if (isRecycled) return
 
-        // Check the page number and makes the difference between UserPages and DocumentPages
         val userPage = pdfFile.determineValidPageNumberFrom(pageNb)
         currentPage = userPage
         loadPages()
@@ -430,49 +482,86 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun recycle() = recycle(true)
 
     private fun recycle(isRemoveRequest: Boolean = true) {
-        logWriter?.writeLog("Recycling PDFView")
+        currentLoadingJob?.cancel()
+        currentLoadingJob = null
 
         isRecycling = true
-
-        if (isRemoveRequest) pdfRequest = null
-
-        pdfAnimator.cancelAllAnimations()
-        dragPinchManager.disable()
-
-        // Stop tasks
-        renderingHandler?.stop()
-        renderingHandler?.removeMessages(RenderingHandler.MSG_RENDER_TASK)
-
-        // Clear caches
-        cacheManager.recycle()
-        if (isScrollHandleInit && isRemoveRequest) scrollHandle?.destroyLayout()
-        _pdfFile?.dispose()
-        _pdfFile = null
-        renderingHandler = null
+        isLoading = false
+        // Only reset global loading flag if this is a full removal, not cleanup before loading
         if (isRemoveRequest) {
-            scrollHandle = null
-            isScrollHandleInit = false
+            isCurrentlyLoading = false
         }
-        currentYOffset = 0f
-        currentXOffset = currentYOffset
-        zoom = 1f
-        isRecycling = false
-        isRecycled = true
-        state = State.DEFAULT
+        lastLoadedSource = null
+
+        try {
+            if (isRemoveRequest) pdfRequest = null
+
+            pdfAnimator.cancelAllAnimations()
+            dragPinchManager.disable()
+
+            renderingHandler?.let { handler ->
+                handler.stop()
+                handler.removeMessages(RenderingHandler.MSG_RENDER_TASK)
+            }
+
+            cacheManager.recycle()
+            if (isScrollHandleInit && isRemoveRequest) {
+                try {
+                    scrollHandle?.destroyLayout()
+                } catch (e: Exception) {
+                    // Ignore scroll handle destruction errors during recycling
+                }
+            }
+
+            try {
+                _pdfFile?.dispose()
+            } catch (e: Exception) {
+                // Ignore PDF disposal errors during recycling
+            }
+
+            _pdfFile = null
+            renderingHandler = null
+            if (isRemoveRequest) {
+                scrollHandle = null
+                isScrollHandleInit = false
+            }
+            currentYOffset = 0f
+            currentXOffset = currentYOffset
+            zoom = 1f
+            state = State.DEFAULT
+        } catch (e: Exception) {
+            // Log but don't crash during recycling
+            logWriter?.writeLog("Error during recycling: ${e.message}")
+        } finally {
+            // Ensure flags are set properly regardless of errors
+            isRecycling = false
+            // Only mark as recycled if this is a full removal, not just cleanup before loading
+            if (isRemoveRequest) {
+                isRecycled = true
+            }
+        }
     }
 
     /** Handle fling animation  */
     override fun computeScroll() {
         super.computeScroll()
-        if (isInEditMode) return
+        if (isInEditMode || isRecycled || isRecycling) return
         pdfAnimator.performFling()
     }
 
     override fun onDetachedFromWindow() {
-        recycle()
+        currentLoadingJob?.cancel()
+        currentLoadingJob = null
+        scope.cancel()
+        isLoading = false
+
+        pdfAnimator.cancelAllAnimations()
+        dragPinchManager.disable()
+
         renderingHandlerThread?.quitSafely()
         renderingHandlerThread = null
-        scope.cancel()
+
+        recycle()
         super.onDetachedFromWindow()
     }
 
@@ -616,7 +705,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      */
     private fun drawScrollPlaceholders(canvas: Canvas) {
         if (_pdfFile == null) return
-        
+
         // Update paint colors based on current night mode
         placeholderPaint.color = if (nightMode) 0xFF2E2E2E.toInt() else 0xFFF5F5F5.toInt()
         placeholderBorderPaint.color = if (nightMode) 0xFF505050.toInt() else 0xFFDDDDDD.toInt()
@@ -632,28 +721,30 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             val pageSize = pdfFile.getPageSize(pageIndex) ?: continue
             val scaledWidth = toCurrentScale(pageSize.width)
             val scaledHeight = toCurrentScale(pageSize.height)
-            
+
             val pageLeft: Float
             val pageTop: Float
-            
+
             when {
                 isSwipeVertical -> {
                     pageLeft = (toCurrentScale(pdfFile.maxPageWidth) - scaledWidth) / 2
                     pageTop = pdfFile.getPageOffset(pageIndex, zoom)
                 }
+
                 else -> {
                     pageLeft = pdfFile.getPageOffset(pageIndex, zoom)
                     pageTop = (toCurrentScale(pdfFile.maxPageHeight) - scaledHeight) / 2
                 }
             }
-            
+
             val pageRight = pageLeft + scaledWidth
             val pageBottom = pageTop + scaledHeight
-            
+
             // Check if page intersects with visible area
-            if (pageRight >= visibleLeft && pageLeft <= visibleRight && 
-                pageBottom >= visibleTop && pageTop <= visibleBottom) {
-                
+            if (pageRight >= visibleLeft && pageLeft <= visibleRight &&
+                pageBottom >= visibleTop && pageTop <= visibleBottom
+            ) {
+
                 // Draw placeholder rectangle
                 canvas.drawRect(pageLeft, pageTop, pageRight, pageBottom, placeholderPaint)
                 canvas.drawRect(pageLeft, pageTop, pageRight, pageBottom, placeholderBorderPaint)
@@ -745,14 +836,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      * the current page displayed
      */
     fun loadPages() {
-        if (_pdfFile == null || renderingHandler == null) return
-        
+        if (_pdfFile == null || renderingHandler == null || isRecycled || isRecycling) return
+
         // Skip bitmap generation if scroll optimization is enabled and we're actively scrolling
         if (isScrollOptimizationEnabled && isActivelyScrolling()) {
             android.util.Log.d("ScrollOptimization", "loadPages() skipped during active scrolling")
             return
         }
-        
+
         // Cancel all current tasks
         renderingHandler?.removeMessages(RenderingHandler.MSG_RENDER_TASK)
         cacheManager.makeANewSet()
@@ -809,6 +900,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     fun redraw() {
+        if (isRecycled || isRecycling) return
         invalidate()
     }
 
@@ -819,6 +911,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      * @param part The created PagePart.
      */
     fun onBitmapRendered(part: PagePart) {
+        if (isRecycled || isRecycling) {
+            part.renderedBitmap?.recycle()
+            return
+        }
+
         // when it is first rendered part
         if (state == State.LOADED) {
             state = State.SHOWN
@@ -840,6 +937,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      * @param moveHandle whether to move scroll handle or not
      */
     fun moveTo(offsetX: Float, offsetY: Float, moveHandle: Boolean = true) {
+        if (isRecycled || isRecycling) return
+
         var offsetX1 = offsetX
         var offsetY1 = offsetY
         when {
@@ -905,7 +1004,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         }
         currentXOffset = offsetX1
         currentYOffset = offsetY1
-        
+
         if (isScrollOptimizationEnabled && isActivelyScrolling()) {
             val positionOffset = positionOffset
             if (moveHandle && !documentFitsView()) {
@@ -932,7 +1031,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun isActivelyScrolling(): Boolean {
         return dragPinchManager.isScrolling || pdfAnimator.isFlinging || isScrollHandleDragging
     }
-    
+
     /**
      * Set scroll handle dragging state - called by scroll handle implementations
      */
@@ -944,6 +1043,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      * Update scroll handle and trigger navigation callbacks
      */
     fun updateScrollUIElements() {
+        if (isRecycled || isRecycling) return
+
         if (!documentFitsView()) {
             val positionOffset = positionOffset
             scrollHandle?.setScroll(positionOffset)
@@ -958,13 +1059,13 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     fun loadPageByOffset(skipBitmapGenerationDuringScroll: Boolean) {
-        if (0 == pageCount) return
-        
+        if (isRecycled || isRecycling || 0 == pageCount) return
+
         if (skipBitmapGenerationDuringScroll && isActivelyScrolling()) {
             redraw()
             return
         }
-        
+
         val offset: Float
         val screenCenter: Float
         when {

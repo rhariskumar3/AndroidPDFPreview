@@ -64,6 +64,8 @@ internal class PdfAnimator(private val pdfView: PDFView) {
     }
 
     private fun handleAnimationEnd() {
+        if (pdfView.isRecycled) return
+        
         pdfView.updateScrollUIElements()
         pdfView.loadPages()
         isPageAnimating = false
@@ -149,10 +151,12 @@ internal class PdfAnimator(private val pdfView: PDFView) {
 
             else -> {
                 flinging = false
-                pdfView.updateScrollUIElements()
-                pdfView.loadPages()
-                pdfView.scrollHandle?.hideDelayed()
-                pdfView.performPageSnap()
+                if (!pdfView.isRecycled) {
+                    pdfView.updateScrollUIElements()
+                    pdfView.loadPages()
+                    pdfView.scrollHandle?.hideDelayed()
+                    pdfView.performPageSnap()
+                }
             }
         }
     }

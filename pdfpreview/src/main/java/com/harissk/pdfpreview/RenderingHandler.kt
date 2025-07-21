@@ -8,8 +8,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import com.harissk.pdfium.exception.PageRenderingException
-import com.harissk.pdfpreview.RenderingHandler.RenderingTask
 import com.harissk.pdfpreview.model.PagePart
+import kotlin.math.roundToInt
+import androidx.core.graphics.createBitmap
 
 /**
  * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
@@ -37,6 +38,12 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
     private val roundedRenderBounds = Rect()
     private val renderMatrix: Matrix = Matrix()
     private var running = false
+
+    companion object {
+        const val MSG_RENDER_TASK = 1
+        private const val TAG = "RenderingHandler"
+    }
+
     fun addRenderingTask(
         page: Int,
         width: Float,
@@ -67,51 +74,82 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
             val part = proceed(task)
             if (part != null) {
                 when {
-                    running -> pdfView.post { pdfView.onBitmapRendered(part); }
+                    running && !pdfView.isRecycled -> pdfView.post { pdfView.onBitmapRendered(part); }
                     else -> part.renderedBitmap?.recycle()
                 }
             }
         } catch (ex: PageRenderingException) {
-            pdfView.post { pdfView.onPageError(ex); }
+            if (!pdfView.isRecycled) {
+                pdfView.post { pdfView.onPageError(ex); }
+            }
         }
     }
 
     @Throws(PageRenderingException::class)
     private fun proceed(renderingTask: RenderingTask): PagePart? {
+        if (pdfView.isRecycled || pdfView.isRecycling) return null
+        if (!running) return null
+
         val pdfFile: PdfFile = pdfView.pdfFile
-        pdfFile.openPage(renderingTask.page)
-        val w = Math.round(renderingTask.width)
-        val h = Math.round(renderingTask.height)
-        if (w == 0 || h == 0 || pdfFile.pageHasError(renderingTask.page)) {
-            return null
-        }
-        val render: Bitmap = try {
-            Bitmap.createBitmap(
-                /* width = */ w,
-                /* height = */ h,
-                /* config = */ when {
-                    renderingTask.bestQuality -> Bitmap.Config.ARGB_8888
-                    else -> Bitmap.Config.RGB_565
-                }
+
+        // Synchronize access to PDF file to prevent concurrent operations
+        synchronized(pdfFile) {
+            // Double-check state after acquiring lock
+            if (pdfView.isRecycled || pdfView.isRecycling || !running) return null
+
+            pdfFile.openPage(renderingTask.page)
+            val w = renderingTask.width.roundToInt()
+            val h = renderingTask.height.roundToInt()
+            if (w == 0 || h == 0 || pdfFile.pageHasError(renderingTask.page)) {
+                return null
+            }
+
+            // Check again before creating bitmap
+            if (pdfView.isRecycled || pdfView.isRecycling || !running) {
+                return null
+            }
+
+            val render: Bitmap = try {
+                createBitmap(
+                    width = w,
+                    height = h,
+                    config = when {
+                        renderingTask.bestQuality -> Bitmap.Config.ARGB_8888
+                        else -> Bitmap.Config.RGB_565
+                    }
+                )
+            } catch (_: IllegalArgumentException) {
+                pdfView.logWriter?.writeLog("Cannot create bitmap", TAG)
+                return null
+            }
+
+            // Final check before native rendering - this is where the crash occurs
+            if (pdfView.isRecycled || pdfView.isRecycling || !running) {
+                render.recycle()
+                return null
+            }
+
+            try {
+                calculateBounds(w, h, renderingTask.bounds ?: RectF())
+                pdfFile.renderPageBitmap(
+                    bitmap = render,
+                    pageIndex = renderingTask.page,
+                    bounds = roundedRenderBounds,
+                    annotationRendering = renderingTask.annotationRendering
+                )
+            } catch (_: Exception) {
+                render.recycle()
+                return null
+            }
+
+            return PagePart(
+                page = renderingTask.page,
+                renderedBitmap = render,
+                pageRelativeBounds = renderingTask.bounds ?: RectF(),
+                isThumbnail = renderingTask.thumbnail,
+                cacheOrder = renderingTask.cacheOrder
             )
-        } catch (e: IllegalArgumentException) {
-            pdfView.logWriter?.writeLog("Cannot create bitmap", TAG)
-            return null
         }
-        calculateBounds(w, h, renderingTask.bounds ?: RectF())
-        pdfFile.renderPageBitmap(
-            bitmap = render,
-            pageIndex = renderingTask.page,
-            bounds = roundedRenderBounds,
-            annotationRendering = renderingTask.annotationRendering
-        )
-        return PagePart(
-            page = renderingTask.page,
-            renderedBitmap = render,
-            pageRelativeBounds = renderingTask.bounds ?: RectF(),
-            isThumbnail = renderingTask.thumbnail,
-            cacheOrder = renderingTask.cacheOrder
-        )
     }
 
     private fun calculateBounds(width: Int, height: Int, pageSliceBounds: RectF) {
@@ -141,12 +179,4 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
         var bestQuality: Boolean,
         var annotationRendering: Boolean,
     )
-
-    companion object {
-        /**
-         * [Message.what] kind of message this handler processes.
-         */
-        const val MSG_RENDER_TASK = 1
-        private val TAG = RenderingHandler::class.java.getName()
-    }
 }
