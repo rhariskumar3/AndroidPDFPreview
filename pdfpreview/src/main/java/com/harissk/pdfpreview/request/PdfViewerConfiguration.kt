@@ -21,7 +21,7 @@ package com.harissk.pdfpreview.request
  *
  * @param isDebugEnabled           Whether debug mode is enabled for logging.
  * @param thumbnailQuality       The quality of thumbnails (between 0 and 1), with a default of 0.7.
- * @param renderTileSize    The size of rendered parts in pixels, with a default of 256.
+ * @param renderTileSize    The size of rendered parts in pixels, with a default of 512.
  * @param preloadMarginDp       The number of pages to preload above and below the currently displayed
  * page, in dp.
  * @param maxCachedBitmaps           The size of the main bitmap cache, which is the number of bitmaps to be
@@ -42,11 +42,11 @@ data class PdfViewerConfiguration(
      */
     val thumbnailQuality: Float = 0.7f,
     /**
-     * The size of the rendered parts (default 256).
+     * The size of the rendered parts (default 512 for better quality).
      * Tinier : a little bit slower to have the whole page rendered but more reactive.
      * Bigger : user will have to wait longer to have the first visual results
      */
-    val renderTileSize: Float = 256f,
+    val renderTileSize: Float = 512f,
     /**
      * Part of the document above and below the screen that should be preloaded, in dp.
      */
@@ -54,7 +54,7 @@ data class PdfViewerConfiguration(
     /**
      * The size of the cache (number of bitmaps kept).
      */
-    val maxCachedBitmaps: Int = 24,
+    val maxCachedBitmaps: Int = 32,
     /**
      * Max pages kept in View
      * Increasing this value may cause performance decrease

@@ -63,9 +63,20 @@ internal class PagesLoader(private val pdfView: PDFView) {
         val size: SizeF = pdfView.pdfFile.getPageSize(pageIndex) ?: return
         val ratioX: Float = 1f / size.width
         val ratioY: Float = 1f / size.height
-        val partHeight: Float =
-            pdfView.pdfViewerConfiguration.renderTileSize * ratioY / pdfView.zoom
-        val partWidth: Float = pdfView.pdfViewerConfiguration.renderTileSize * ratioX / pdfView.zoom
+        
+        // Maintain tile size at higher zoom levels to prevent blur
+        // Use a more aggressive scaling approach for better quality
+        val zoomFactor = pdfView.zoom.coerceAtLeast(1f)
+        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize * 
+            when {
+                zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
+                zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
+                zoomFactor > 1f -> zoomFactor          // Standard scaling
+                else -> 1f                              // Base quality
+            }
+        
+        val partHeight: Float = effectiveTileSize * ratioY / pdfView.zoom
+        val partWidth: Float = effectiveTileSize * ratioX / pdfView.zoom
         grid.rows = ceil(1f / partHeight).roundToInt()
         grid.cols = ceil(1f / partWidth).roundToInt()
     }
@@ -73,8 +84,19 @@ internal class PagesLoader(private val pdfView: PDFView) {
     private fun calculatePartSize(grid: GridSize) {
         pageRelativePartWidth = 1f / grid.cols.toFloat()
         pageRelativePartHeight = 1f / grid.rows.toFloat()
-        partRenderWidth = pdfView.pdfViewerConfiguration.renderTileSize / pageRelativePartWidth
-        partRenderHeight = pdfView.pdfViewerConfiguration.renderTileSize / pageRelativePartHeight
+        
+        // Use effective tile size that maintains quality at higher zoom levels
+        val zoomFactor = pdfView.zoom.coerceAtLeast(1f)
+        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize * 
+            when {
+                zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
+                zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
+                zoomFactor > 1f -> zoomFactor          // Standard scaling
+                else -> 1f                              // Base quality
+            }
+            
+        partRenderWidth = effectiveTileSize / pageRelativePartWidth
+        partRenderHeight = effectiveTileSize / pageRelativePartHeight
     }
 
     /**
@@ -287,7 +309,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
         val relY = pageRelativePartHeight * row
         val relWidth = when {
             relX + pageRelativePartWidth > 1 -> 1 - relX
-            else -> pageRelativePartHeight
+            else -> pageRelativePartWidth
         }
         val relHeight = when {
             relY + pageRelativePartHeight > 1 -> 1 - relY

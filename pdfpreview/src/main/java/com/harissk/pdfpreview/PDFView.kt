@@ -293,6 +293,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         isPageSnap = pdfRequest.pageSnap
         isPageFlingEnabled = pdfRequest.pageFling
         isScrollOptimizationEnabled = pdfRequest.scrollOptimization
+        // Start with basic quality, will be adjusted based on zoom level
         isBestQuality = false
         if (pdfRequest.disableLongPress) dragPinchManager.disableLongPress()
 
@@ -844,6 +845,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             return
         }
 
+        // Dynamically enable best quality when zoomed in to reduce blur
+        // Lower threshold for earlier quality improvement
+        isBestQuality = zoom > 1.2f
+
         // Cancel all current tasks
         renderingHandler?.removeMessages(RenderingHandler.MSG_RENDER_TASK)
         cacheManager.makeANewSet()
@@ -1181,6 +1186,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      * @param pivot The point on the screen that should stays.
      */
     fun zoomCenteredTo(zoom: Float, pivot: PointF) {
+        val oldZoom = this.zoom
         val dzoom = zoom / this.zoom
         this.zoom = zoom
         var baseX = currentXOffset * dzoom
@@ -1188,6 +1194,12 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         baseX += pivot.x - pivot.x * dzoom
         baseY += pivot.y - pivot.y * dzoom
         moveTo(baseX, baseY)
+        
+        // Reload pages immediately if zoom changed significantly to reduce blur time
+        val zoomChange = kotlin.math.abs(zoom - oldZoom) / oldZoom
+        if (zoomChange > 0.3f) { // If zoom changed by more than 30%
+            loadPages()
+        }
     }
 
     /**

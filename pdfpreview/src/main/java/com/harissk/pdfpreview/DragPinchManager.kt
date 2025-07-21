@@ -45,6 +45,9 @@ internal class DragPinchManager(
 
     private var lastX = 0f
     private var lastY = 0f
+    
+    private var lastZoomLevel = 1f
+    private var lastZoomReloadTime = 0L
 
     private var scrolling = false
     private var scaling = false
@@ -286,11 +289,23 @@ internal class DragPinchManager(
             dzoom = wantedZoom.coerceIn(minZoom, maxZoom) / pdfView.zoom,
             pivot = PointF(detector.focusX, detector.focusY)
         )
+        
+        // Reload pages periodically during scaling to reduce blur time
+        val currentTime = System.currentTimeMillis()
+        val zoomChange = kotlin.math.abs(pdfView.zoom - lastZoomLevel) / lastZoomLevel
+        if (zoomChange > 0.2f && (currentTime - lastZoomReloadTime) > 200) { // Every 200ms and 20% zoom change
+            lastZoomLevel = pdfView.zoom
+            lastZoomReloadTime = currentTime
+            pdfView.loadPages()
+        }
+        
         return true
     }
 
     override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
         scaling = true
+        lastZoomLevel = pdfView.zoom
+        lastZoomReloadTime = System.currentTimeMillis()
         return true
     }
 
