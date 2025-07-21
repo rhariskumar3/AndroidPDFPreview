@@ -51,9 +51,9 @@ internal class PdfAnimator(private val pdfView: PDFView) {
                 val animationValue = valueAnimator.animatedValue as Float
                 pdfView.moveTo(
                     if (isAnimatingVertically) pdfView.currentXOffset else animationValue,
-                    if (isAnimatingVertically) animationValue else pdfView.currentYOffset
+                    if (isAnimatingVertically) animationValue else pdfView.currentYOffset,
+                    moveHandle = true
                 )
-                pdfView.loadPageByOffset()
             }
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) = handleAnimationEnd()
@@ -64,6 +64,7 @@ internal class PdfAnimator(private val pdfView: PDFView) {
     }
 
     private fun handleAnimationEnd() {
+        pdfView.updateScrollUIElements()
         pdfView.loadPages()
         isPageAnimating = false
         pdfView.scrollHandle?.hideDelayed()
@@ -142,12 +143,13 @@ internal class PdfAnimator(private val pdfView: PDFView) {
         if (pdfView.isRecycled || !flinging) return
         when {
             flingScroller.computeScrollOffset() -> {
-                pdfView.moveTo(flingScroller.currX.toFloat(), flingScroller.currY.toFloat())
-                pdfView.loadPageByOffset()
+                pdfView.moveTo(flingScroller.currX.toFloat(), flingScroller.currY.toFloat(), moveHandle = true)
+                pdfView.invalidate()
             }
 
             else -> {
                 flinging = false
+                pdfView.updateScrollUIElements()
                 pdfView.loadPages()
                 pdfView.scrollHandle?.hideDelayed()
                 pdfView.performPageSnap()

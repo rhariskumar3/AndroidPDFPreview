@@ -49,6 +49,7 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * @property fitEachPage If true, each page will be individually fitted to the screen. Defaults to false.
  * @property pageFling Enables or disables page flinging for faster navigation. Defaults to false.
  * @property pageSnap Enables or disables page snapping, where pages will snap to the screen edges. Defaults to false.
+ * @property scrollOptimization Enables or disables scroll optimization. When true, bitmap generation is skipped during scrolling for better performance, but may show empty areas when scrolling to new content. Defaults to true.
  * @property nightMode Enables or disables night mode, which inverts the colors for better readability in low-light conditions. Defaults to false.
  * @property disableLongPress Disables long press gestures on the PDF view. Defaults to false.
  * @property pdfViewerConfiguration Custom rendering options for the PDF document. Defaults to [PdfViewerConfiguration.DEFAULT].
@@ -76,6 +77,7 @@ data class PdfRequest(
     val fitEachPage: Boolean = false,
     val pageFling: Boolean = false,
     val pageSnap: Boolean = false,
+    val scrollOptimization: Boolean = true,
     val nightMode: Boolean = false,
     val disableLongPress: Boolean = false,
     val pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT,
@@ -102,6 +104,7 @@ data class PdfRequest(
         private var fitEachPage: Boolean = false
         private var pageFling: Boolean = false
         private var pageSnap: Boolean = false
+        private var scrollOptimization: Boolean = true
         private var nightMode: Boolean = false
         private var disableLongPress: Boolean = false
         private var pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT
@@ -187,6 +190,11 @@ data class PdfRequest(
             return this
         }
 
+        fun scrollOptimization(scrollOptimization: Boolean): Builder {
+            this.scrollOptimization = scrollOptimization
+            return this
+        }
+
         fun nightMode(nightMode: Boolean): Builder {
             this.nightMode = nightMode
             return this
@@ -254,6 +262,7 @@ data class PdfRequest(
             fitEachPage = fitEachPage,
             pageSnap = pageSnap,
             pageFling = pageFling,
+            scrollOptimization = scrollOptimization,
             nightMode = nightMode,
             disableLongPress = disableLongPress,
             pdfViewerConfiguration = pdfViewerConfiguration,

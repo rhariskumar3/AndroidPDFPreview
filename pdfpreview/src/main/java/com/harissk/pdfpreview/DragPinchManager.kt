@@ -50,6 +50,9 @@ internal class DragPinchManager(
     private var scaling = false
     private var enabled = false
 
+    /** Check if user is currently scrolling */
+    val isScrolling: Boolean get() = scrolling
+
     init {
         pdfView.setOnTouchListener(this)
     }
@@ -184,11 +187,11 @@ internal class DragPinchManager(
         scrolling = true
         if (pdfView.isZooming || pdfView.isSwipeEnabled)
             pdfView.moveRelativeTo(-distanceX, -distanceY)
-        if (!scaling || pdfView.doRenderDuringScale) pdfView.loadPageByOffset()
         return true
     }
 
     private fun onScrollEnd() {
+        pdfView.updateScrollUIElements()
         pdfView.loadPages()
         hideHandle()
         if (!pdfAnimator.isFlinging) pdfView.performPageSnap()

@@ -234,12 +234,12 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
         when (event.action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 currentPdfView.stopFling()
+                currentPdfView.setScrollHandleDragging(true)
                 handler.removeCallbacks(hidePageScrollerRunnable)
                 currentPos = when (currentPdfView.isSwipeVertical) {
                     true -> event.rawY - y
                     else -> event.rawX - x
                 }
-                // The primary job here is to update the handle's visual position.
                 val eventPos = if (currentPdfView.isSwipeVertical) event.rawY else event.rawX
                 setPosition(eventPos - currentPos + relativeHandlerMiddle)
                 currentPdfView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
@@ -267,11 +267,17 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
                     val offset =
                         (handleCenter - actualHandleSize / 2f) / (viewSize - actualHandleSize)
                     currentPdfView.setPositionOffset(offset.coerceIn(0f, 1f), false)
+                    
+                    val actualCurrentPage = currentPdfView.getPageAtPositionOffset(offset.coerceIn(0f, 1f))
+                    setPageNum(actualCurrentPage + 1)
                 }
                 return true
             }
 
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                currentPdfView.setScrollHandleDragging(false)
+                currentPdfView.updateScrollUIElements()
+                currentPdfView.loadPageByOffset()
                 hideDelayed()
                 currentPdfView.performPageSnap()
                 return true

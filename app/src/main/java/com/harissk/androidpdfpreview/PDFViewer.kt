@@ -41,6 +41,7 @@ internal fun PDFViewer(
                 enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
                 scrollHandle(DefaultScrollHandle(it.context))
                 spacing(10F) // in dp
+                scrollOptimization(true) // Enable scroll optimization for better performance
 
                 documentLoadListener(object : DocumentLoadListener {
                     override fun onDocumentLoadingStart() {

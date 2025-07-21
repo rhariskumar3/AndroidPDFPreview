@@ -172,6 +172,9 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     var scrollHandle: ScrollHandle? = null
         private set
     private var isScrollHandleInit: Boolean = false
+    
+    var isScrollHandleDragging: Boolean = false
+        private set
 
     /**
      * True if bitmap should use ARGB_8888 format and take more memory
@@ -195,11 +198,31 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      */
     private var renderDuringScale: Boolean = false
 
+    /**
+     * True if bitmap generation should be skipped during scrolling for better performance.
+     * When true, only cached bitmaps are drawn during scrolling, and new bitmaps are generated
+     * when scrolling stops. This improves scrolling performance but may show empty areas
+     * when scrolling to new content.
+     */
+    var isScrollOptimizationEnabled: Boolean = true
+        private set
+
     /** Antialiasing and bitmap filtering  */
     var isAntialiasing: Boolean = true
         private set
     private val antialiasFilter =
         PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+
+    /** Paint for drawing placeholder pages during scroll optimization */
+    private val placeholderPaint = Paint().apply {
+        style = Paint.Style.FILL
+    }
+    
+    /** Paint for drawing placeholder page borders during scroll optimization */
+    private val placeholderBorderPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+    }
 
     /** Spacing between pages, in px  */
     var spacingPx: Int = 0
@@ -257,6 +280,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         isFitEachPage = pdfRequest.fitEachPage
         isPageSnap = pdfRequest.pageSnap
         isPageFlingEnabled = pdfRequest.pageFling
+        isScrollOptimizationEnabled = pdfRequest.scrollOptimization
         isBestQuality = false
         if (pdfRequest.disableLongPress) dragPinchManager.disableLongPress()
 
@@ -372,7 +396,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                 moveHandle
             )
         }
-        loadPageByOffset()
+        loadPageByOffset(skipBitmapGenerationDuringScroll = isScrollOptimizationEnabled && isScrollHandleDragging)
     }
 
     fun stopFling() = pdfAnimator.cancelFling()
@@ -486,7 +510,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             currentYOffset = -relativeCenterPointInStripYOffset * pdfFile.maxPageHeight + h * 0.5f
         }
         moveTo(currentXOffset, currentYOffset)
-        loadPageByOffset()
+        loadPageByOffset(skipBitmapGenerationDuringScroll = false)
     }
 
     override fun canScrollHorizontally(direction: Int): Boolean {
@@ -568,6 +592,12 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         val currentYOffset = currentYOffset
         canvas.translate(currentXOffset, currentYOffset)
 
+        // If scroll optimization is enabled and we're actively scrolling,
+        // draw placeholder pages for better visual feedback
+        if (isScrollOptimizationEnabled && isActivelyScrolling()) {
+            drawScrollPlaceholders(canvas)
+        }
+
         // Draws thumbnails
         for (part in cacheManager.getThumbnails()) drawPart(canvas, part)
 
@@ -579,6 +609,56 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         // Restores the canvas position
         canvas.translate(-currentXOffset, -currentYOffset)
+    }
+
+    /**
+     * Draw placeholder rectangles for pages during scrolling to provide visual feedback
+     */
+    private fun drawScrollPlaceholders(canvas: Canvas) {
+        if (_pdfFile == null) return
+        
+        // Update paint colors based on current night mode
+        placeholderPaint.color = if (nightMode) 0xFF2E2E2E.toInt() else 0xFFF5F5F5.toInt()
+        placeholderBorderPaint.color = if (nightMode) 0xFF505050.toInt() else 0xFFDDDDDD.toInt()
+
+        // Calculate visible area
+        val visibleLeft = -currentXOffset
+        val visibleTop = -currentYOffset
+        val visibleRight = visibleLeft + width
+        val visibleBottom = visibleTop + height
+
+        // Draw placeholders for all pages that intersect with visible area
+        for (pageIndex in 0 until pageCount) {
+            val pageSize = pdfFile.getPageSize(pageIndex) ?: continue
+            val scaledWidth = toCurrentScale(pageSize.width)
+            val scaledHeight = toCurrentScale(pageSize.height)
+            
+            val pageLeft: Float
+            val pageTop: Float
+            
+            when {
+                isSwipeVertical -> {
+                    pageLeft = (toCurrentScale(pdfFile.maxPageWidth) - scaledWidth) / 2
+                    pageTop = pdfFile.getPageOffset(pageIndex, zoom)
+                }
+                else -> {
+                    pageLeft = pdfFile.getPageOffset(pageIndex, zoom)
+                    pageTop = (toCurrentScale(pdfFile.maxPageHeight) - scaledHeight) / 2
+                }
+            }
+            
+            val pageRight = pageLeft + scaledWidth
+            val pageBottom = pageTop + scaledHeight
+            
+            // Check if page intersects with visible area
+            if (pageRight >= visibleLeft && pageLeft <= visibleRight && 
+                pageBottom >= visibleTop && pageTop <= visibleBottom) {
+                
+                // Draw placeholder rectangle
+                canvas.drawRect(pageLeft, pageTop, pageRight, pageBottom, placeholderPaint)
+                canvas.drawRect(pageLeft, pageTop, pageRight, pageBottom, placeholderBorderPaint)
+            }
+        }
     }
 
     private fun drawWithListener(canvas: Canvas, page: Int) {
@@ -666,6 +746,13 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      */
     fun loadPages() {
         if (_pdfFile == null || renderingHandler == null) return
+        
+        // Skip bitmap generation if scroll optimization is enabled and we're actively scrolling
+        if (isScrollOptimizationEnabled && isActivelyScrolling()) {
+            android.util.Log.d("ScrollOptimization", "loadPages() skipped during active scrolling")
+            return
+        }
+        
         // Cancel all current tasks
         renderingHandler?.removeMessages(RenderingHandler.MSG_RENDER_TASK)
         cacheManager.makeANewSet()
@@ -818,14 +905,66 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         }
         currentXOffset = offsetX1
         currentYOffset = offsetY1
-        val positionOffset = positionOffset
-        if (moveHandle && !documentFitsView()) scrollHandle?.setScroll(positionOffset)
+        
+        if (isScrollOptimizationEnabled && isActivelyScrolling()) {
+            val positionOffset = positionOffset
+            if (moveHandle && !documentFitsView()) {
+                scrollHandle?.setScroll(positionOffset)
+                val actualCurrentPage = getPageAtPositionOffset(positionOffset)
+                scrollHandle?.setPageNum(actualCurrentPage + 1)
+            }
+            redraw()
+        } else {
+            val positionOffset = positionOffset
+            if (moveHandle && !documentFitsView()) {
+                scrollHandle?.setScroll(positionOffset)
+                val actualCurrentPage = getPageAtPositionOffset(positionOffset)
+                scrollHandle?.setPageNum(actualCurrentPage + 1)
+            }
+            pdfRequest?.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)
+            redraw()
+        }
+    }
+
+    /**
+     * Check if user is currently scrolling or flinging
+     */
+    fun isActivelyScrolling(): Boolean {
+        return dragPinchManager.isScrolling || pdfAnimator.isFlinging || isScrollHandleDragging
+    }
+    
+    /**
+     * Set scroll handle dragging state - called by scroll handle implementations
+     */
+    fun setScrollHandleDragging(dragging: Boolean) {
+        isScrollHandleDragging = dragging
+    }
+
+    /**
+     * Update scroll handle and trigger navigation callbacks
+     */
+    fun updateScrollUIElements() {
+        if (!documentFitsView()) {
+            val positionOffset = positionOffset
+            scrollHandle?.setScroll(positionOffset)
+            val actualCurrentPage = getPageAtPositionOffset(positionOffset)
+            scrollHandle?.setPageNum(actualCurrentPage + 1)
+        }
         pdfRequest?.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)
-        redraw()
     }
 
     fun loadPageByOffset() {
+        loadPageByOffset(skipBitmapGenerationDuringScroll = isScrollOptimizationEnabled)
+    }
+
+    fun loadPageByOffset(skipBitmapGenerationDuringScroll: Boolean) {
         if (0 == pageCount) return
+        
+        if (skipBitmapGenerationDuringScroll && isActivelyScrolling()) {
+            redraw()
+            return
+        }
+        
         val offset: Float
         val screenCenter: Float
         when {
