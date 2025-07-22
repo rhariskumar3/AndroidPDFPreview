@@ -128,11 +128,84 @@ fun MyScreen() {
 * InputStream
 * DocumentSource (custom)
 
+## PDF Thumbnail Generation
+
+Generate thumbnails from PDF documents for preview purposes:
+
+```kotlin
+// Simple thumbnail generation
+val thumbnail = PDFThumbnailGenerator.generateThumbnail(
+    context = this,
+    source = pdfFile,
+    pageIndex = 0
+)
+thumbnail?.let { imageView.setImageBitmap(it) }
+
+// Custom thumbnail configuration
+val config = ThumbnailConfig(
+    width = 300,
+    height = 400,
+    quality = Bitmap.Config.ARGB_8888,
+    annotationRendering = true,
+    aspectRatio = AspectRatio.PRESERVE
+)
+
+val thumbnail = PDFThumbnailGenerator.generateThumbnail(
+    context = this,
+    source = pdfFile,
+    pageIndex = 0,
+    config = config
+)
+
+// Generate multiple thumbnails
+val thumbnails = PDFThumbnailGenerator.generateThumbnails(
+    context = this,
+    source = pdfFile,
+    pageIndices = listOf(0, 1, 2, 3)
+)
+
+// Get page count
+val pageCount = PDFThumbnailGenerator.getPageCount(context, pdfFile)
+```
+
+### Jetpack Compose Integration:
+
+```kotlin
+@Composable
+fun PDFThumbnailImage(
+    file: File,
+    page: Int = 0,
+    size: Int = 200,
+    modifier: Modifier = Modifier
+) {
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val context = LocalContext.current
+    
+    LaunchedEffect(file, page, size) {
+        bitmap = PDFThumbnailGenerator.generateThumbnail(
+            context = context,
+            source = file,
+            pageIndex = page,
+            config = ThumbnailConfig(width = size, height = size)
+        )
+    }
+    
+    bitmap?.let { 
+        Image(
+            bitmap = it.asImageBitmap(),
+            contentDescription = "PDF Thumbnail",
+            modifier = modifier
+        )
+    }
+}
+```
+
 ## Additional Features
 
 AndroidPDFPreview supports a number of additional features, including:
 
 * Page navigation
+* **PDF Thumbnail Generation** - Generate preview thumbnails from any page
 * Search (coming soon)
 * Table of contents
 * Bookmarks
