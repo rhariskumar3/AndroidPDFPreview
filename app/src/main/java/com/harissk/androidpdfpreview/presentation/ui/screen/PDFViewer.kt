@@ -1,4 +1,4 @@
-package com.harissk.androidpdfpreview
+package com.harissk.androidpdfpreview.presentation.ui.screen
 
 import android.graphics.Canvas
 import android.util.Log
@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import com.harissk.androidpdfpreview.domain.model.PDFDocument
+import com.harissk.androidpdfpreview.presentation.model.ViewerSettings
 import com.harissk.pdfium.Meta
 import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.listener.LogWriter
@@ -24,8 +26,9 @@ import com.harissk.pdfpreview.scroll.DefaultScrollHandle
 internal fun PDFViewer(
     modifier: Modifier = Modifier,
     pdfDocument: PDFDocument,
-    viewerSettings: PDFViewerSettings,
+    viewerSettings: ViewerSettings,
     onError: (String) -> Unit = {},
+    onFullScreenToggle: (() -> Unit)? = null,
 ) {
     AndroidView(
         modifier = modifier.fillMaxSize(),
@@ -65,7 +68,10 @@ internal fun PDFViewer(
                         pdfView.tableOfContents.forEach { bookmark ->
                             Log.d("=====>", "${bookmark.pageIdx}  - ${bookmark.title}")
                             bookmark.children.forEach { child ->
-                                Log.d("=====>", "${bookmark.pageIdx}:${child.pageIdx} - ${child.title}")
+                                Log.d(
+                                    "=====>",
+                                    "${bookmark.pageIdx}:${child.pageIdx} - ${child.title}"
+                                )
                             }
                         }
                         Log.d("=====>", "=============")
@@ -116,8 +122,23 @@ internal fun PDFViewer(
                     }
                 })
                 gestureEventListener(object : GestureEventListener {
+                    private var lastTapTime = 0L
+                    private val doubleTapDelay = 300L // milliseconds
+
                     override fun onTap(motionEvent: MotionEvent): Boolean {
                         Log.d("=====>", "onTap() called with: motionEvent = $motionEvent")
+
+                        // Check for double-tap to toggle fullscreen
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastTapTime < doubleTapDelay) {
+                            // Double-tap detected, toggle fullscreen
+                            onFullScreenToggle?.invoke()
+                            lastTapTime = 0L // Reset to prevent triple-tap detection
+                            return true // Consume the event
+                        } else {
+                            lastTapTime = currentTime
+                        }
+
                         return false
                     }
 

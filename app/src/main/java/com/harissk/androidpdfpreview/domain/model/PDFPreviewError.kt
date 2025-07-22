@@ -1,4 +1,4 @@
-package com.harissk.androidpdfpreview
+package com.harissk.androidpdfpreview.domain.model
 
 sealed class PDFPreviewError {
     data object NoError : PDFPreviewError()

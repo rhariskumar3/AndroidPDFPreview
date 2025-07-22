@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.harissk.androidpdfpreview.presentation.ui.screen.PDFPreviewScreen
 import com.harissk.androidpdfpreview.ui.theme.PDFPreviewTheme
 
 class MainActivity : ComponentActivity() {
@@ -18,9 +19,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PDFPreviewTheme {
-                PDFPreviewScreen { fullScreen ->
-                    if (fullScreen) showFullScreen() else hideFullScreen()
-                }
+                PDFPreviewScreen(
+                    onFullScreen = { fullScreen ->
+                        if (fullScreen) showFullScreen() else hideFullScreen()
+                    }
+                )
             }
         }
         windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)

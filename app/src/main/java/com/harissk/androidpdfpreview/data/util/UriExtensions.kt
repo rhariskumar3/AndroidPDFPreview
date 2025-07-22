@@ -1,4 +1,4 @@
-package com.harissk.androidpdfpreview
+package com.harissk.androidpdfpreview.data.util
 
 import android.content.Context
 import android.net.Uri
