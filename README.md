@@ -17,6 +17,8 @@ rendering, it delivers a smooth and user-friendly experience.
 ## Features
 
 * Display and interact with PDF documents
+* Generate thumbnails from PDF pages for preview purposes
+* Validate PDF documents for integrity, password protection, and corruption
 * Support for gestures, zoom, and double tap
 * Lightweight and easy to integrate into your Android apps
 * Compatible with Android versions 5.1 and above
@@ -48,6 +50,13 @@ dependencies {
 
    Kotlin
     ```
+    // Optional: Validate document first (recommended)
+    val isValid = PDFThumbnailGenerator.isDocumentValid(this, file)
+    if (!isValid) {
+        // Handle invalid document
+        return
+    }
+    
     binding.pdfView.load(file) {
         defaultPage(0)
         swipeHorizontal(true)
@@ -84,7 +93,7 @@ fun PDFViewCompose(
                     swipeHorizontal(true)
                     enableAnnotationRendering(true)
                     spacing(10F) // in dp
-                    
+
                     // Listeners
                     documentLoadListener { pages ->
                         // Document loaded with $pages pages
@@ -111,7 +120,7 @@ fun PDFViewCompose(
 @Composable
 fun MyScreen() {
     val pdfFile = remember { /* your file */ }
-    
+
     PDFViewCompose(
         file = pdfFile,
         modifier = Modifier.fillMaxSize()
@@ -180,7 +189,7 @@ fun PDFThumbnailImage(
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     val context = LocalContext.current
-    
+
     LaunchedEffect(file, page, size) {
         bitmap = PDFThumbnailGenerator.generateThumbnail(
             context = context,
@@ -189,8 +198,8 @@ fun PDFThumbnailImage(
             config = ThumbnailConfig(width = size, height = size)
         )
     }
-    
-    bitmap?.let { 
+
+    bitmap?.let {
         Image(
             bitmap = it.asImageBitmap(),
             contentDescription = "PDF Thumbnail",
@@ -200,12 +209,84 @@ fun PDFThumbnailImage(
 }
 ```
 
+## PDF Document Validation
+
+Validate PDF documents before processing to check if they're valid, password protected, or
+corrupted:
+
+```kotlin
+// Comprehensive validation with detailed results
+val validationResult = PDFThumbnailGenerator.validateDocument(context, pdfFile)
+
+when (validationResult) {
+    is DocumentValidationResult.Valid -> {
+        println("✅ Document is valid with ${validationResult.pageCount} pages")
+        println("Has metadata: ${validationResult.hasMetadata}")
+        println("Has bookmarks: ${validationResult.hasBookmarks}")
+
+        // Safe to generate thumbnails or open document
+        val thumbnail = PDFThumbnailGenerator.generateThumbnail(context, pdfFile)
+    }
+
+    is DocumentValidationResult.PasswordProtected -> {
+        println("🔒 Document requires password")
+        println("Security level: ${validationResult.securityLevel}")
+
+        // Request password from user
+        val password = showPasswordDialog()
+        val thumbnail = PDFThumbnailGenerator.generateThumbnail(
+            context, pdfFile, password = password
+        )
+    }
+
+    is DocumentValidationResult.Corrupted -> {
+        println("❌ Document is corrupted: ${validationResult.reason}")
+        println("Error code: ${validationResult.errorCode}")
+        showErrorDialog("Document cannot be opened: corrupted or damaged")
+    }
+
+    is DocumentValidationResult.Invalid -> {
+        println("⚠️ Document is invalid: ${validationResult.reason}")
+        showErrorDialog("Invalid PDF: ${validationResult.errorMessage}")
+    }
+
+    is DocumentValidationResult.Error -> {
+        println("🚫 Validation error: ${validationResult.errorMessage}")
+        showErrorDialog("Cannot validate document")
+    }
+}
+
+// Quick validation methods
+val isValid = PDFThumbnailGenerator.isDocumentValid(context, pdfFile)
+val needsPassword = PDFThumbnailGenerator.isPasswordProtected(context, pdfFile)
+val correctPassword = PDFThumbnailGenerator.isPasswordCorrect(context, pdfFile, "password123")
+```
+
+### Validation Features:
+
+- **📋 Document Status**: Valid, password protected, corrupted, or invalid
+- **🔍 Detailed Analysis**: Page count, metadata presence, bookmarks detection
+- **🔐 Security Detection**: Password protection and encryption level identification
+- **⚡ Efficient Operations**: All validation runs on background threads
+- **🎯 Multiple Sources**: Supports File, Uri, ByteArray, InputStream, and assets
+- **🛡️ Error Handling**: Comprehensive error detection with specific error codes
+
+### Use Cases:
+
+1. **Pre-validation**: Check documents before thumbnail generation or viewing
+2. **Password Handling**: Detect and handle password-protected PDFs
+3. **Error Prevention**: Avoid crashes from corrupted or invalid files
+4. **User Experience**: Provide specific error messages for different issues
+5. **Performance**: Quick boolean checks for simple validation needs
+
 ## Additional Features
 
 AndroidPDFPreview supports a number of additional features, including:
 
 * Page navigation
 * **PDF Thumbnail Generation** - Generate preview thumbnails from any page
+* **PDF Document Validation** - Validate documents for integrity, password protection, and
+  corruption
 * Search (coming soon)
 * Table of contents
 * Bookmarks

@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -67,6 +66,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.harissk.pdfpreview.thumbnail.AspectRatio
 import com.harissk.pdfpreview.thumbnail.PDFThumbnailGenerator
 import com.harissk.pdfpreview.thumbnail.ThumbnailConfig
+import com.harissk.pdfpreview.validation.DocumentValidationResult
+import com.harissk.pdfpreview.validation.PDFDocumentValidator
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import kotlin.math.log10
@@ -119,10 +120,12 @@ internal fun PDFPreviewScreen(
                 state.document.file.delete()
                 previewState = PDFPreviewState.NoPdfSelected
             }
+
             is PDFPreviewState.PdfPreviewing -> {
                 state.document.file.delete()
                 previewState = PDFPreviewState.NoPdfSelected
             }
+
             else -> {}
         }
     }
@@ -132,6 +135,7 @@ internal fun PDFPreviewScreen(
             is PDFPreviewState.PdfPreviewing -> {
                 previewState = PDFPreviewState.PdfSelected(state.document)
             }
+
             else -> {}
         }
     }
@@ -141,6 +145,7 @@ internal fun PDFPreviewScreen(
             is PDFPreviewState.PdfSelected -> {
                 previewState = PDFPreviewState.PdfPreviewing(state.document)
             }
+
             else -> {}
         }
     }
@@ -166,6 +171,7 @@ internal fun PDFPreviewScreen(
                                     fontSize = 14.sp,
                                 )
                             }
+
                             else -> {}
                         }
                     }
@@ -174,9 +180,13 @@ internal fun PDFPreviewScreen(
                     when (previewState) {
                         is PDFPreviewState.PdfPreviewing -> {
                             IconButton(onClick = ::backToDetails) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
                             }
                         }
+
                         else -> {}
                     }
                 },
@@ -190,15 +200,17 @@ internal fun PDFPreviewScreen(
                                 )
                             }
                         }
+
                         else -> {}
                     }
-                    
+
                     when (previewState) {
                         is PDFPreviewState.PdfSelected, is PDFPreviewState.PdfPreviewing -> {
                             Button(onClick = ::closePDF) {
                                 Text("Close")
                             }
                         }
+
                         else -> {}
                     }
                 },
@@ -221,7 +233,7 @@ internal fun PDFPreviewScreen(
                         onPickPDF = ::pickPDF
                     )
                 }
-                
+
                 is PDFPreviewState.PdfSelected -> {
                     PDFDetailsCard(
                         pdfDocument = state.document,
@@ -231,7 +243,7 @@ internal fun PDFPreviewScreen(
                         onPickNewPDF = ::pickPDF
                     )
                 }
-                
+
                 is PDFPreviewState.PdfPreviewing -> {
                     PDFViewer(
                         modifier = Modifier.fillMaxSize(),
@@ -247,6 +259,7 @@ internal fun PDFPreviewScreen(
                     text = "Error: ${error.message}",
                     color = Color.Red
                 )
+
                 else -> {}
             }
         }
@@ -257,7 +270,7 @@ internal fun PDFPreviewScreen(
 private fun PDFConfigurationCard(
     viewerSettings: PDFViewerSettings,
     onSettingsChange: (PDFViewerSettings) -> Unit,
-    onPickPDF: () -> Unit
+    onPickPDF: () -> Unit,
 ) {
     OutlinedCard(
         modifier = Modifier
@@ -274,12 +287,12 @@ private fun PDFConfigurationCard(
                 .fillMaxWidth()
                 .padding(16.dp),
         )
-        
+
         PDFSettingsForm(
             viewerSettings = viewerSettings,
             onSettingsChange = onSettingsChange
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             modifier = Modifier
@@ -301,42 +314,85 @@ private fun PDFDetailsCard(
     viewerSettings: PDFViewerSettings,
     onSettingsChange: (PDFViewerSettings) -> Unit,
     onStartPreview: () -> Unit,
-    onPickNewPDF: () -> Unit
+    onPickNewPDF: () -> Unit,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    
+
     var thumbnail by remember { mutableStateOf<Bitmap?>(null) }
     var isLoadingThumbnail by remember { mutableStateOf(false) }
     var pageCount by remember { mutableIntStateOf(0) }
     var fileSize by remember { mutableStateOf("") }
-    
+    var documentStatus by remember { mutableStateOf("") }
+    var validationResult by remember { mutableStateOf<DocumentValidationResult?>(null) }
+
     LaunchedEffect(pdfDocument) {
         isLoadingThumbnail = true
-        
+        documentStatus = "Validating document..."
+
         coroutineScope.launch {
-            // Get page count
-            pageCount = PDFThumbnailGenerator.getPageCount(context, pdfDocument.file)
-            
-            // Calculate file size
-            val fileSizeBytes = pdfDocument.file.length()
-            fileSize = formatFileSize(fileSizeBytes)
-            
-            // Generate thumbnail
-            thumbnail = PDFThumbnailGenerator.generateThumbnail(
-                context = context,
-                source = pdfDocument.file,
-                pageIndex = 0,
-                config = ThumbnailConfig(
-                    width = 200,
-                    height = 280,
-                    aspectRatio = AspectRatio.PRESERVE
-                )
-            )
+            // First validate the document
+            validationResult = PDFDocumentValidator.validateDocument(context, pdfDocument.file)
+
+            when (val result = validationResult) {
+                is DocumentValidationResult.Valid -> {
+                    documentStatus = "Valid PDF document"
+                    pageCount = result.pageCount
+
+                    // Calculate file size
+                    val fileSizeBytes = pdfDocument.file.length()
+                    fileSize = formatFileSize(fileSizeBytes)
+
+                    // Generate thumbnail
+                    documentStatus = "Generating thumbnail..."
+                    thumbnail = PDFThumbnailGenerator.generateThumbnail(
+                        context = context,
+                        source = pdfDocument.file,
+                        pageIndex = 0,
+                        config = ThumbnailConfig(
+                            width = 200,
+                            height = 280,
+                            aspectRatio = AspectRatio.PRESERVE
+                        )
+                    )
+                    documentStatus = "Ready"
+                }
+
+                is DocumentValidationResult.PasswordProtected -> {
+                    documentStatus = "Password protected document"
+                    pageCount = 0
+                    fileSize = formatFileSize(pdfDocument.file.length())
+                }
+
+                is DocumentValidationResult.Corrupted -> {
+                    documentStatus = "Corrupted document: ${result.reason}"
+                    pageCount = 0
+                    fileSize = formatFileSize(pdfDocument.file.length())
+                }
+
+                is DocumentValidationResult.Invalid -> {
+                    documentStatus = "Invalid document: ${result.reason}"
+                    pageCount = 0
+                    fileSize = formatFileSize(pdfDocument.file.length())
+                }
+
+                is DocumentValidationResult.Error -> {
+                    documentStatus = "Error: ${result.errorMessage}"
+                    pageCount = 0
+                    fileSize = formatFileSize(pdfDocument.file.length())
+                }
+
+                else -> {
+                    documentStatus = "Unknown validation result"
+                    pageCount = 0
+                    fileSize = formatFileSize(pdfDocument.file.length())
+                }
+            }
+
             isLoadingThumbnail = false
         }
     }
-    
+
     Column(
         modifier = Modifier
             .padding(16.dp)
@@ -356,9 +412,9 @@ private fun PDFDetailsCard(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Thumbnail section
                 Box(
                     modifier = Modifier
@@ -370,6 +426,7 @@ private fun PDFDetailsCard(
                         isLoadingThumbnail -> {
                             CircularProgressIndicator()
                         }
+
                         thumbnail != null -> {
                             Image(
                                 bitmap = thumbnail!!.asImageBitmap(),
@@ -378,6 +435,7 @@ private fun PDFDetailsCard(
                                 contentScale = ContentScale.Fit
                             )
                         }
+
                         else -> {
                             Card(
                                 modifier = Modifier.fillMaxSize(),
@@ -399,34 +457,71 @@ private fun PDFDetailsCard(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // File information
                 Column {
                     InfoRow(label = "File Name", value = pdfDocument.name)
                     InfoRow(label = "File Size", value = fileSize)
-                    InfoRow(label = "Pages", value = if (pageCount > 0) pageCount.toString() else "Loading...")
+                    InfoRow(label = "Status", value = documentStatus)
+                    InfoRow(
+                        label = "Pages",
+                        value = if (pageCount > 0) pageCount.toString() else if (isLoadingThumbnail) "Loading..." else "Unknown"
+                    )
+
+                    // Show additional validation details
+                    validationResult?.let { result ->
+                        when (result) {
+                            is DocumentValidationResult.Valid -> {
+                                if (result.hasMetadata) {
+                                    InfoRow(label = "Metadata", value = "Available")
+                                }
+                                if (result.hasBookmarks) {
+                                    InfoRow(label = "Bookmarks", value = "Available")
+                                }
+                            }
+
+                            is DocumentValidationResult.PasswordProtected -> {
+                                InfoRow(
+                                    label = "Security",
+                                    value = result.securityLevel.name.replace("_", " ")
+                                )
+                            }
+
+                            is DocumentValidationResult.Corrupted -> {
+                                if (result.errorCode != -1) {
+                                    InfoRow(
+                                        label = "Error Code",
+                                        value = result.errorCode.toString()
+                                    )
+                                }
+                            }
+
+                            else -> { /* No additional info to show */
+                            }
+                        }
+                    }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Settings section
                 Text(
                     text = "Viewer Settings",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 PDFSettingsForm(
                     viewerSettings = viewerSettings,
                     onSettingsChange = onSettingsChange
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Action buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -440,12 +535,13 @@ private fun PDFDetailsCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Pick Another")
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     Button(
                         onClick = onStartPreview,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = validationResult is DocumentValidationResult.Valid
                     ) {
                         Icon(Icons.Filled.Preview, contentDescription = "Start Preview")
                         Spacer(modifier = Modifier.width(4.dp))
@@ -460,7 +556,7 @@ private fun PDFDetailsCard(
 @Composable
 private fun PDFSettingsForm(
     viewerSettings: PDFViewerSettings,
-    onSettingsChange: (PDFViewerSettings) -> Unit
+    onSettingsChange: (PDFViewerSettings) -> Unit,
 ) {
     TextField(
         value = viewerSettings.defaultPage.toString(),
@@ -475,7 +571,7 @@ private fun PDFSettingsForm(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
     )
-    
+
     Row(
         modifier = Modifier
             .padding(8.dp)
@@ -492,7 +588,7 @@ private fun PDFSettingsForm(
             }
         )
     }
-    
+
     Row(
         modifier = Modifier
             .padding(8.dp)
@@ -534,10 +630,10 @@ private fun InfoRow(label: String, value: String) {
 
 private fun formatFileSize(bytes: Long): String {
     if (bytes <= 0) return "0 B"
-    
+
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
     val digitGroups = (log10(bytes.toDouble()) / log10(1024.0)).toInt()
-    
+
     return DecimalFormat("#,##0.#").format(bytes / 1024.0.pow(digitGroups.toDouble())) + " " + units[digitGroups]
 }
 
