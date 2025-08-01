@@ -5,6 +5,24 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2025-08-01
+
+### Added
+- Robust PDF page loading with multi-layer validation and retry mechanism to handle NaN values and prevent ANRs.
+- Adaptive delay in PDFView for improved rendering based on document size.
+
+### Changed
+- Removed unwanted comments from PagesLoader for improved code clarity.
+
+### Migration Guide
+No migration steps required. This is a backward-compatible release.
+
+```gradle
+dependencies {
+    implementation 'io.github.rhariskumar3:pdfpreview:1.0.8'
+}
+```
+
 ## [1.0.7] - 2025-07-28
 
 ### Changed
@@ -122,6 +140,7 @@ dependencies {
 
 ## Version Links
 
-- [1.0.7](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.7) - Latest
+- [1.0.8](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.8) - Latest
+- [1.0.7](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.7)
 - [1.0.6](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.6)
 - [1.0.5](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.5)
