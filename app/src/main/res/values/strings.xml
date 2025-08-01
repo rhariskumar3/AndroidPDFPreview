@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">PDF Preview</string>
     <string name="label_pick_pdf">Pick PDF</string>
+    <string name="enter_exit_fullscreen">Enter/Exit Fullscreen</string>
 </resources>

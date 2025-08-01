@@ -67,4 +67,6 @@ dependencies {
     implementation(libs.bundles.androidx.compose)
 
     implementation(project(":pdfpreview"))
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
 }

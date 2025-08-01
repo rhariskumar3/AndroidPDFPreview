@@ -12,18 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.Preview
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -52,6 +47,7 @@ internal fun DocumentDetailsCard(
     onSettingsChange: (ViewerSettings) -> Unit,
     onStartPreview: () -> Unit,
     onPickNewFile: () -> Unit,
+    onLaunchXmlActivity: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -110,7 +106,8 @@ internal fun DocumentDetailsCard(
                 ActionButtonsSection(
                     canPreview = canPreview,
                     onStartPreview = onStartPreview,
-                    onPickNewFile = onPickNewFile
+                    onPickNewFile = onPickNewFile,
+                    onLaunchXmlActivity = onLaunchXmlActivity,
                 )
             }
         }
@@ -279,6 +276,7 @@ private fun ActionButtonsSection(
     canPreview: Boolean,
     onStartPreview: () -> Unit,
     onPickNewFile: () -> Unit,
+    onLaunchXmlActivity: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -289,20 +287,25 @@ private fun ActionButtonsSection(
             onClick = onPickNewFile,
             modifier = Modifier.weight(1f)
         ) {
-            Icon(Icons.Default.FileOpen, contentDescription = null)
-            Spacer(modifier = Modifier.width(4.dp))
             Text("Select Another")
         }
-
+        // launch XmlActivity
         Button(
-            onClick = onStartPreview,
+            onClick = onLaunchXmlActivity,
             modifier = Modifier.weight(1f),
-            enabled = canPreview
         ) {
-            Icon(Icons.Default.Preview, contentDescription = null)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("Preview PDF")
+            Text("Open in Xml")
         }
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Button(
+        onClick = onStartPreview,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = canPreview
+    ) {
+        Text("Preview PDF")
     }
 }
 

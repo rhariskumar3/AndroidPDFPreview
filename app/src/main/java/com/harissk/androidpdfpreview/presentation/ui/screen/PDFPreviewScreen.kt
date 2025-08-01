@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.harissk.androidpdfpreview.XmlActivity
 import com.harissk.androidpdfpreview.data.util.getFileName
 import com.harissk.androidpdfpreview.data.util.uriToFile
 import com.harissk.androidpdfpreview.domain.model.PDFDocument
@@ -92,6 +93,15 @@ fun PDFPreviewScreen(
             type = "application/pdf"
         }
         filePickerLauncher.launch(intent)
+    }
+
+    val launchXmlActivity
+    = { fileName: String, filePath: String ->
+        val intent = Intent(context, XmlActivity::class.java).apply {
+            putExtra("fileName", fileName)
+            putExtra("filePath", filePath)
+        }
+        context.startActivity(intent)
     }
 
     Scaffold(
@@ -214,7 +224,10 @@ fun PDFPreviewScreen(
                         onStartPreview = {
                             viewModel.handleIntent(PDFPreviewIntent.NavigateToViewer)
                         },
-                        onPickNewFile = pickFile
+                        onPickNewFile = pickFile,
+                        onLaunchXmlActivity = {
+                            launchXmlActivity(state.fileName, state.selectedFile?.absolutePath ?: "")
+                        }
                     )
                 }
 
