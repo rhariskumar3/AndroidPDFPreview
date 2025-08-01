@@ -116,23 +116,46 @@ internal class PageSizeCalculator(
         }
     }
 
-    private fun fitWidth(pageSize: Size, maxWidth: Float): SizeF = SizeF(
-        maxWidth,
-        floor(maxWidth / (pageSize.width.toFloat() / pageSize.height.toFloat()))
-    )
+    private fun fitWidth(pageSize: Size, maxWidth: Float): SizeF {
+        if (pageSize.width <= 0 || pageSize.height <= 0 || maxWidth <= 0f) {
+            return SizeF(0F, 0F)
+        }
+        val ratio = pageSize.width.toFloat() / pageSize.height.toFloat()
+        if (ratio.isNaN() || ratio.isInfinite() || ratio <= 0f) {
+            return SizeF(0F, 0F)
+        }
+        val height = floor(maxWidth / ratio)
+        return SizeF(maxWidth, if (height.isFinite() && height > 0f) height else 0F)
+    }
 
-    private fun fitHeight(pageSize: Size, maxHeight: Float): SizeF = SizeF(
-        floor(maxHeight / (pageSize.height.toFloat() / pageSize.width.toFloat())),
-        maxHeight
-    )
+    private fun fitHeight(pageSize: Size, maxHeight: Float): SizeF {
+        if (pageSize.width <= 0 || pageSize.height <= 0 || maxHeight <= 0f) {
+            return SizeF(0F, 0F)
+        }
+        val ratio = pageSize.height.toFloat() / pageSize.width.toFloat()
+        if (ratio.isNaN() || ratio.isInfinite() || ratio <= 0f) {
+            return SizeF(0F, 0F)
+        }
+        val width = floor(maxHeight / ratio)
+        return SizeF(if (width.isFinite() && width > 0f) width else 0F, maxHeight)
+    }
 
     private fun fitBoth(pageSize: Size, maxWidth: Float, maxHeight: Float): SizeF {
+        if (pageSize.width <= 0 || pageSize.height <= 0 || maxWidth <= 0f || maxHeight <= 0f) {
+            return SizeF(0F, 0F)
+        }
         val ratio = pageSize.width.toFloat() / pageSize.height.toFloat()
+        if (ratio.isNaN() || ratio.isInfinite() || ratio <= 0f) {
+            return SizeF(0F, 0F)
+        }
         var w: Float = maxWidth
         var h: Float = floor(maxWidth / ratio)
-        if (h > maxHeight) {
+        if (!h.isFinite() || h <= 0f || h > maxHeight) {
             h = maxHeight
             w = floor(maxHeight * ratio)
+            if (!w.isFinite() || w <= 0f) {
+                return SizeF(0F, 0F)
+            }
         }
         return SizeF(w, h)
     }

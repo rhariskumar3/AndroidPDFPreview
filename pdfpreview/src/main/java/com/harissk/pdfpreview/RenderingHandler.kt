@@ -94,15 +94,20 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
 
         // Synchronize access to PDF file to prevent concurrent operations
         synchronized(pdfFile) {
-            // Double-check state after acquiring lock
             if (pdfView.isRecycled || pdfView.isRecycling || !running) return null
 
             pdfFile.openPage(renderingTask.page)
-            val w = renderingTask.width.roundToInt()
-            val h = renderingTask.height.roundToInt()
-            if (w == 0 || h == 0 || pdfFile.pageHasError(renderingTask.page)) {
+            val w = renderingTask.width
+            val h = renderingTask.height
+
+            // Validate dimensions
+            if (w.isNaN() || h.isNaN() || w <= 0 || h <= 0) {
+                pdfView.logWriter?.writeLog("Invalid dimensions or page error: width=$w, height=$h", TAG)
                 return null
             }
+
+            val roundedWidth = w.roundToInt()
+            val roundedHeight = h.roundToInt()
 
             // Check again before creating bitmap
             if (pdfView.isRecycled || pdfView.isRecycling || !running) {
@@ -111,8 +116,8 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
 
             val render: Bitmap = try {
                 createBitmap(
-                    width = w,
-                    height = h,
+                    width = roundedWidth,
+                    height = roundedHeight,
                     config = when {
                         renderingTask.bestQuality -> Bitmap.Config.ARGB_8888
                         else -> Bitmap.Config.RGB_565
@@ -123,14 +128,14 @@ class RenderingHandler(looper: Looper, private val pdfView: PDFView) : Handler(l
                 return null
             }
 
-            // Final check before native rendering - this is where the crash occurs
+            // Final check before native rendering
             if (pdfView.isRecycled || pdfView.isRecycling || !running) {
                 render.recycle()
                 return null
             }
 
             try {
-                calculateBounds(w, h, renderingTask.bounds ?: RectF())
+                calculateBounds(roundedWidth, roundedHeight, renderingTask.bounds ?: RectF())
                 pdfFile.renderPageBitmap(
                     bitmap = render,
                     pageIndex = renderingTask.page,

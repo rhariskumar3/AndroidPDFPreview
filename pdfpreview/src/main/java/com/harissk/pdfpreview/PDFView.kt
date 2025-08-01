@@ -843,7 +843,20 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         try {
             dragPinchManager.enable()
             pdfRequest?.documentLoadListener?.onDocumentLoaded(pageCount)
-            jumpTo(defaultPage, false)
+            
+            // Add a small delay to allow PDF native library to fully initialize page dimensions
+            // Use a longer delay for large documents to ensure proper initialization
+            val initDelay = when {
+                pageCount > 1000 -> 200L  // Large documents need more time
+                pageCount > 500 -> 150L   // Medium documents
+                else -> 100L              // Small documents
+            }
+            
+            postDelayed({
+                if (!isRecycled && !isRecycling) {
+                    jumpTo(defaultPage, false)
+                }
+            }, initDelay)
         } catch (e: Exception) {
             loadError(e)
         }

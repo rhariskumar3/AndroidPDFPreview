@@ -38,6 +38,11 @@ internal class PagesLoader(private val pdfView: PDFView) {
     private var pageRelativePartHeight = 0f
     private var partRenderWidth = 0f
     private var partRenderHeight = 0f
+
+    // Add retry tracking for PDF readiness
+    private var retryCount = 0
+    private val maxRetries = 5  // Reduced from 10
+    private val retryDelayMs = 100L // Reduced from 200ms
     private val thumbnailRect = RectF(0f, 0f, 1f, 1f)
     private val preloadOffset: Int =
         pdfView.context.toPx(pdfView.pdfViewerConfiguration.preloadMarginDp)
@@ -61,42 +66,74 @@ internal class PagesLoader(private val pdfView: PDFView) {
 
     private fun getPageColsRows(grid: GridSize, pageIndex: Int) {
         val size: SizeF = pdfView.pdfFile.getPageSize(pageIndex) ?: return
+
+        // Validate page size
+        if (size.width <= 0f || size.height <= 0f) {
+            grid.rows = 1
+            grid.cols = 1
+            return
+        }
+
         val ratioX: Float = 1f / size.width
         val ratioY: Float = 1f / size.height
-        
+
         // Maintain tile size at higher zoom levels to prevent blur
         // Use a more aggressive scaling approach for better quality
         val zoomFactor = pdfView.zoom.coerceAtLeast(1f)
-        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize * 
-            when {
-                zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
-                zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
-                zoomFactor > 1f -> zoomFactor          // Standard scaling
-                else -> 1f                              // Base quality
-            }
-        
+        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize *
+                when {
+                    zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
+                    zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
+                    zoomFactor > 1f -> zoomFactor          // Standard scaling
+                    else -> 1f                              // Base quality
+                }
+
         val partHeight: Float = effectiveTileSize * ratioY / pdfView.zoom
         val partWidth: Float = effectiveTileSize * ratioX / pdfView.zoom
-        grid.rows = ceil(1f / partHeight).roundToInt()
-        grid.cols = ceil(1f / partWidth).roundToInt()
+
+        // Ensure valid calculations and prevent NaN/infinite values
+        val calculatedRows = if (partHeight > 0f && !partHeight.isNaN()) {
+            ceil(1f / partHeight).roundToInt().coerceAtLeast(1)
+        } else 1
+
+        val calculatedCols = if (partWidth > 0f && !partWidth.isNaN()) {
+            ceil(1f / partWidth).roundToInt().coerceAtLeast(1)
+        } else 1
+
+        grid.rows = calculatedRows
+        grid.cols = calculatedCols
     }
 
     private fun calculatePartSize(grid: GridSize) {
-        pageRelativePartWidth = 1f / grid.cols.toFloat()
-        pageRelativePartHeight = 1f / grid.rows.toFloat()
-        
+        // Ensure grid size is valid
+        val validCols = grid.cols.coerceAtLeast(1)
+        val validRows = grid.rows.coerceAtLeast(1)
+
+        pageRelativePartWidth = 1f / validCols.toFloat()
+        pageRelativePartHeight = 1f / validRows.toFloat()
+
         // Use effective tile size that maintains quality at higher zoom levels
         val zoomFactor = pdfView.zoom.coerceAtLeast(1f)
-        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize * 
-            when {
-                zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
-                zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
-                zoomFactor > 1f -> zoomFactor          // Standard scaling
-                else -> 1f                              // Base quality
-            }
-            
-        partRenderWidth = effectiveTileSize / pageRelativePartWidth
-        partRenderHeight = effectiveTileSize / pageRelativePartHeight
+        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize *
+                when {
+                    zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
+                    zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
+                    zoomFactor > 1f -> zoomFactor          // Standard scaling
+                    else -> 1f                              // Base quality
+                }
+
+        // Validate that pageRelativePartWidth and pageRelativePartHeight are not zero
+        val safePageRelativePartWidth = pageRelativePartWidth.takeIf { it > 0f } ?: 1f
+        val safePageRelativePartHeight = pageRelativePartHeight.takeIf { it > 0f } ?: 1f
+
+        partRenderWidth = effectiveTileSize / safePageRelativePartWidth
+        partRenderHeight = effectiveTileSize / safePageRelativePartHeight
+
+        // Validate final results
+        if (partRenderWidth.isNaN() || partRenderHeight.isNaN() || partRenderWidth <= 0 || partRenderHeight <= 0) {
+            partRenderWidth = pdfView.pdfViewerConfiguration.renderTileSize.toFloat()
+            partRenderHeight = pdfView.pdfViewerConfiguration.renderTileSize.toFloat()
+        }
     }
 
     /**
@@ -108,14 +145,23 @@ internal class PagesLoader(private val pdfView: PDFView) {
         lastXOffset: Float,
         lastYOffset: Float,
     ): List<RenderRange> = try {
+        // Validate offsets to prevent NaN values
+        if (firstXOffset.isNaN() || firstYOffset.isNaN() || lastXOffset.isNaN() || lastYOffset.isNaN()) {
+            throw IllegalArgumentException("Offsets cannot be NaN")
+        }
+
         val fixedFirstXOffset: Float = -firstXOffset.coerceAtMost(0F)
         val fixedFirstYOffset: Float = -firstYOffset.coerceAtMost(0F)
         val fixedLastXOffset: Float = -lastXOffset.coerceAtMost(0F)
         val fixedLastYOffset: Float = -lastYOffset.coerceAtMost(0F)
         val offsetFirst = if (pdfView.isSwipeVertical) fixedFirstYOffset else fixedFirstXOffset
         val offsetLast = if (pdfView.isSwipeVertical) fixedLastYOffset else fixedLastXOffset
-        val firstPage = pdfView.pdfFile.getPageAtOffset(offsetFirst, pdfView.zoom)
+
+        // Validate page indices
+        val firstPage = pdfView.pdfFile.getPageAtOffset(offsetFirst, pdfView.zoom).coerceAtLeast(0)
         val lastPage = pdfView.pdfFile.getPageAtOffset(offsetLast, pdfView.zoom)
+            .coerceAtMost(pdfView.pdfFile.pagesCount - 1)
+
         val pageCount = lastPage - firstPage + 1
         val renderRanges: MutableList<RenderRange> = LinkedList()
         for (page in firstPage..lastPage) {
@@ -191,13 +237,17 @@ internal class PagesLoader(private val pdfView: PDFView) {
                     }
                 }
             }
+
             getPageColsRows(
                 range.gridSize,
                 range.page
             ) // get the page's grid size that rows and cols
             val scaledPageSize = pdfView.pdfFile.getScaledPageSize(range.page, pdfView.zoom)
-            val rowHeight: Float = scaledPageSize.height / range.gridSize.rows
-            val colWidth: Float = scaledPageSize.width / range.gridSize.cols
+
+            val rowHeight
+                    : Float = scaledPageSize.height / range.gridSize.rows
+            val colWidth
+                    : Float = scaledPageSize.width / range.gridSize.cols
 
             // get the page offset int the whole file
             // ---------------------------------------
@@ -218,20 +268,27 @@ internal class PagesLoader(private val pdfView: PDFView) {
                                 pdfView.zoom
                             )
                         ) / rowHeight
-                    ).roundToInt()
-                    range.leftTop.col =
-                        ((pageFirstXOffset - secondaryOffset).coerceAtLeast(0F) / colWidth).roundToInt()
-                    range.rightBottom.row = ceil(
-                        (pageLastYOffset - pdfView.pdfFile.getPageOffset(
-                            range.page,
-                            pdfView.zoom
-                        )) / rowHeight
-                    ).roundToInt()
-                    range.rightBottom.col =
-                        ((pageLastXOffset - secondaryOffset).coerceAtLeast(0F) / colWidth).roundToInt()
+                    ).toInt()
+                    range.leftTop.col = floor(
+                        abs(pageFirstXOffset - secondaryOffset) / colWidth
+                    ).toInt()
+                    range.rightBottom.row = floor(
+                        abs(
+                            pageLastYOffset - pdfView.pdfFile.getPageOffset(
+                                range.page,
+                                pdfView.zoom
+                            )
+                        ) / rowHeight
+                    ).toInt()
+                    range.rightBottom.col = floor(
+                        abs(pageLastXOffset - secondaryOffset) / colWidth
+                    ).toInt()
                 }
 
                 else -> {
+                    range.leftTop.row = floor(
+                        abs(pageFirstYOffset - secondaryOffset) / rowHeight
+                    ).toInt()
                     range.leftTop.col = floor(
                         abs(
                             pageFirstXOffset - pdfView.pdfFile.getPageOffset(
@@ -239,15 +296,18 @@ internal class PagesLoader(private val pdfView: PDFView) {
                                 pdfView.zoom
                             )
                         ) / colWidth
-                    ).roundToInt()
-                    range.leftTop.row =
-                        ((pageFirstYOffset - secondaryOffset).coerceAtLeast(0F) / rowHeight).roundToInt()
-                    range.rightBottom.col = ((pageLastXOffset - pdfView.pdfFile.getPageOffset(
-                        range.page,
-                        pdfView.zoom
-                    )) / colWidth).roundToInt()
-                    range.rightBottom.row =
-                        floor((pageLastYOffset - secondaryOffset).coerceAtLeast(0F) / rowHeight).roundToInt()
+                    ).toInt()
+                    range.rightBottom.row = floor(
+                        abs(pageLastYOffset - secondaryOffset) / rowHeight
+                    ).toInt()
+                    range.rightBottom.col = floor(
+                        abs(
+                            pageLastXOffset - pdfView.pdfFile.getPageOffset(
+                                range.page,
+                                pdfView.zoom
+                            )
+                        ) / colWidth
+                    ).toInt()
                 }
             }
             renderRanges.add(range)
@@ -259,6 +319,28 @@ internal class PagesLoader(private val pdfView: PDFView) {
     }
 
     private fun loadVisible() {
+        // Check if PDF is ready by testing a few page sizes first
+        if (!isPdfReady()) {
+            retryCount++
+            if (retryCount <= maxRetries) {
+                val delay = retryDelayMs // Fixed delay instead of exponential backoff
+                pdfView.logWriter?.writeLog("PDF not ready for rendering (attempt $retryCount/$maxRetries), retrying in ${delay}ms", TAG)
+                // Schedule a retry after a delay
+                pdfView.postDelayed({ 
+                    if (pdfView.isAttachedToWindow) {
+                        pdfView.loadPages() 
+                    }
+                }, delay)
+            } else {
+                pdfView.logWriter?.writeLog("PDF still not ready after $maxRetries attempts, giving up", TAG)
+                retryCount = 0 // Reset for next load cycle
+            }
+            return
+        }
+        
+        // Reset retry count on successful load
+        retryCount = 0
+        
         val scaledPreloadOffset = preloadOffset.toFloat()
         val rangeList = getRenderRangeList(
             firstXOffset = -xOffset + scaledPreloadOffset,
@@ -281,6 +363,44 @@ internal class PagesLoader(private val pdfView: PDFView) {
             )
             if (loadedParts >= pdfView.pdfViewerConfiguration.maxCachedBitmaps) break
         }
+    }
+    
+    /**
+     * Check if PDF is ready by verifying that page sizes are available
+     */
+    private fun isPdfReady(): Boolean {
+        val totalPages = pdfView.pageCount
+        if (totalPages <= 0) {
+            pdfView.logWriter?.writeLog("PDF not ready: page count is $totalPages", TAG)
+            return false
+        }
+        
+        // Check the first few pages to see if they have valid dimensions
+        val pagesToCheck = minOf(3, totalPages) // Reduce to 3 pages for faster check
+        var validPages = 0
+        var totalSizeSum = 0f
+        
+        for (i in 0 until pagesToCheck) {
+            val pageSize = pdfView.pdfFile.getPageSize(i)
+            if (pageSize != null) {
+                pdfView.logWriter?.writeLog("Page $i size: width=${pageSize.width}, height=${pageSize.height}", TAG)
+                if (pageSize.width > 0f && pageSize.height > 0f) {
+                    validPages++
+                    totalSizeSum += pageSize.width + pageSize.height
+                }
+            } else {
+                pdfView.logWriter?.writeLog("Page $i size: null", TAG)
+            }
+        }
+        
+        val isReady = validPages > 0 && totalSizeSum > 0f
+        if (!isReady) {
+            pdfView.logWriter?.writeLog("PDF not ready: validPages=$validPages, totalSizeSum=$totalSizeSum", TAG)
+        } else {
+            pdfView.logWriter?.writeLog("PDF is ready: validPages=$validPages out of $pagesToCheck checked", TAG)
+        }
+        
+        return isReady
     }
 
     private fun loadPage(
@@ -338,12 +458,40 @@ internal class PagesLoader(private val pdfView: PDFView) {
     }
 
     private fun loadThumbnail(page: Int) {
+        // Validate page index
+        if (page < 0 || page >= pdfView.pageCount) {
+            pdfView.logWriter?.writeLog("Invalid page index for thumbnail: $page", TAG)
+            return
+        }
+        
         val pageSize: SizeF = pdfView.pdfFile.getPageSize(page) ?: return
+
+        // Validate page size for thumbnails
+        if (pageSize.width <= 0f || pageSize.height <= 0f) {
+            pdfView.logWriter?.writeLog(
+                "Invalid page size for thumbnail page $page: width=${pageSize.width}, height=${pageSize.height}",
+                TAG
+            )
+            return
+        }
+
+        val thumbWidth = pageSize.width * pdfView.pdfViewerConfiguration.thumbnailQuality
+        val thumbHeight = pageSize.height * pdfView.pdfViewerConfiguration.thumbnailQuality
+
+        // Validate calculated thumbnail dimensions
+        if (thumbWidth <= 0f || thumbHeight <= 0f || thumbWidth.isNaN() || thumbHeight.isNaN()) {
+            pdfView.logWriter?.writeLog(
+                "Invalid thumbnail dimensions for page $page: width=$thumbWidth, height=$thumbHeight",
+                TAG
+            )
+            return
+        }
+
         if (!pdfView.cacheManager.containsThumbnail(page, thumbnailRect))
             pdfView.renderingHandler?.addRenderingTask(
                 page = page,
-                width = pageSize.width * pdfView.pdfViewerConfiguration.thumbnailQuality,
-                height = pageSize.height * pdfView.pdfViewerConfiguration.thumbnailQuality,
+                width = thumbWidth,
+                height = thumbHeight,
                 bounds = thumbnailRect,
                 thumbnail = true,
                 cacheOrder = 0,
@@ -357,5 +505,9 @@ internal class PagesLoader(private val pdfView: PDFView) {
         xOffset = -pdfView.currentXOffset.coerceIn(-Float.MAX_VALUE, 0f)
         yOffset = -pdfView.currentYOffset.coerceIn(-Float.MAX_VALUE, 0f)
         loadVisible()
+    }
+    
+    companion object {
+        private const val TAG = "PagesLoader"
     }
 }

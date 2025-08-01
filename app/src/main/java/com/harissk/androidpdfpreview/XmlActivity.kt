@@ -86,6 +86,12 @@ class XmlActivity : AppCompatActivity() {
     }
 
     private fun toggleFullscreen() {
+        Log.i("XMLActivity", "Toggling fullscreen mode - Current state: $isFullScreen")
+        if (isFinishing || isDestroyed) {
+            Log.w("XMLActivity", "Activity is finishing or destroyed, skipping fullscreen toggle")
+            return
+        }
+
         isFullScreen = !isFullScreen
         if (isFullScreen) {
             supportActionBar?.hide()
