@@ -39,10 +39,6 @@ internal class PagesLoader(private val pdfView: PDFView) {
     private var partRenderWidth = 0f
     private var partRenderHeight = 0f
 
-    // Add retry tracking for PDF readiness
-    private var retryCount = 0
-    private val maxRetries = 5  // Reduced from 10
-    private val retryDelayMs = 100L // Reduced from 200ms
     private val thumbnailRect = RectF(0f, 0f, 1f, 1f)
     private val preloadOffset: Int =
         pdfView.context.toPx(pdfView.pdfViewerConfiguration.preloadMarginDp)
@@ -319,28 +315,13 @@ internal class PagesLoader(private val pdfView: PDFView) {
     }
 
     private fun loadVisible() {
-        // Check if PDF is ready by testing a few page sizes first
-        if (!isPdfReady()) {
-            retryCount++
-            if (retryCount <= maxRetries) {
-                val delay = retryDelayMs // Fixed delay instead of exponential backoff
-                pdfView.logWriter?.writeLog("PDF not ready for rendering (attempt $retryCount/$maxRetries), retrying in ${delay}ms", TAG)
-                // Schedule a retry after a delay
-                pdfView.postDelayed({ 
-                    if (pdfView.isAttachedToWindow) {
-                        pdfView.loadPages() 
-                    }
-                }, delay)
-            } else {
-                pdfView.logWriter?.writeLog("PDF still not ready after $maxRetries attempts, giving up", TAG)
-                retryCount = 0 // Reset for next load cycle
-            }
+        pdfView.logWriter?.writeLog("Loading visible pages", TAG)
+
+        if (pdfView.pageCount <= 0) {
+            pdfView.logWriter?.writeLog("No pages available, skipping load", TAG)
             return
         }
-        
-        // Reset retry count on successful load
-        retryCount = 0
-        
+
         val scaledPreloadOffset = preloadOffset.toFloat()
         val rangeList = getRenderRangeList(
             firstXOffset = -xOffset + scaledPreloadOffset,
@@ -348,60 +329,55 @@ internal class PagesLoader(private val pdfView: PDFView) {
             lastXOffset = -xOffset - pdfView.width - scaledPreloadOffset,
             lastYOffset = -yOffset - pdfView.height - scaledPreloadOffset
         )
-        for (range in rangeList) loadThumbnail(range.page)
+
+        val maxRangesToProcess = 3
+        val limitedRangeList = rangeList.take(maxRangesToProcess)
+
+        for (range in limitedRangeList)
+            try {
+                loadThumbnail(range.page)
+            } catch (e: Exception) {
+                pdfView.logWriter?.writeLog(
+                    "Failed to load thumbnail for page ${range.page}: ${e.message}",
+                    TAG
+                )
+                continue
+            }
 
         var loadedParts = 0
-        for (range in rangeList) {
-            calculatePartSize(range.gridSize)
-            loadedParts += loadPage(
-                page = range.page,
-                firstRow = range.leftTop.row,
-                lastRow = range.rightBottom.row,
-                firstCol = range.leftTop.col,
-                lastCol = range.rightBottom.col,
-                nbOfPartsLoadable = pdfView.pdfViewerConfiguration.maxCachedBitmaps - loadedParts
-            )
-            if (loadedParts >= pdfView.pdfViewerConfiguration.maxCachedBitmaps) break
-        }
-    }
-    
-    /**
-     * Check if PDF is ready by verifying that page sizes are available
-     */
-    private fun isPdfReady(): Boolean {
-        val totalPages = pdfView.pageCount
-        if (totalPages <= 0) {
-            pdfView.logWriter?.writeLog("PDF not ready: page count is $totalPages", TAG)
-            return false
-        }
-        
-        // Check the first few pages to see if they have valid dimensions
-        val pagesToCheck = minOf(3, totalPages) // Reduce to 3 pages for faster check
-        var validPages = 0
-        var totalSizeSum = 0f
-        
-        for (i in 0 until pagesToCheck) {
-            val pageSize = pdfView.pdfFile.getPageSize(i)
-            if (pageSize != null) {
-                pdfView.logWriter?.writeLog("Page $i size: width=${pageSize.width}, height=${pageSize.height}", TAG)
-                if (pageSize.width > 0f && pageSize.height > 0f) {
-                    validPages++
-                    totalSizeSum += pageSize.width + pageSize.height
+        val maxPartsPerCall = 50
+
+        for (range in limitedRangeList)
+            try {
+                calculatePartSize(range.gridSize)
+                val partsToLoad = minOf(
+                    pdfView.pdfViewerConfiguration.maxCachedBitmaps - loadedParts,
+                    maxPartsPerCall - loadedParts
+                )
+                if (partsToLoad <= 0) break
+
+                loadedParts += loadPage(
+                    page = range.page,
+                    firstRow = range.leftTop.row,
+                    lastRow = range.rightBottom.row,
+                    firstCol = range.leftTop.col,
+                    lastCol = range.rightBottom.col,
+                    nbOfPartsLoadable = partsToLoad
+                )
+
+                if (loadedParts >= maxPartsPerCall) {
+                    pdfView.logWriter?.writeLog(
+                        "Reached max parts limit ($maxPartsPerCall), deferring remaining load",
+                        TAG
+                    )
+                    break
                 }
-            } else {
-                pdfView.logWriter?.writeLog("Page $i size: null", TAG)
+            } catch (e: Exception) {
+                pdfView.logWriter?.writeLog("Failed to load page ${range.page}: ${e.message}", TAG)
+                continue
             }
-        }
-        
-        val isReady = validPages > 0 && totalSizeSum > 0f
-        if (!isReady) {
-            pdfView.logWriter?.writeLog("PDF not ready: validPages=$validPages, totalSizeSum=$totalSizeSum", TAG)
-        } else {
-            pdfView.logWriter?.writeLog("PDF is ready: validPages=$validPages out of $pagesToCheck checked", TAG)
-        }
-        
-        return isReady
     }
+
 
     private fun loadPage(
         page: Int, firstRow: Int, lastRow: Int, firstCol: Int, lastCol: Int,
@@ -463,7 +439,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
             pdfView.logWriter?.writeLog("Invalid page index for thumbnail: $page", TAG)
             return
         }
-        
+
         val pageSize: SizeF = pdfView.pdfFile.getPageSize(page) ?: return
 
         // Validate page size for thumbnails
@@ -506,7 +482,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
         yOffset = -pdfView.currentYOffset.coerceIn(-Float.MAX_VALUE, 0f)
         loadVisible()
     }
-    
+
     companion object {
         private const val TAG = "PagesLoader"
     }
