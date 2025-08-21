@@ -5,11 +5,11 @@ import android.util.Log
 import android.view.MotionEvent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.harissk.androidpdfpreview.domain.model.PDFDocument
 import com.harissk.androidpdfpreview.presentation.model.ViewerSettings
-import com.harissk.pdfium.Meta
 import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfpreview.PDFView
@@ -21,6 +21,8 @@ import com.harissk.pdfpreview.listener.RenderingEventListener
 import com.harissk.pdfpreview.load
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun PDFViewer(
@@ -30,6 +32,8 @@ internal fun PDFViewer(
     onError: (String) -> Unit = {},
     onFullScreenToggle: (() -> Unit)? = null,
 ) {
+    val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
+
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
@@ -52,29 +56,34 @@ internal fun PDFViewer(
                     override fun onDocumentLoaded(totalPages: Int) {
                         Log.d("=====>", "onDocumentLoaded() called with: totalPages = $totalPages")
 
-                        Log.d("=====>", "=============")
-                        val meta: Meta? = pdfView.documentMeta
-                        Log.d("=====>", "title = ${meta?.title}")
-                        Log.d("=====>", "author = ${meta?.author}")
-                        Log.d("=====>", "subject = ${meta?.subject}")
-                        Log.d("=====>", "keywords = ${meta?.keywords}")
-                        Log.d("=====>", "creator = ${meta?.creator}")
-                        Log.d("=====>", "producer = ${meta?.producer}")
-                        Log.d("=====>", "creationDate = ${meta?.creationDate}")
-                        Log.d("=====>", "modDate = ${meta?.modDate}")
-                        Log.d("=====>", "=============")
+                        coroutineScope.launch {
+                            pdfView.getDocumentMeta().let { meta ->
+                                Log.d("=====>", "=============")
+                                Log.d("=====>", "title = ${meta?.title}")
+                                Log.d("=====>", "author = ${meta?.author}")
+                                Log.d("=====>", "subject = ${meta?.subject}")
+                                Log.d("=====>", "keywords = ${meta?.keywords}")
+                                Log.d("=====>", "creator = ${meta?.creator}")
+                                Log.d("=====>", "producer = ${meta?.producer}")
+                                Log.d("=====>", "creationDate = ${meta?.creationDate}")
+                                Log.d("=====>", "modDate = ${meta?.modDate}")
+                                Log.d("=====>", "=============")
 
-                        Log.d("=====>", "=============")
-                        pdfView.tableOfContents.forEach { bookmark ->
-                            Log.d("=====>", "${bookmark.pageIdx}  - ${bookmark.title}")
-                            bookmark.children.forEach { child ->
-                                Log.d(
-                                    "=====>",
-                                    "${bookmark.pageIdx}:${child.pageIdx} - ${child.title}"
-                                )
+                                Log.d("=====>", "=============")
+                                pdfView.getTableOfContents().let { bookmarks ->
+                                    bookmarks.forEach { bookmark ->
+                                        Log.d("=====>", "${bookmark.pageIdx}  - ${bookmark.title}")
+                                        bookmark.children.forEach { child ->
+                                            Log.d(
+                                                "=====>",
+                                                "${bookmark.pageIdx}:${child.pageIdx} - ${child.title}"
+                                            )
+                                        }
+                                    }
+                                    Log.d("=====>", "=============")
+                                }
                             }
                         }
-                        Log.d("=====>", "=============")
                     }
 
                     override fun onDocumentLoadError(error: Throwable) {

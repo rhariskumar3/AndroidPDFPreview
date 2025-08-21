@@ -321,11 +321,9 @@ class PdfFile(
         renderAnnot = annotationRendering
     )
 
-    val metaData: Meta
-        get() = pdfiumCore.documentMeta
+    suspend fun getMetaData(): Meta = pdfiumCore.getDocumentMeta()
 
-    val bookmarks: List<Bookmark>
-        get() = pdfiumCore.getTableOfContents()
+    suspend fun getBookmarks(): List<Bookmark> = pdfiumCore.getTableOfContents()
 
     fun getPageLinks(pageIndex: Int): List<Link> = pdfiumCore.getPageLinks(documentPage(pageIndex))
 

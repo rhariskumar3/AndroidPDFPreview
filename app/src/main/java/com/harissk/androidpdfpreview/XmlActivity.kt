@@ -38,11 +38,16 @@ import com.harissk.pdfpreview.listener.RenderingEventListener
 import com.harissk.pdfpreview.load
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 
 class XmlActivity : AppCompatActivity() {
 
     private var isFullScreen = false
+
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,16 +157,20 @@ class XmlActivity : AppCompatActivity() {
         }
 
     private fun logDocumentMeta(binding: ActivityXmlBinding) {
-        binding.pdfView.documentMeta?.let { meta ->
-            Log.d("XMLActivity", "Document Meta: $meta")
+        coroutineScope.launch {
+            binding.pdfView.getDocumentMeta()?.let { meta ->
+                Log.d("XMLActivity", "Document Meta: $meta")
+            }
         }
     }
 
     private fun logTableOfContents(binding: ActivityXmlBinding) {
-        binding.pdfView.tableOfContents.forEach { bookmark ->
-            Log.d("XMLActivity", "Bookmark: ${bookmark.pageIdx} - ${bookmark.title}")
-            bookmark.children.forEach { child ->
-                Log.d("XMLActivity", "Child Bookmark: ${child.pageIdx} - ${child.title}")
+        coroutineScope.launch {
+            binding.pdfView.getTableOfContents().forEach { bookmark ->
+                Log.d("XMLActivity", "Bookmark: ${bookmark.pageIdx} - ${bookmark.title}")
+                bookmark.children.forEach { child ->
+                    Log.d("XMLActivity", "Child Bookmark: ${child.pageIdx} - ${child.title}")
+                }
             }
         }
     }

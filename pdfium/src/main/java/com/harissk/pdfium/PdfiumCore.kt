@@ -92,11 +92,15 @@ class PdfiumCore : java.io.Closeable {
         renderAnnot: Boolean,
     )
 
-    private external fun nativeGetDocumentMetaText(docPtr: Long, tag: String): String?
-    private external fun nativeGetFirstChildBookmark(docPtr: Long, bookmarkPtr: Long?): Long?
-    private external fun nativeGetSiblingBookmark(docPtr: Long, bookmarkPtr: Long): Long?
-    private external fun nativeGetBookmarkTitle(bookmarkPtr: Long): String?
-    private external fun nativeGetBookmarkDestIndex(docPtr: Long, bookmarkPtr: Long): Long
+    private external suspend fun nativeGetDocumentMetaText(docPtr: Long, tag: String): String?
+    private external suspend fun nativeGetFirstChildBookmark(
+        docPtr: Long,
+        bookmarkPtr: Long?,
+    ): Long?
+
+    private external suspend fun nativeGetSiblingBookmark(docPtr: Long, bookmarkPtr: Long): Long?
+    private external suspend fun nativeGetBookmarkTitle(bookmarkPtr: Long): String?
+    private external suspend fun nativeGetBookmarkDestIndex(docPtr: Long, bookmarkPtr: Long): Long
     private external fun nativeGetPageSizeByIndex(docPtr: Long, pageIndex: Int, dpi: Int): Size
     private external fun nativeGetPageLinks(pagePtr: Long): LongArray
     private external fun nativeGetDestPageIndex(docPtr: Long, linkPtr: Long): Int?
@@ -447,28 +451,27 @@ class PdfiumCore : java.io.Closeable {
     /**
      * Get metadata for given document
      */
-    val documentMeta: Meta
-        get() = Meta(
-            title = nativeGetDocumentMetaText(mNativeDocPtr, "Title").orEmpty(),
-            author = nativeGetDocumentMetaText(mNativeDocPtr, "Author").orEmpty(),
-            subject = nativeGetDocumentMetaText(mNativeDocPtr, "Subject").orEmpty(),
-            keywords = nativeGetDocumentMetaText(mNativeDocPtr, "Keywords").orEmpty(),
-            creator = nativeGetDocumentMetaText(mNativeDocPtr, "Creator").orEmpty(),
-            producer = nativeGetDocumentMetaText(mNativeDocPtr, "Producer").orEmpty(),
-            creationDate = nativeGetDocumentMetaText(mNativeDocPtr, "CreationDate").orEmpty(),
-            modDate = nativeGetDocumentMetaText(mNativeDocPtr, "ModDate").orEmpty()
-        )
+    suspend fun getDocumentMeta(): Meta = Meta(
+        title = nativeGetDocumentMetaText(mNativeDocPtr, "Title").orEmpty(),
+        author = nativeGetDocumentMetaText(mNativeDocPtr, "Author").orEmpty(),
+        subject = nativeGetDocumentMetaText(mNativeDocPtr, "Subject").orEmpty(),
+        keywords = nativeGetDocumentMetaText(mNativeDocPtr, "Keywords").orEmpty(),
+        creator = nativeGetDocumentMetaText(mNativeDocPtr, "Creator").orEmpty(),
+        producer = nativeGetDocumentMetaText(mNativeDocPtr, "Producer").orEmpty(),
+        creationDate = nativeGetDocumentMetaText(mNativeDocPtr, "CreationDate").orEmpty(),
+        modDate = nativeGetDocumentMetaText(mNativeDocPtr, "ModDate").orEmpty()
+    )
 
     /**
      * Get table of contents (bookmarks) for given document
      */
-    fun getTableOfContents(): List<Bookmark> {
+    suspend fun getTableOfContents(): List<Bookmark> {
         val topLevel = arrayListOf<Bookmark>()
         nativeGetFirstChildBookmark(mNativeDocPtr, null)?.let { recursiveGetBookmark(topLevel, it) }
         return topLevel
     }
 
-    private fun recursiveGetBookmark(tree: ArrayList<Bookmark>, bookmarkPtr: Long) {
+    private suspend fun recursiveGetBookmark(tree: ArrayList<Bookmark>, bookmarkPtr: Long) {
         val bookmark = Bookmark(
             title = nativeGetBookmarkTitle(bookmarkPtr).orEmpty(),
             pageIdx = nativeGetBookmarkDestIndex(mNativeDocPtr, bookmarkPtr),
@@ -626,7 +629,10 @@ class PdfiumCore : java.io.Closeable {
         if (!isValidPointer(pagePtr)) {
             throw IllegalStateException("Page at index $pageIndex not open. Ensure page is opened before preparing text info.")
         }
-        val textPagePtr = nativeLoadTextPage(mNativeDocPtr, pagePtr!!) // pagePtr is checked for null by isValidPointer
+        val textPagePtr = nativeLoadTextPage(
+            mNativeDocPtr,
+            pagePtr!!
+        ) // pagePtr is checked for null by isValidPointer
         if (isValidPointer(textPagePtr)) {
             mNativeTextPagesPtr[pageIndex] = textPagePtr
         }
@@ -998,9 +1004,14 @@ class PdfiumCore : java.io.Closeable {
         this.logWriter = logWriter
     }
 
-    private fun validPtr(ptr: Long?): Boolean = ptr != null && ptr != -1L && ptr != 0L // Added 0L check for consistency
-    private fun validPtr(ptr: Long): Boolean = ptr != 0L && ptr != -1L // Added -1L check for consistency
-    private fun isValidPointer(pointer: Long?): Boolean = pointer != null && pointer != 0L && pointer != -1L // Make it nullable and consistent
+    private fun validPtr(ptr: Long?): Boolean =
+        ptr != null && ptr != -1L && ptr != 0L // Added 0L check for consistency
+
+    private fun validPtr(ptr: Long): Boolean =
+        ptr != 0L && ptr != -1L // Added -1L check for consistency
+
+    private fun isValidPointer(pointer: Long?): Boolean =
+        pointer != null && pointer != 0L && pointer != -1L // Make it nullable and consistent
 
     companion object {
         private const val TAG = "PdfiumCore"

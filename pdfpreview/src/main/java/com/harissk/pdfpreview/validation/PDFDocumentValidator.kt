@@ -92,7 +92,7 @@ object PDFDocumentValidator {
             // Convert source to DocumentSource
             val documentSource = try {
                 DocumentSource.toDocumentSource(source)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 return@withContext DocumentValidationResult.Invalid(
                     reason = InvalidityReason.INVALID_FORMAT,
                     errorMessage = "Unsupported document source type: ${source::class.simpleName}"
@@ -340,9 +340,9 @@ object PDFDocumentValidator {
     /**
      * Checks if the document has metadata.
      */
-    private fun checkMetadata(pdfiumCore: PdfiumCore): Boolean {
+    private suspend fun checkMetadata(pdfiumCore: PdfiumCore): Boolean {
         return try {
-            val meta = pdfiumCore.documentMeta
+            val meta = pdfiumCore.getDocumentMeta()
             meta.title.isNotEmpty() || meta.author.isNotEmpty() || meta.subject.isNotEmpty()
         } catch (_: Exception) {
             false
@@ -352,7 +352,7 @@ object PDFDocumentValidator {
     /**
      * Checks if the document has bookmarks/table of contents.
      */
-    private fun checkBookmarks(pdfiumCore: PdfiumCore): Boolean {
+    private suspend fun checkBookmarks(pdfiumCore: PdfiumCore): Boolean {
         return try {
             val bookmarks = pdfiumCore.getTableOfContents()
             bookmarks.isNotEmpty()
