@@ -20,8 +20,8 @@ For usage instructions and API documentation, see the main **[README.md](../READ
 - 📋 **Want technical details?** → Review [CHANGELOG.md](./CHANGELOG.md)
 
 ### Current Version Information
-- **Latest Version**: 1.0.8 (Aug 1, 2025)
-- **Installation**: `implementation 'io.github.rhariskumar3:pdfpreview:1.0.8'`
+- **Latest Version**: 1.0.9 (Aug 21, 2025)
+- **Installation**: `implementation 'io.github.rhariskumar3:pdfpreview:1.0.9'`
 - **Compatibility**: Android API 21+ (Android 5.1 and above)
 - **Kotlin**: 1.9.23+
 

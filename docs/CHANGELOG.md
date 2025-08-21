@@ -5,6 +5,32 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2025-08-21
+
+### Added
+- NDK ABI filters for arm64-v8a, armeabi-v7a, x86, and x86_64 architectures to optimize APK size and ensure compatibility with a wider range of devices.
+- Improved packaging options to disable legacy JNI library packaging and exclude unnecessary META-INF files, further reducing APK size.
+
+### Changed
+- **Performance Improvements**: Made PDF metadata and bookmark retrieval asynchronous using suspend functions to improve UI responsiveness.
+  - `PdfiumCore.getDocumentMeta()` and `PdfiumCore.getTableOfContents()` are now suspend functions
+  - `PdfFile.getMetaData()` and `PdfFile.getBookmarks()` are now suspend functions  
+  - Corresponding native methods are now executed off the main thread
+- **Background Processing**: Modified sample app to load PDF files in background threads to prevent UI blocking.
+  - `XmlActivity` now loads PDF files in a background coroutine
+  - Renamed sample `setupPdfViewer` to `loadPdfFileInBackground` for better clarity
+- **Code Simplification**: Simplified PDF loading logic by removing retry mechanism and limiting thumbnail processing for better performance.
+- **PDFium Update**: Updated precompiled PDFium libraries to version 141.0.7363.0 with enhanced PDF rendering capabilities.
+
+### Migration Guide
+No breaking changes. This is a backward-compatible release with performance improvements.
+
+```gradle
+dependencies {
+    implementation 'io.github.rhariskumar3:pdfpreview:1.0.9'
+}
+```
+
 ## [1.0.8] - 2025-08-01
 
 ### Added
@@ -140,7 +166,8 @@ dependencies {
 
 ## Version Links
 
-- [1.0.8](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.8) - Latest
+- [1.0.9](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.9) - Latest
+- [1.0.8](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.8)
 - [1.0.7](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.7)
 - [1.0.6](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.6)
 - [1.0.5](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.5)
