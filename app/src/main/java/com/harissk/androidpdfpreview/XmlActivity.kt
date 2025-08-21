@@ -67,7 +67,7 @@ class XmlActivity : AppCompatActivity() {
 
         setupToolbar(binding, fileName)
         setupFullscreenToggle(binding)
-        setupPdfViewer(binding, filePath)
+        loadPdfFileInBackground(binding, filePath)
     }
 
     private fun setupToolbar(binding: ActivityXmlBinding, fileName: String?) {
@@ -116,14 +116,23 @@ class XmlActivity : AppCompatActivity() {
         binding.fabFullscreen.setImageResource(iconRes)
     }
 
-    private fun setupPdfViewer(binding: ActivityXmlBinding, filePath: String) {
+    private fun loadPdfFileInBackground(binding: ActivityXmlBinding, filePath: String) {
+        coroutineScope.launch {
+            val file = File(filePath)
+            launch(Dispatchers.Main) {
+                setupPdfViewer(binding, file)
+            }
+        }
+    }
+
+    private fun setupPdfViewer(binding: ActivityXmlBinding, file: File) {
         val viewerSettings = ViewerSettings(
             defaultPage = 0,
             swipeHorizontal = false,
             enableAnnotationRendering = true
         )
 
-        binding.pdfView.load(File(filePath)) {
+        binding.pdfView.load(file) {
             defaultPage(viewerSettings.defaultPage)
             swipeHorizontal(viewerSettings.swipeHorizontal)
             enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
