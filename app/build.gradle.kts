@@ -24,6 +24,10 @@ android {
         targetSdk = (property("compileSdk") as String).toInt()
         versionCode = 1
         versionName = "1.0.8"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
@@ -51,6 +55,19 @@ android {
     }
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    packagingOptions.jniLibs {
+        useLegacyPackaging = false
+    }
+    packagingOptions.resources {
+        excludes += listOf(
+            "META-INF/DEPENDENCIES",
+            "META-INF/LICENSE",
+            "META-INF/LICENSE.txt",
+            "META-INF/NOTICE",
+            "META-INF/NOTICE.txt"
+        )
     }
 }
 
