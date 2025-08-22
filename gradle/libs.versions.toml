@@ -11,7 +11,7 @@ dokka = "1.8.10"
 gradleMavenPublishPlugin = "0.34.0"
 kotlin = "1.9.23"
 kotlinxCoroutines = "1.8.0"
-lifecycle = "2.8.7"
+lifecycle = "2.9.2"
 material = "1.12.0"
 
 [libraries]
