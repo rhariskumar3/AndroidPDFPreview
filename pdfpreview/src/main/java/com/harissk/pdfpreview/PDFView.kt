@@ -379,6 +379,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun jumpTo(page: Int, withAnimation: Boolean = false) {
         _pdfFile ?: return
         val userPage = pdfFile.determineValidPageNumberFrom(page)
+        logWriter?.writeLog(
+            "Jumping to page $userPage (requested: $page) with animation: $withAnimation",
+            "PDFView"
+        )
+
         val offset: Float = if (userPage == 0) 0F else -pdfFile.getPageOffset(userPage, zoom)
         when {
             isSwipeVertical -> when {
@@ -396,6 +401,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     fun showPage(pageNb: Int) {
         if (isRecycled) return
+        _pdfFile ?: return
 
         val userPage = pdfFile.determineValidPageNumberFrom(pageNb)
         currentPage = userPage
