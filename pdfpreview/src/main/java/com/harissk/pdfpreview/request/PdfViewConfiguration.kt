@@ -2,12 +2,10 @@ package com.harissk.pdfpreview.request
 
 import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfpreview.link.LinkHandler
-import com.harissk.pdfpreview.listener.DocumentLoadListener
 import com.harissk.pdfpreview.listener.GestureEventListener
 import com.harissk.pdfpreview.listener.PageNavigationEventListener
 import com.harissk.pdfpreview.listener.RenderingEventListener
 import com.harissk.pdfpreview.scroll.ScrollHandle
-import com.harissk.pdfpreview.source.DocumentSource
 import com.harissk.pdfpreview.utils.FitPolicy
 
 /**
@@ -27,24 +25,14 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * */
 
 /**
- * Represents a configuration request for loading and rendering a PDF document.
+ * Configuration for PDF view behavior and rendering settings.
+ * These settings are typically set once when the view is created (factory time)
+ * and remain consistent across different document loads.
  *
- * This class encapsulates all the settings and options that can be applied when loading and displaying a PDF.
- * It's used to customize the behavior of the PDF viewer, such as enabling/disabling features,
- * setting the initial page, defining the page fit policy, and more.
- *
- * @deprecated Use PdfViewConfiguration for factory-time settings and PdfLoadRequest for load-time settings.
- * This class is kept for backward compatibility and will be removed in a future version.
- *
- * @property source The source of the PDF document to load (e.g., file, asset, URI).
- * @property pageNumbers An optional list of specific page numbers to load. If null, all pages are loaded.
  * @property enableSwipe Enables or disables swipe gestures for page navigation. Defaults to true.
  * @property enableDoubleTap Enables or disables double tap gestures for zooming. Defaults to true.
- * @property defaultPage The initial page number to display when the document is loaded. Defaults to 0 (the first page).
  * @property swipeHorizontal If true, swipe gestures will navigate horizontally instead of vertically. Defaults to false.
  * @property annotationRendering Enables or disables rendering of PDF annotations. Defaults to false.
- * @property password The password to use if the PDF document is encrypted. Defaults to null.
- * @property scrollHandle The type of scroll handle to display. Defaults to null (no scroll handle).
  * @property antialiasing Enables or disables anti-aliasing for smoother rendering. Defaults to true.
  * @property spacing The spacing between pages in dp. Defaults to 0F.
  * @property autoSpacing If true, automatically adjusts spacing between pages based on screen size. Defaults to false.
@@ -55,24 +43,19 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * @property scrollOptimization Enables or disables scroll optimization. When true, bitmap generation is skipped during scrolling for better performance, but may show empty areas when scrolling to new content. Defaults to true.
  * @property nightMode Enables or disables night mode, which inverts the colors for better readability in low-light conditions. Defaults to false.
  * @property disableLongPress Disables long press gestures on the PDF view. Defaults to false.
+ * @property scrollHandle The type of scroll handle to display. Defaults to null (no scroll handle).
  * @property pdfViewerConfiguration Custom rendering options for the PDF document. Defaults to [PdfViewerConfiguration.DEFAULT].
- * @property documentLoadListener A listener to be notified when the document is loaded and ready for rendering. Defaults to null.
  * @property renderingEventListener A listener to be notified of rendering events (e.g., when a page is rendered). Defaults to null.
  * @property pageNavigationEventListener A listener to be notified of page navigation events (e.g., when a page is changed). Defaults to null.
  * @property gestureEventListener A listener to be notified of gesture events (e.g., when a gesture is detected). Defaults to null.
  * @property linkHandler A handler for processing link clicks in the PDF document. Defaults to null.
  * @property logWriter A writer for logging messages and errors. Defaults to null.
  */
-data class PdfRequest(
-    val source: DocumentSource,
-    val pageNumbers: List<Int>? = null,
+data class PdfViewConfiguration(
     val enableSwipe: Boolean = true,
     val enableDoubleTap: Boolean = true,
-    val defaultPage: Int = 0,
     val swipeHorizontal: Boolean = false,
     val annotationRendering: Boolean = false,
-    val password: String? = null,
-    val scrollHandle: ScrollHandle? = null,
     val antialiasing: Boolean = true,
     val spacing: Float = 0F,
     val autoSpacing: Boolean = false,
@@ -83,23 +66,20 @@ data class PdfRequest(
     val scrollOptimization: Boolean = true,
     val nightMode: Boolean = false,
     val disableLongPress: Boolean = false,
+    val scrollHandle: ScrollHandle? = null,
     val pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT,
-    val documentLoadListener: DocumentLoadListener? = null,
     val renderingEventListener: RenderingEventListener? = null,
     val pageNavigationEventListener: PageNavigationEventListener? = null,
     val gestureEventListener: GestureEventListener? = null,
     val linkHandler: LinkHandler? = null,
     val logWriter: LogWriter? = null,
 ) {
-    class Builder(private val source: DocumentSource) {
-        private var pageNumbers: List<Int>? = null
+
+    class Builder {
         private var enableSwipe: Boolean = true
         private var enableDoubleTap: Boolean = true
-        private var defaultPage: Int = 0
         private var swipeHorizontal: Boolean = false
         private var annotationRendering: Boolean = false
-        private var password: String? = null
-        private var scrollHandle: ScrollHandle? = null
         private var antialiasing: Boolean = true
         private var spacing: Float = 0F
         private var autoSpacing: Boolean = false
@@ -110,18 +90,13 @@ data class PdfRequest(
         private var scrollOptimization: Boolean = true
         private var nightMode: Boolean = false
         private var disableLongPress: Boolean = false
+        private var scrollHandle: ScrollHandle? = null
         private var pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT
-        private var documentLoadListener: DocumentLoadListener? = null
         private var renderingEventListener: RenderingEventListener? = null
         private var pageNavigationEventListener: PageNavigationEventListener? = null
         private var gestureEventListener: GestureEventListener? = null
         private var linkHandler: LinkHandler? = null
         private var logWriter: LogWriter? = null
-
-        fun pages(vararg pageNumbers: Int): Builder {
-            this.pageNumbers = pageNumbers.toList()
-            return this
-        }
 
         fun enableSwipe(enableSwipe: Boolean): Builder {
             this.enableSwipe = enableSwipe
@@ -133,28 +108,13 @@ data class PdfRequest(
             return this
         }
 
-        fun enableAnnotationRendering(annotationRendering: Boolean): Builder {
-            this.annotationRendering = annotationRendering
-            return this
-        }
-
-        fun defaultPage(defaultPage: Int): Builder {
-            this.defaultPage = defaultPage
-            return this
-        }
-
         fun swipeHorizontal(swipeHorizontal: Boolean): Builder {
             this.swipeHorizontal = swipeHorizontal
             return this
         }
 
-        fun password(password: String?): Builder {
-            this.password = password
-            return this
-        }
-
-        fun scrollHandle(scrollHandle: ScrollHandle?): Builder {
-            this.scrollHandle = scrollHandle
+        fun enableAnnotationRendering(annotationRendering: Boolean): Builder {
+            this.annotationRendering = annotationRendering
             return this
         }
 
@@ -208,13 +168,13 @@ data class PdfRequest(
             return this
         }
 
-        fun renderOptions(pdfViewerConfiguration: PdfViewerConfiguration): Builder {
-            this.pdfViewerConfiguration = pdfViewerConfiguration
+        fun scrollHandle(scrollHandle: ScrollHandle?): Builder {
+            this.scrollHandle = scrollHandle
             return this
         }
 
-        fun documentLoadListener(documentLoadListener: DocumentLoadListener): Builder {
-            this.documentLoadListener = documentLoadListener
+        fun renderOptions(pdfViewerConfiguration: PdfViewerConfiguration): Builder {
+            this.pdfViewerConfiguration = pdfViewerConfiguration
             return this
         }
 
@@ -245,19 +205,11 @@ data class PdfRequest(
             return this
         }
 
-        /**
-         * Create a new [PdfRequest].
-         */
-        fun build() = PdfRequest(
-            source = source,
-            pageNumbers = pageNumbers,
+        fun build() = PdfViewConfiguration(
             enableSwipe = enableSwipe,
             enableDoubleTap = enableDoubleTap,
-            defaultPage = defaultPage,
             swipeHorizontal = swipeHorizontal,
             annotationRendering = annotationRendering,
-            password = password,
-            scrollHandle = scrollHandle,
             antialiasing = antialiasing,
             spacing = spacing,
             autoSpacing = autoSpacing,
@@ -268,8 +220,8 @@ data class PdfRequest(
             scrollOptimization = scrollOptimization,
             nightMode = nightMode,
             disableLongPress = disableLongPress,
+            scrollHandle = scrollHandle,
             pdfViewerConfiguration = pdfViewerConfiguration,
-            documentLoadListener = documentLoadListener,
             renderingEventListener = renderingEventListener,
             pageNavigationEventListener = pageNavigationEventListener,
             gestureEventListener = gestureEventListener,
@@ -278,43 +230,7 @@ data class PdfRequest(
         )
     }
 
-    override fun toString(): String = source.toString()
-
-    /**
-     * Convert this PdfRequest to the new PdfViewConfiguration for factory-time settings.
-     */
-    fun toViewConfiguration(): PdfViewConfiguration = PdfViewConfiguration(
-        enableSwipe = enableSwipe,
-        enableDoubleTap = enableDoubleTap,
-        swipeHorizontal = swipeHorizontal,
-        annotationRendering = annotationRendering,
-        antialiasing = antialiasing,
-        spacing = spacing,
-        autoSpacing = autoSpacing,
-        pageFitPolicy = pageFitPolicy,
-        fitEachPage = fitEachPage,
-        pageFling = pageFling,
-        pageSnap = pageSnap,
-        scrollOptimization = scrollOptimization,
-        nightMode = nightMode,
-        disableLongPress = disableLongPress,
-        scrollHandle = scrollHandle,
-        pdfViewerConfiguration = pdfViewerConfiguration,
-        renderingEventListener = renderingEventListener,
-        pageNavigationEventListener = pageNavigationEventListener,
-        gestureEventListener = gestureEventListener,
-        linkHandler = linkHandler,
-        logWriter = logWriter,
-    )
-
-    /**
-     * Convert this PdfRequest to the new PdfLoadRequest for load-time settings.
-     */
-    fun toLoadRequest(): PdfLoadRequest = PdfLoadRequest(
-        source = source,
-        password = password,
-        pageNumbers = pageNumbers,
-        defaultPage = defaultPage,
-        documentLoadListener = documentLoadListener,
-    )
+    companion object {
+        val DEFAULT = PdfViewConfiguration()
+    }
 }

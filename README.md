@@ -48,36 +48,97 @@ dependencies {
 
 2. Load a PDF in your code:
 
-   Kotlin
-    ```
-    // Optional: Validate document first (recommended)
-    val isValid = PDFThumbnailGenerator.isDocumentValid(this, file)
-    if (!isValid) {
-        // Handle invalid document
-        return
-    }
-    
-    binding.pdfView.load(file) {
-        defaultPage(0)
-        swipeHorizontal(true)
-        enableAnnotationRendering(true)
-        spacing(10F) // in dp
-    
-        // Listeners
-        documentLoadListener(...)
-        renderingEventListener(...)
-        pageNavigationEventListener(...)
-        gestureEventListener(...)
-        linkHandler(...)
-    }
+   **New API (Recommended):**
+   ```kotlin
+   // Optional: Validate document first (recommended)
+   val isValid = PDFThumbnailGenerator.isDocumentValid(this, file)
+   if (!isValid) {
+       // Handle invalid document
+       return
+   }
+   
+   // Configure view settings (factory-time, set once)
+   binding.pdfView.configureView {
+       swipeHorizontal(true)
+       enableAnnotationRendering(true)
+       spacing(10F) // in dp
+       documentLoadListener(...)
+       renderingEventListener(...)
+       pageNavigationEventListener(...)
+       gestureEventListener(...)
+       linkHandler(...)
+   }
+   
+   // Load document (runtime, can be called multiple times)
+   binding.pdfView.loadDocument(file) {
+       defaultPage(0)
+       password(null) // Can be updated for password retry
+   }
+   ```
+
+   **Legacy API (Deprecated but supported):**
+   ```kotlin
+   // Still works for backward compatibility
+   binding.pdfView.load(file) {
+       defaultPage(0)
+       swipeHorizontal(true)
+       enableAnnotationRendering(true)
+       spacing(10F) // in dp
+       // ... other settings
+   }
     ```
 
 Use code with caution. Learn more
 
 ## Jetpack Compose Usage
 
-You can also use PDFView in Jetpack Compose with `AndroidView`:
+You can use PDFView in Jetpack Compose with `AndroidView`:
 
+**New API (Recommended):**
+```kotlin
+@Composable
+fun PDFViewCompose(
+    file: File,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            PDFView(context).apply {
+                // Configure view settings once at factory time
+                configureView {
+                    swipeHorizontal(true)
+                    enableAnnotationRendering(true)
+                    spacing(10F) // in dp
+                    documentLoadListener { pages ->
+                        // Document loaded with $pages pages
+                    }
+                    renderingEventListener { page ->
+                        // Page $page rendered
+                    }
+                    pageNavigationEventListener { page, pageCount ->
+                        // Navigated to page $page of $pageCount
+                    }
+                    gestureEventListener { type ->
+                        // Gesture event: $type
+                    }
+                    linkHandler { uri ->
+                        // Handle link: $uri
+                    }
+                }
+            }
+        },
+        update = { pdfView ->
+            // Update document at runtime (supports password retry, document switching)
+            pdfView.loadDocument(file) {
+                defaultPage(0)
+            }
+        }
+    )
+}
+```
+
+**Legacy API (Still supported):**
 ```kotlin
 @Composable
 fun PDFViewCompose(
@@ -136,6 +197,134 @@ fun MyScreen() {
 * ByteArray
 * InputStream
 * DocumentSource (custom)
+
+## New Architecture: Factory vs Runtime Configuration
+
+AndroidPDFPreview now supports a modern architecture that separates factory-time configuration from runtime document loading:
+
+### **Factory-Time Configuration** (PdfViewConfiguration)
+Set once when the view is created. Controls view behavior, rendering options, and listeners:
+```kotlin
+val viewConfig = PdfViewConfiguration.Builder()
+    .swipeHorizontal(true)
+    .enableAnnotationRendering(true)
+    .spacing(10F)
+    .pageFitPolicy(FitPolicy.WIDTH)
+    .nightMode(false)
+    .documentLoadListener(...)
+    .build()
+
+pdfView.configure(viewConfig)
+```
+
+### **Runtime Document Loading** (PdfLoadRequest)
+Can be called multiple times to load different documents or retry with different settings:
+```kotlin
+// Initial load
+val loadRequest = PdfLoadRequest(
+    source = file,
+    password = null,
+    defaultPage = 0
+)
+pdfView.load(loadRequest)
+
+// Password retry scenario
+val retryRequest = loadRequest.copy(password = "correct_password")
+pdfView.load(retryRequest)
+
+// Load different document
+val newRequest = PdfLoadRequest(source = anotherFile)
+pdfView.load(newRequest)
+```
+
+### **Key Advantages:**
+- **Password Retry**: Update password without reconfiguring the entire view
+- **Document Switching**: Load different documents while preserving view settings
+- **Compose-Friendly**: Matches AndroidView's factory/update pattern
+- **Performance**: View configuration is set once and reused
+- **Memory Efficient**: Only document-specific data changes during runtime
+
+### **Migration Guide:**
+The old API still works but is deprecated:
+```kotlin
+// OLD (still works, but deprecated)
+pdfView.load(file) { /* all settings mixed together */ }
+
+// NEW (recommended)
+pdfView.configureView { /* factory settings */ }
+pdfView.loadDocument(file) { /* runtime settings */ }
+```
+
+### **Practical Examples:**
+
+**Password-Protected PDF with Retry:**
+```kotlin
+class PDFActivity : AppCompatActivity() {
+    private lateinit var pdfView: PDFView
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Configure view once
+        pdfView.configureView {
+            swipeHorizontal(true)
+            enableAnnotationRendering(true)
+            documentLoadListener(object : DocumentLoadListener {
+                override fun onDocumentLoaded(totalPages: Int) {
+                    // Success!
+                }
+                override fun onDocumentLoadError(error: Throwable) {
+                    if (error is IncorrectPasswordException) {
+                        showPasswordDialog()
+                    }
+                }
+            })
+        }
+        
+        // Initial load attempt
+        pdfView.loadDocument(file)
+    }
+    
+    private fun retryWithPassword(password: String) {
+        // Easy password retry - just load with new password
+        pdfView.loadDocument(file) {
+            password(password)
+        }
+    }
+}
+```
+
+**Document Switching in Compose:**
+```kotlin
+@Composable
+fun DocumentViewer(documents: List<File>) {
+    var currentDoc by remember { mutableStateOf(documents.first()) }
+    
+    AndroidView(
+        factory = { context ->
+            PDFView(context).apply {
+                // Configure once
+                configureView {
+                    swipeHorizontal(true)
+                }
+            }
+        },
+        update = { pdfView ->
+            // Recomposes when currentDoc changes
+            pdfView.loadDocument(currentDoc)
+        }
+    )
+    
+    // Document switcher UI
+    LazyRow {
+        items(documents) { doc ->
+            Button(onClick = { currentDoc = doc }) {
+                Text(doc.name)
+            }
+        }
+    }
+}
+```
 
 ## PDF Thumbnail Generation
 

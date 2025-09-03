@@ -1,34 +1,42 @@
 # API Documentation for PDF Preview Library
 
 This document provides detailed descriptions of the parameters, methods, and classes in the PDF
-Preview library components: `PdfRequest`, `PdfViewerConfiguration`, `FitPolicy`, `SnapEdge`, and
-`PdfiumException`. It serves as a reference for developers integrating the library into their
-applications.
+Preview library components. The library now features a modern architecture that separates
+factory-time configuration (`PdfViewConfiguration`) from runtime document loading (
+`PdfLoadRequest`), alongside the original unified approach (`PdfRequest`, now deprecated).
 
-## PdfRequest
+## New Architecture Overview
 
-`PdfRequest` is a data class that encapsulates configuration options for loading and rendering a PDF
-document. It includes settings for navigation, rendering, and event handling. This class is
-typically used with the `PDFView.load()` method to customize the viewer's behavior.
+The library now supports two configuration approaches:
+
+### **Recommended: Separate Configuration Pattern**
+
+- **`PdfViewConfiguration`**: Factory-time settings (view behavior, rendering, listeners) - set once
+- **`PdfLoadRequest`**: Runtime settings (document source, password, page selection) - can change
+- **`PDFView.configure()`**: Apply view configuration
+- **`PDFView.load()`**: Load documents with runtime settings
+
+### **Legacy: Unified Configuration Pattern**
+
+- **`PdfRequest`**: All settings combined (deprecated but supported)
+- **`PDFView.enqueue()`**: Load with unified configuration (deprecated)
+
+## PdfViewConfiguration
+
+`PdfViewConfiguration` is a data class that encapsulates factory-time configuration options for the
+PDF view. These settings control view behavior, rendering options, and event handlers that remain
+constant across different document loads. This class is used with the `PDFView.configure()` method.
 
 ### Properties
 
-- **source** (`DocumentSource`): The source of the PDF document (e.g., file, asset, URI). Required
-  for loading.
-- **pageNumbers** (`List<Int>?`): Optional list of specific page numbers to load (0-based). If null,
-  all pages are loaded. Useful for partial document loading.
 - **enableSwipe** (`Boolean`): Enables or disables swipe gestures for page navigation. Default:
   `true`. Set to `false` to restrict manual navigation.
 - **enableDoubleTap** (`Boolean`): Enables or disables double-tap gestures for zooming. Default:
   `true`. Affects zoom functionality.
-- **defaultPage** (`Int`): The initial page number to display (0-based). Default: `0`. Must be
-  within the document's page range.
 - **swipeHorizontal** (`Boolean`): If true, swipe gestures navigate horizontally; otherwise,
   vertically. Default: `false`. Ignored if `enableSwipe` is `false`.
 - **annotationRendering** (`Boolean`): Enables rendering of PDF annotations (e.g., comments,
   highlights). Default: `false`. May impact performance.
-- **password** (`String?`): Password for encrypted PDFs. Default: `null`. Required if the document
-  is password-protected.
 - **scrollHandle** (`ScrollHandle?`): Type of scroll handle to display for navigation. Default:
   `null` (no handle). Provides visual feedback for scrolling.
 - **antialiasing** (`Boolean`): Enables anti-aliasing for smoother rendering. Default: `true`.
@@ -68,16 +76,12 @@ typically used with the `PDFView.load()` method to customize the viewer's behavi
 
 ### Builder Methods
 
-The `Builder` class provides a fluent API to construct a `PdfRequest` instance. All methods return
-the `Builder` for chaining, except `build()`.
+The `Builder` class provides a fluent API to construct a `PdfViewConfiguration` instance:
 
-- **pages(vararg pageNumbers: Int)**: Sets specific page numbers to load. Example: `pages(0, 2, 4)`.
 - **enableSwipe(enableSwipe: Boolean)**: Sets swipe gesture enablement.
 - **enableDoubleTap(doubleTap: Boolean)**: Sets double-tap enablement.
-- **enableAnnotationRendering(annotationRendering: Boolean)**: Sets annotation rendering enablement.
-- **defaultPage(defaultPage: Int)**: Sets the default page.
 - **swipeHorizontal(swipeHorizontal: Boolean)**: Sets horizontal swipe direction.
-- **password(password: String?)**: Sets the PDF password.
+- **enableAnnotationRendering(annotationRendering: Boolean)**: Sets annotation rendering enablement.
 - **scrollHandle(scrollHandle: ScrollHandle?)**: Sets the scroll handle.
 - **enableAntialiasing(antialiasing: Boolean)**: Sets anti-aliasing enablement.
 - **spacing(spacing: Float)**: Sets page spacing in pixels.
@@ -98,16 +102,188 @@ the `Builder` for chaining, except `build()`.
 - **gestureEventListener(gestureEventListener: GestureEventListener)**: Sets gesture event listener.
 - **linkHandler(linkHandler: LinkHandler)**: Sets link handler.
 - **logWriter(logWriter: LogWriter)**: Sets log writer.
-- **build()**: Constructs the `PdfRequest` instance.
+- **build()**: Constructs the `PdfViewConfiguration` instance.
 
 **Example Usage:**
 
 ```kotlin
-val request = PdfRequest.Builder(documentSource)
-    .defaultPage(1)
-    .enableSwipe(false)
-    .pageFitPolicy(FitPolicy.BOTH)
+val viewConfig = PdfViewConfiguration.Builder()
+    .swipeHorizontal(true)
+    .enableAnnotationRendering(true)
+    .pageFitPolicy(FitPolicy.WIDTH)
+    .documentLoadListener { pages ->
+        println("Document loaded with $pages pages")
+    }
     .build()
+
+pdfView.configure(viewConfig)
+
+// Or use the DSL extension function (recommended):
+pdfView.configureView {
+    swipeHorizontal(true)
+    enableAnnotationRendering(true)
+    pageFitPolicy(FitPolicy.WIDTH)
+    documentLoadListener { pages ->
+        println("Document loaded with $pages pages")
+    }
+}
+```
+
+## PdfLoadRequest
+
+`PdfLoadRequest` is a data class that encapsulates runtime settings for loading a specific PDF
+document. These settings can change between document loads and include the document source,
+password, and page selection options. This class is used with the `PDFView.load()` method.
+
+### Properties
+
+- **source** (`DocumentSource`): The source of the PDF document (e.g., file, asset, URI). Required
+  for loading.
+- **password** (`String?`): Password for encrypted PDFs. Default: `null`. Required if the document
+  is password-protected. Can be updated for password retry scenarios.
+- **pageNumbers** (`List<Int>?`): Optional list of specific page numbers to load (0-based). If null,
+  all pages are loaded. Useful for partial document loading.
+- **defaultPage** (`Int`): The initial page number to display (0-based). Default: `0`. Must be
+  within the document's page range.
+- **documentLoadListener** (`DocumentLoadListener?`): Optional listener for this specific load
+  operation. Default: `null`. Overrides the view configuration listener if provided.
+
+### Constructor
+
+```kotlin
+PdfLoadRequest(
+    source: DocumentSource,
+    password: String? = null,
+pageNumbers: List<Int>? = null,
+defaultPage: Int = 0,
+documentLoadListener: DocumentLoadListener? = null
+)
+```
+
+### Copy Method
+
+The `copy()` method allows creating modified copies for scenarios like password retry:
+
+```kotlin
+val retryRequest = originalRequest.copy(password = "new_password")
+```
+
+**Example Usage:**
+
+```kotlin
+// Initial load
+val loadRequest = PdfLoadRequest(
+    source = file,
+    defaultPage = 1,
+    password = null
+)
+pdfView.load(loadRequest)
+
+// Password retry
+val retryRequest = loadRequest.copy(password = "correct_password")
+pdfView.load(retryRequest)
+
+// Load specific pages
+val pageRequest = PdfLoadRequest(
+    source = file,
+    pageNumbers = listOf(0, 2, 4) // Load pages 1, 3, and 5
+)
+pdfView.load(pageRequest)
+
+// Or use the DSL extension function (recommended):
+pdfView.loadDocument(file) {
+    defaultPage(1)
+    password(null)
+}
+
+// Password retry with DSL
+pdfView.loadDocument(file) {
+    password("correct_password")
+}
+
+// Load specific pages with DSL
+pdfView.loadDocument(file) {
+    pages(0, 2, 4) // Load pages 1, 3, and 5
+}
+```
+
+## PDFView Methods
+
+### New API Methods
+
+- **configure(configuration: PdfViewConfiguration)**: Applies factory-time configuration to the
+  view. Should be called once when the view is created.
+- **configureView { ... }**: DSL extension function for configuring the view (recommended over
+  configure()).
+- **load(request: PdfLoadRequest)**: Loads a document with runtime settings. Can be called multiple
+  times to load different documents or retry with different parameters.
+- **loadDocument(source) { ... }**: DSL extension function for loading documents (recommended over
+  load()).
+
+### Deprecated Methods
+
+- **enqueue(pdfRequest: PdfRequest)**: **Deprecated**. Loads a document using the legacy unified
+  configuration. Still functional for backward compatibility but prefer the new `configure()` +
+  `load()` pattern.
+
+## PdfRequest (Deprecated)
+
+⚠️ **Deprecated**: Use `PdfViewConfiguration` + `PdfLoadRequest` instead.
+
+`PdfRequest` is a data class that encapsulates configuration options for loading and rendering a PDF
+document. While still functional, it combines factory-time and runtime settings in a single class,
+making runtime updates (like password retry) impossible.
+
+### Migration from PdfRequest
+
+```kotlin
+// OLD (deprecated)
+val request = PdfRequest.Builder(source)
+    .swipeHorizontal(true)
+    .password("password")
+    .defaultPage(1)
+    .build()
+pdfView.enqueue(request)
+
+// NEW (recommended with DSL)
+pdfView.configureView {
+    swipeHorizontal(true)
+}
+pdfView.loadDocument(source) {
+    password("password")
+    defaultPage(1)
+}
+
+// NEW (alternative with builder pattern)
+val viewConfig = PdfViewConfiguration.Builder()
+    .swipeHorizontal(true)
+    .build()
+val loadRequest = PdfLoadRequest(
+    source = source,
+    password = "password",
+    defaultPage = 1
+)
+pdfView.configure(viewConfig)
+pdfView.load(loadRequest)
+```
+
+### Extension Methods for Migration
+
+The `PdfRequest` class provides extension methods to convert to the new architecture:
+
+- **toViewConfiguration()**: Extracts factory-time settings into a `PdfViewConfiguration`
+- **toLoadRequest()**: Extracts runtime settings into a `PdfLoadRequest`
+
+```kotlin
+// Automatic migration helper (uses extension methods)
+val oldRequest = PdfRequest.Builder(source)...build()
+pdfView.configure(oldRequest.toViewConfiguration())
+pdfView.load(oldRequest.toLoadRequest())
+
+// Or migrate to DSL (recommended)
+val oldRequest = PdfRequest.Builder(source)...build()
+pdfView.configureView { /* copy view settings from oldRequest */ }
+pdfView.loadDocument(source) { /* copy load settings from oldRequest */ }
 ```
 
 ## PdfViewerConfiguration

@@ -23,9 +23,12 @@ import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfium.util.Size
 import com.harissk.pdfium.util.SizeF
 import com.harissk.pdfpreview.link.DefaultLinkHandler
+import com.harissk.pdfpreview.listener.DocumentLoadListener
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.model.PagePart
+import com.harissk.pdfpreview.request.PdfLoadRequest
 import com.harissk.pdfpreview.request.PdfRequest
+import com.harissk.pdfpreview.request.PdfViewConfiguration
 import com.harissk.pdfpreview.request.PdfViewerConfiguration
 import com.harissk.pdfpreview.scroll.ScrollHandle
 import com.harissk.pdfpreview.source.DocumentSource
@@ -73,10 +76,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     private var currentLoadingJob: kotlinx.coroutines.Job? = null
     private var isCurrentlyLoading: Boolean = false
 
-    private var pdfRequest: PdfRequest? = null
-
-    // Store pending PDF request when view size is not ready
-    private var pendingPdfRequest: PdfRequest? = null
+    // Configuration approach
+    private var viewConfiguration: PdfViewConfiguration = PdfViewConfiguration.DEFAULT
+    private var pendingLoadRequest: PdfLoadRequest? = null
+    private var currentDocumentLoadListener: DocumentLoadListener? = null
 
     private var _pdfFile: PdfFile? = null
     val pdfFile: PdfFile
@@ -86,7 +89,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         } ?: throw IllegalStateException("PDF not decoded")
 
     val pdfViewerConfiguration: PdfViewerConfiguration
-        get() = pdfRequest?.pdfViewerConfiguration ?: PdfViewerConfiguration.DEFAULT
+        get() = viewConfiguration.pdfViewerConfiguration
 
     val minZoom: Float = DEFAULT_MIN_SCALE
     val midZoom: Float = DEFAULT_MID_SCALE
@@ -214,7 +217,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     internal var isPageFlingEnabled: Boolean = true
 
     val logWriter: LogWriter?
-        get() = pdfRequest?.logWriter
+        get() = viewConfiguration.logWriter
 
     /** Construct the initial view  */
     init {
@@ -235,34 +238,49 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         })
     }
 
-    fun enqueue(pdfRequest: PdfRequest) {
-        this.pdfRequest = pdfRequest
-        isSwipeEnabled = pdfRequest.enableSwipe
-        setNightMode(pdfRequest.nightMode)
-        isDoubleTapEnabled = pdfRequest.enableDoubleTap
-        defaultPage = pdfRequest.defaultPage
-        isSwipeVertical = !pdfRequest.swipeHorizontal
-        isAnnotationRendering = pdfRequest.annotationRendering
-        scrollHandle = pdfRequest.scrollHandle
-        isAntialiasing = pdfRequest.antialiasing
-        spacingPx = context.toPx(pdfRequest.spacing)
-        isAutoSpacingEnabled = pdfRequest.autoSpacing
-        pageFitPolicy = pdfRequest.pageFitPolicy
-        isFitEachPage = pdfRequest.fitEachPage
-        isPageSnap = pdfRequest.pageSnap
-        isPageFlingEnabled = pdfRequest.pageFling
-        isScrollOptimizationEnabled = pdfRequest.scrollOptimization
-        // Start with basic quality, will be adjusted based on zoom level
+    /**
+     * Configure the PDF view with factory-time settings.
+     * This should be called once when the view is created, typically in the factory block
+     * of AndroidView in Compose or in the constructor/initialization of the view.
+     */
+    fun configure(configuration: PdfViewConfiguration) {
+        this.viewConfiguration = configuration
+        applyViewConfiguration()
+    }
+
+    private fun applyViewConfiguration() {
+        isSwipeEnabled = viewConfiguration.enableSwipe
+        setNightMode(viewConfiguration.nightMode)
+        isDoubleTapEnabled = viewConfiguration.enableDoubleTap
+        isSwipeVertical = !viewConfiguration.swipeHorizontal
+        isAnnotationRendering = viewConfiguration.annotationRendering
+        scrollHandle = viewConfiguration.scrollHandle
+        isAntialiasing = viewConfiguration.antialiasing
+        spacingPx = context.toPx(viewConfiguration.spacing)
+        isAutoSpacingEnabled = viewConfiguration.autoSpacing
+        pageFitPolicy = viewConfiguration.pageFitPolicy
+        isFitEachPage = viewConfiguration.fitEachPage
+        isPageSnap = viewConfiguration.pageSnap
+        isPageFlingEnabled = viewConfiguration.pageFling
+        isScrollOptimizationEnabled = viewConfiguration.scrollOptimization
+        if (viewConfiguration.disableLongPress) dragPinchManager.disableLongPress()
         isBestQuality = false
-        if (pdfRequest.disableLongPress) dragPinchManager.disableLongPress()
+    }
+
+    /**
+     * Load a PDF document with the specified load request.
+     * This method can be called multiple times to load different documents or retry with different parameters.
+     */
+    fun load(loadRequest: PdfLoadRequest) {
+        defaultPage = loadRequest.defaultPage
+        currentDocumentLoadListener = loadRequest.documentLoadListener
 
         // Check if view has valid dimensions before starting PDF loading
         when {
-            width > 0 && height > 0 -> startLoading()
-
+            width > 0 && height > 0 -> startLoading(loadRequest)
             else -> {
                 // Store request for later when view gets proper dimensions
-                pendingPdfRequest = pdfRequest
+                pendingLoadRequest = loadRequest
                 logWriter?.writeLog(
                     "PDF loading deferred - view size not ready (${width}x${height})",
                     "PDFView"
@@ -271,7 +289,21 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         }
     }
 
-    private fun startLoading() {
+    /**
+     * @deprecated Use configure() for view settings and load() for document loading.
+     * This method is kept for backward compatibility.
+     */
+    @Deprecated(
+        "Use configure() and load() methods instead",
+        ReplaceWith("configure(pdfRequest.toViewConfiguration()); load(pdfRequest.toLoadRequest())")
+    )
+    fun enqueue(pdfRequest: PdfRequest) {
+        // For backward compatibility, extract view and load configurations
+        configure(pdfRequest.toViewConfiguration())
+        load(pdfRequest.toLoadRequest())
+    }
+
+    private fun startLoading(loadRequest: PdfLoadRequest) {
         // Prevent multiple concurrent operations
         if (isCurrentlyLoading) return
 
@@ -289,10 +321,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                 try {
                     recycle(false)
                     load(
-                        this@PDFView,
-                        pdfRequest!!.source,
-                        pdfRequest!!.password,
-                        pdfRequest!!.pageNumbers
+                        pdfView = this@PDFView,
+                        docSource = loadRequest.source,
+                        password = loadRequest.password,
+                        userPages = loadRequest.pageNumbers,
+                        documentLoadListener = loadRequest.documentLoadListener
                     )
                 } catch (e: Exception) {
                     logWriter?.writeLog("Error loading PDF: ${e.message}")
@@ -315,6 +348,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         docSource: DocumentSource,
         password: String?,
         userPages: List<Int>? = null,
+        documentLoadListener: DocumentLoadListener? = null,
     ) {
         coroutineContext.ensureActive()
 
@@ -334,7 +368,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         coroutineContext.ensureActive()
 
         try {
-            pdfRequest?.documentLoadListener?.onDocumentLoadingStart()
+            documentLoadListener?.onDocumentLoadingStart()
             val pdfFile = withContext(Dispatchers.IO) {
                 coroutineContext.ensureActive()
                 if (isRecycling || !isCurrentlyLoading) return@withContext null
@@ -407,7 +441,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         currentPage = userPage
         loadPages()
         if (!documentFitsView()) scrollHandle?.setPageNum(currentPage + 1)
-        pdfRequest?.pageNavigationEventListener?.onPageChanged(currentPage, pageCount)
+        viewConfiguration.pageNavigationEventListener?.onPageChanged(currentPage, pageCount)
     }
 
     /**
@@ -470,7 +504,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     internal fun onPageError(ex: PageRenderingException) {
-        pdfRequest?.renderingEventListener?.onPageFailedToRender(ex)
+        viewConfiguration.renderingEventListener?.onPageFailedToRender(ex)
     }
 
     fun recycle() = recycle(true)
@@ -487,10 +521,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         }
 
         try {
-            if (isRemoveRequest) pdfRequest = null
+            // Reset view configuration to default if removing entirely
+            if (isRemoveRequest) viewConfiguration = PdfViewConfiguration.DEFAULT
 
             // Clear pending request when recycling
-            if (isRemoveRequest) pendingPdfRequest = null
+            if (isRemoveRequest) pendingLoadRequest = null
 
             pdfAnimator.cancelAllAnimations()
             dragPinchManager.disable()
@@ -552,7 +587,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         isLoading = false
 
         // Clear any pending PDF request
-        pendingPdfRequest = null
+        pendingLoadRequest = null
 
         pdfAnimator.cancelAllAnimations()
         dragPinchManager.disable()
@@ -565,22 +600,28 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        // Check if we have a pending PDF request and valid dimensions now
-        if (pendingPdfRequest != null && w > 0 && h > 0) {
+        // Check if we have a pending load request and valid dimensions now
+        if (pendingLoadRequest != null && w > 0 && h > 0) {
             logWriter?.writeLog(
                 "Starting deferred PDF loading with valid dimensions (${w}x${h})",
                 "PDFView"
             )
-            val request = pendingPdfRequest!!
-            pendingPdfRequest = null
-            enqueue(request)
+            val request = pendingLoadRequest!!
+            pendingLoadRequest = null
+            load(request)
             return
         }
 
         // Only restart loading if PDF hasn't been loaded yet or if this is the first size change
         // Don't restart loading for subsequent size changes to avoid blank screen issues
-        if (state == State.DEFAULT && pdfRequest != null && w > 0 && h > 0)
-            enqueue(pdfRequest!!)
+        // Note: This fallback is mainly for backward compatibility
+        if (state == State.DEFAULT && w > 0 && h > 0)
+            // If we have no pending load request, we can't restart loading
+            // This situation should not occur with the new API
+            logWriter?.writeLog(
+                "No pending load request available for size change restart",
+                "PDFView"
+            )
 
         if (isInEditMode || state != State.SHOWN) return
 
@@ -709,7 +750,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         // Draws parts
         for (part in cacheManager.getPageParts()) drawPart(canvas, part)
-        if (pdfViewerConfiguration.isDebugEnabled && pdfRequest?.renderingEventListener != null)
+        if (pdfViewerConfiguration.isDebugEnabled && viewConfiguration.renderingEventListener != null)
             drawWithListener(canvas, currentPage)
 
         // Restores the canvas position
@@ -784,7 +825,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         }
         canvas.translate(translateX, translateY)
         val size: SizeF = pdfFile.getPageSize(page) ?: SizeF(0f, 0f)
-        pdfRequest?.renderingEventListener?.onDrawPage(
+        viewConfiguration.renderingEventListener?.onDrawPage(
             canvas = canvas,
             pageWidth = toCurrentScale(size.width),
             pageHeight = toCurrentScale(size.height),
@@ -904,7 +945,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         // Call to the on load complete listener if any
         try {
             dragPinchManager.enable()
-            pdfRequest?.documentLoadListener?.onDocumentLoaded(pageCount)
+            currentDocumentLoadListener?.onDocumentLoaded(pageCount)
 
             // Add a small delay to allow PDF native library to fully initialize page dimensions
             // Use a longer delay for large documents to ensure proper initialization
@@ -929,7 +970,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         if (isRecycling) return null
         state = State.ERROR
-        pdfRequest?.documentLoadListener?.onDocumentLoadError(t)
+        currentDocumentLoadListener?.onDocumentLoadError(t)
         recycle()
         invalidate()
         return null
@@ -955,7 +996,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         // when it is first rendered part
         if (state == State.LOADED) {
             state = State.SHOWN
-            pdfRequest?.renderingEventListener?.onPageRendered(part.page)
+            viewConfiguration.renderingEventListener?.onPageRendered(part.page)
         }
         when {
             part.isThumbnail -> cacheManager.cacheThumbnail(part)
@@ -1046,7 +1087,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                 val actualCurrentPage = getPageAtPositionOffset(positionOffset)
                 scrollHandle?.setPageNum(actualCurrentPage + 1)
             }
-            pdfRequest?.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)
+            viewConfiguration.pageNavigationEventListener?.onPageScrolled(
+                page = currentPage,
+                positionOffset = positionOffset
+            )
             redraw()
         }
     }
@@ -1077,7 +1121,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             val actualCurrentPage = getPageAtPositionOffset(positionOffset)
             scrollHandle?.setPageNum(actualCurrentPage + 1)
         }
-        pdfRequest?.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)
+        viewConfiguration.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)
     }
 
     internal fun loadPageByOffset() {
@@ -1292,14 +1336,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun getLinks(page: Int): List<Link> = _pdfFile?.getPageLinks(page).orEmpty()
 
     internal fun callOnTap(e: MotionEvent): Boolean =
-        pdfRequest?.gestureEventListener?.onTap(e) ?: false
+        viewConfiguration.gestureEventListener?.onTap(e) ?: false
 
     internal fun callOnLongPress(e: MotionEvent) {
-        pdfRequest?.gestureEventListener?.onLongPress(e)
+        viewConfiguration.gestureEventListener?.onLongPress(e)
     }
 
     internal fun callLinkHandler(linkTapEvent: LinkTapEvent) {
-        pdfRequest?.linkHandler?.handleLinkEvent(linkTapEvent) ?: DefaultLinkHandler(this)
+        viewConfiguration.linkHandler?.handleLinkEvent(linkTapEvent) ?: DefaultLinkHandler(this)
     }
 
     private enum class State {
