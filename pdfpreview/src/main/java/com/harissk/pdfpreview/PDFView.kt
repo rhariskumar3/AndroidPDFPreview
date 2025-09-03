@@ -75,6 +75,9 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     private var pdfRequest: PdfRequest? = null
 
+    // Store pending PDF request when view size is not ready
+    private var pendingPdfRequest: PdfRequest? = null
+
     private var _pdfFile: PdfFile? = null
     val pdfFile: PdfFile
         get() = when (_pdfFile) {
@@ -253,7 +256,19 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         isBestQuality = false
         if (pdfRequest.disableLongPress) dragPinchManager.disableLongPress()
 
-        startLoading()
+        // Check if view has valid dimensions before starting PDF loading
+        when {
+            width > 0 && height > 0 -> startLoading()
+
+            else -> {
+                // Store request for later when view gets proper dimensions
+                pendingPdfRequest = pdfRequest
+                logWriter?.writeLog(
+                    "PDF loading deferred - view size not ready (${width}x${height})",
+                    "PDFView"
+                )
+            }
+        }
     }
 
     private fun startLoading() {
@@ -266,6 +281,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         // Set global loading flag immediately
         isCurrentlyLoading = true
 
+        logWriter?.writeLog("PDF loading started", "PDFView")
+
         try {
             currentLoadingJob = scope.async(Dispatchers.Main.immediate) {
                 isLoading = true
@@ -277,6 +294,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                         pdfRequest!!.password,
                         pdfRequest!!.pageNumbers
                     )
+                } catch (e: Exception) {
+                    logWriter?.writeLog("Error loading PDF: ${e.message}")
                 } finally {
                     isLoading = false
                     isCurrentlyLoading = false
@@ -300,6 +319,15 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         coroutineContext.ensureActive()
 
         if (isRecycled) return
+
+        // Validate that view has valid dimensions before proceeding with PDF loading
+        if (pdfView.width <= 0 || pdfView.height <= 0) {
+            logWriter?.writeLog(
+                "Skipping PDF load due to invalid view dimensions: ${pdfView.width}x${pdfView.height}",
+                "PDFView"
+            )
+            return
+        }
 
         isRecycling = false
         isRecycled = false
@@ -455,6 +483,9 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         try {
             if (isRemoveRequest) pdfRequest = null
 
+            // Clear pending request when recycling
+            if (isRemoveRequest) pendingPdfRequest = null
+
             pdfAnimator.cancelAllAnimations()
             dragPinchManager.disable()
 
@@ -514,6 +545,9 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         scope.cancel()
         isLoading = false
 
+        // Clear any pending PDF request
+        pendingPdfRequest = null
+
         pdfAnimator.cancelAllAnimations()
         dragPinchManager.disable()
 
@@ -525,8 +559,27 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        pdfRequest?.let { enqueue(it) }
+        // Check if we have a pending PDF request and valid dimensions now
+        if (pendingPdfRequest != null && w > 0 && h > 0) {
+            logWriter?.writeLog(
+                "Starting deferred PDF loading with valid dimensions (${w}x${h})",
+                "PDFView"
+            )
+            val request = pendingPdfRequest!!
+            pendingPdfRequest = null
+            enqueue(request)
+            return
+        }
+
+        // Only restart loading if PDF hasn't been loaded yet or if this is the first size change
+        // Don't restart loading for subsequent size changes to avoid blank screen issues
+        if (state == State.DEFAULT && pdfRequest != null && w > 0 && h > 0)
+            enqueue(pdfRequest!!)
+
         if (isInEditMode || state != State.SHOWN) return
+
+        // If PDF is already loaded, just recalculate layout for new size
+        if (_pdfFile == null) return
 
         // calculates the position of the point which in the center of view relative to big strip
         val centerPointInStripXOffset = -currentXOffset + oldw * 0.5f
@@ -814,7 +867,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     /** Called when the PDF is loaded  */
     private fun loadComplete(pdfFile: PdfFile) {
-        logWriter?.writeLog("PDF document loaded")
+        logWriter?.writeLog(
+            "PDF loading finished successfully - ${pdfFile.pagesCount} pages",
+            "PDFView"
+        )
 
         if (isRecycling) return
         state = State.LOADED
