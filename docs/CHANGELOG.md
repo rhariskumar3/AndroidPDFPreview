@@ -32,12 +32,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Proper recomposition handling with separated configuration
     - Document switching without view reconfiguration
 
+- **🛠️ DSL Extension Functions**
+    - `configureView { }` extension for PDFView configuration
+    - `loadDocument { }` extension for document loading
+    - Fluent builder API for improved developer experience
+
+- **📋 Builder Pattern Support**
+    - `PdfViewConfiguration.Builder` for programmatic configuration
+    - `PdfLoadRequest.Builder` for load request construction
+    - Consistent API patterns across all configuration classes
+
+- **📄 New Documentation Files**
+    - `API_Documentation.md` - Comprehensive API reference with examples
+    - `Use_Case_Implementations.md` - Practical implementation scenarios and patterns
+
 ### Changed
 
 - **📋 API Evolution**
     - `PdfRequest` and `PDFView.enqueue()` method marked as deprecated (but fully supported)
     - Improved error handling with clearer exception paths
     - Better separation between factory-time and runtime concerns
+
+- **🔧 Internal Architecture Improvements**
+    - Deferred PDF loading until view dimensions are available (prevents loading with invalid size)
+    - Enhanced logging in `jumpTo` method for better debugging of page navigation issues
+    - Added null safety checks in `showPage` method to prevent NullPointerExceptions
+    - Improved view size validation before PDF processing begins
+
+- **📚 Documentation Structure**
+    - Updated spacing documentation to clarify units (dp instead of pixels)
+    - Enhanced copyright headers updated to 2025 across all source files
+    - Comprehensive documentation reorganization with dedicated API and use case files
+
+- **🏭 Build and Configuration Updates**
+    - Version management system updated to support new architecture
+    - Sample app (`PDFViewer.kt`) updated with new configuration patterns and improved examples
 
 ### Deprecated
 
@@ -109,12 +138,62 @@ pdfView.enqueue(newRequest)
 - **📚 Documentation**: Complete migration examples and use cases provided
 - **🛣️ Migration Path**: Gradual migration supported - use both APIs together during transition
 
+### Fixed
+
+- **🛡️ Robustness Improvements**
+    - Fixed potential issues with PDF loading before view initialization
+    - Added null safety checks in `showPage` method to prevent crashes when called before PDF is
+      loaded
+    - Improved handling of view size changes to prevent unnecessary PDF reloading
+    - Enhanced error handling in deferred loading scenarios
+
+- **📱 View Lifecycle Management**
+    - Proper cleanup of `pendingPdfRequest` in `recycle()` and `onDetachedFromWindow()`
+    - Better state management during view dimension changes
+    - Prevented PDF processing attempts with invalid view dimensions (width/height = 0)
+
 ### Technical Details
 
-- Internal architecture completely refactored while maintaining API compatibility
-- Removed internal `pdfRequest` and `pendingPdfRequest` fields from `PDFView`
-- Enhanced memory management with proper separation of configuration lifecycle
-- Improved error handling paths for password and document loading scenarios
+- **Internal Architecture Changes**:
+    - Removed internal `pdfRequest` and `pendingPdfRequest` fields from public API
+    - Enhanced memory management with proper separation of configuration lifecycle
+    - Improved error handling paths for password and document loading scenarios
+    - Added comprehensive logging for debugging PDF loading and navigation issues
+
+- **New Internal State Management**:
+    - `pendingPdfRequest: PdfRequest?` for deferred loading until view is ready
+    - Enhanced `onSizeChanged` logic to process deferred requests only when appropriate
+    - Refined conditions for PDF reloading on size changes to prevent blank screens
+
+- **API Compatibility Layer**:
+    - Migration extension methods (`toViewConfiguration()` and `toLoadRequest()`) for smooth
+      transition
+    - Complete backward compatibility maintained through deprecation annotations with `ReplaceWith`
+    - Both old and new APIs can be used simultaneously during migration period
+
+### Files Modified
+
+This major refactor touched 40 files with 2,280 additions and 266 deletions:
+
+- **New Classes Added**:
+    - `PdfLoadRequest.kt` - Runtime document loading configuration
+    - `PdfViewConfiguration.kt` - Factory-time view configuration
+
+- **Core Classes Modified**:
+    - `PDFView.kt` - Major refactoring with new configure()/load() methods and improved state
+      management
+    - `Extensions.kt` - Added DSL extension functions (`configureView`, `loadDocument`)
+    - `PdfRequest.kt` - Deprecated with migration helper methods
+
+- **Documentation Files**:
+    - `API_Documentation.md` - New comprehensive API reference (368+ lines)
+    - `Use_Case_Implementations.md` - New practical implementation guide (602+ lines)
+    - `README.md` - Major update with new architecture examples (261+ lines added)
+    - `CHANGELOG.md`, `VERSION_HISTORY.md`, `docs/README.md` - Updated for v1.1.0
+
+- **Build and Configuration**:
+    - `gradle.properties`, `app/build.gradle.kts` - Version updates
+    - Sample app `PDFViewer.kt` - Updated with new patterns (215 lines modified)
 
 ## [1.0.9] - 2025-08-21
 
