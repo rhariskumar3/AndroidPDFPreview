@@ -8,7 +8,7 @@ import java.io.IOException
 import java.io.InputStream
 
 /**
- * Copyright [2024] [Haris Kumar R](https://github.com/rhariskumar3)
+ * Copyright [2025] [Haris Kumar R](https://github.com/rhariskumar3)
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
