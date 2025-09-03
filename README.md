@@ -292,6 +292,18 @@ AndroidPDFPreview supports a number of additional features, including:
 * Bookmarks
 * Annotations (coming soon)
 
+## Documentation
+
+For detailed API references, use case implementations, and project information, see:
+
+- [API Documentation](docs/API_Documentation.md) - Comprehensive guide to all parameters, methods,
+  and classes.
+- [Use Case Implementations](docs/Use_Case_Implementations.md) - Practical examples for common
+  scenarios.
+- [Changelog](docs/CHANGELOG.md) - List of changes and updates.
+- [Version History](docs/VERSION_HISTORY.md) - Detailed version release notes.
+- [Docs README](docs/README.md) - Additional documentation overview.
+
 ## Contributing
 
 We welcome contributions! Raise pull requests or file issues on GitHub.
