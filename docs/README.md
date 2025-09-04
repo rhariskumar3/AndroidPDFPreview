@@ -28,8 +28,8 @@ project root.
 
 ### Current Version Information
 
-- **Latest Version**: 1.1.0 (Sep 03, 2025)
-- **Installation**: `implementation 'io.github.rhariskumar3:pdfpreview:1.1.0'`
+- **Latest Version**: 1.1.1 (Sep 04, 2025)
+- **Installation**: `implementation 'io.github.rhariskumar3:pdfpreview:1.1.1'`
 - **Compatibility**: Android API 21+ (Android 5.1 and above)
 - **Kotlin**: 1.9.23+
 

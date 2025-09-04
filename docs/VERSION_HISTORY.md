@@ -4,21 +4,20 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 📋 Current Version
 
-**[1.1.0](./CHANGELOG.md#110---2025-09-03)** - Latest Release (September 03, 2025)
+**[1.1.1](./CHANGELOG.md#111---2025-09-04)** - Latest Release (January 04, 2025)
 
-- **Major Architecture Refactor**: Separated factory-time configuration from runtime document
-  loading
-- Added `PdfViewConfiguration` class for view behavior settings
-- Added `PdfLoadRequest` class for runtime document loading
-- New DSL extension methods: `configureView()` and `loadDocument()`
-- Enhanced password retry scenarios and document switching capabilities
-- Improved Jetpack Compose integration with proper factory/update pattern support
-- Better separation of concerns for improved performance and memory efficiency
+- **Performance and Stability Improvements**: Enhanced loading state management and lifecycle
+  handling
+- Prevented redundant PDF loads during recompositions in sample app
+- Improved error handling and cancellation logic for robust PDF operations
+- Better resource cleanup and state consistency throughout view lifecycle
+- Enhanced logging and debugging capabilities for easier troubleshooting
 
 ## 📚 Version History
 
 | Version   | Release Date | Type  | Key Features                                                                       |
 |-----------|--------------|-------|------------------------------------------------------------------------------------|
+| **1.1.1** | 2025-09-04   | Patch | Performance optimizations, loading state improvements, lifecycle enhancements      |
 | **1.1.0** | 2025-09-03   | Major | Architecture refactor, separated configuration, DSL APIs, improved Compose support |
 | **1.0.9** | 2025-08-21   | Minor | NDK optimization, async metadata, background processing, PDFium 141.0.7363.0       |
 | **1.0.8** | 2025-08-01   | Minor | Enhanced PDF loading, adaptive rendering delay, code cleanup                       |
@@ -27,7 +26,8 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 🔄 Version Status
 
-- ✅ **1.1.0** - Current (Recommended)
+- ✅ **1.1.1** - Current (Recommended)
+- ✅ **1.1.0** - Previous (Still supported)
 - ✅ **1.0.9** - Previous (Still supported)
 - ⚠️ **1.0.8** - Previous (Limited support)
 - ⚠️ **1.0.7** - Previous (Limited support)
@@ -39,7 +39,7 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ```gradle
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.1.0'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.1.1'
 }
 ```
 
@@ -47,7 +47,7 @@ dependencies {
 
 ```gradle
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.0.9'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.1.0'
 }
 ```
 
@@ -58,6 +58,21 @@ dependencies {
 ```
 
 ## 🚀 Upgrade Guide
+
+### From 1.1.0 to 1.1.1
+
+- **Compatibility**: ✅ Fully backward compatible
+- **Breaking Changes**: None
+- **Action Required**: None - just update the version number
+- **Benefits**: Performance improvements, better loading state management, enhanced error handling
+
+```gradle
+// Old
+implementation 'io.github.rhariskumar3:pdfpreview:1.1.0'
+
+// New
+implementation 'io.github.rhariskumar3:pdfpreview:1.1.1'
+```
 
 ### From 1.0.9 to 1.1.0
 
@@ -118,8 +133,8 @@ implementation 'io.github.rhariskumar3:pdfpreview:1.0.8'
 
 ## 📊 Release Statistics
 
-- **Total Releases**: 4 major versions
-- **Latest Release**: August 21, 2025
+- **Total Releases**: 5 versions
+- **Latest Release**: September 04, 2025
 - **Release Frequency**: Regular updates with improvements
 - **Stability**: Stable and production-ready
 

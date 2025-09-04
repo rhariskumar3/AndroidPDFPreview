@@ -5,6 +5,63 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-09-04 - Performance and Stability Improvements
+
+### Fixed
+
+- **🚀 Performance Optimizations**
+    - Prevented redundant PDF loads in sample `PDFViewer` during recompositions
+    - Added `hasLoadedPdf` state variable to track loading status and avoid unnecessary reloads
+    - Early return logic in AndroidView's update lambda when PDF is already loaded
+    - Reset loading flag to `false` on document load errors to allow retry scenarios
+
+- **🔧 Loading State Management**
+    - Improved `isCurrentlyLoading` flag usage to prevent concurrent load operations
+    - Enhanced `pendingLoadRequest` handling with immediate setting and proper cleanup
+    - More reliable reset of loading flags (`isLoading`, `isCurrentlyLoading`, `currentLoadingJob`,
+      `pendingLoadRequest`)
+    - Consistent state management in `loadComplete`, `loadError`, and during cancellation
+
+- **🛡️ Robust Cancellation and Lifecycle**
+    - Introduced `Job.cancelSafely()` extension to handle exceptions during job cancellation
+    - Improved `recycle()` and `onDetachedFromWindow()` with safe job cancellation
+    - Better early exit checks in `loadDoc()` for recycled views or cancelled jobs
+    - Removed unnecessary `ensureActive()` calls in favor of explicit cancellation handling
+
+- **📐 Enhanced Size Change Logic**
+    - Prevented new load attempts when loading is already in progress during `onSizeChanged`
+    - Refined logging for size change scenarios with valid dimensions but no pending requests
+    - Better handling of view dimension changes to prevent race conditions
+
+- **⚠️ Error Handling Improvements**
+    - Ensured `onDocumentLoadError()` is called before `recycle()` in error scenarios
+    - Added null safety checks in `loadComplete()` before attempting `jumpTo`
+    - Standardized logging with consistent "PDFView" tag usage
+    - Enhanced debug logging in sample app for AndroidView factory and update calls
+
+### Technical Details
+
+- **Internal State Improvements**:
+    - Better separation of concerns between loading states and view lifecycle
+    - Improved error recovery paths with proper state cleanup
+    - Enhanced logging for debugging PDF loading and navigation issues
+
+- **Sample App Enhancements**:
+    - Added state tracking in `PDFViewer` composable to prevent redundant loads
+    - Improved recomposition handling with file-based state keys
+    - Better error handling and retry scenarios for password-protected PDFs
+
+### Migration Guide
+
+No migration steps required. This is a backward-compatible release focused on performance and
+stability improvements.
+
+```gradle
+dependencies {
+    implementation 'io.github.rhariskumar3:pdfpreview:1.1.1'
+}
+```
+
 ## [1.1.0] - 2025-09-03 - Major Architecture Refactor
 
 ### Added
@@ -391,7 +448,8 @@ dependencies {
 
 ## Version Links
 
-- [1.1.0](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.1.0) - Latest
+- [1.1.1](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.1.1) - Latest
+- [1.1.0](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.1.0)
 - [1.0.9](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.9)
 - [1.0.8](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.8)
 - [1.0.7](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.7)
