@@ -47,6 +47,9 @@ internal fun PDFViewer(
     var password by remember { mutableStateOf<String?>(null) }
     var isPasswordProtected by remember { mutableStateOf(false) }
 
+    // Track if PDF has been loaded to prevent redundant loads during recomposition
+    var hasLoadedPdf by remember(pdfDocument.file) { mutableStateOf(false) }
+
     // Pre-validate if password is needed
     LaunchedEffect(pdfDocument.file) {
         isPasswordProtected = PDFDocumentValidator.isPasswordProtected(context, pdfDocument.file)
@@ -158,6 +161,14 @@ internal fun PDFViewer(
         update = { pdfView ->
             Log.d("========>", "PDFViewer() AndroidView update called with: pdfView = $pdfView")
 
+            // Early return if PDF has already been loaded to prevent redundant loads during recompositions
+            if (hasLoadedPdf) {
+                Log.d("========>", "Skipping PDF load - already loaded or in progress")
+                return@AndroidView
+            }
+
+            Log.d("========>", "Loading PDF document for the first time")
+
             // Load or reload document when data changes (runtime updates)
             pdfView.loadDocument(pdfDocument.file) {
                 defaultPage(viewerSettings.defaultPage)
@@ -170,6 +181,9 @@ internal fun PDFViewer(
 
                     override fun onDocumentLoaded(totalPages: Int) {
                         Log.d("=====>", "onDocumentLoaded() called with: totalPages = $totalPages")
+
+                        // Mark as loaded only after successful load
+                        hasLoadedPdf = true
 
                         coroutineScope.launch {
                             pdfView.getDocumentMeta().let { meta ->
@@ -203,6 +217,9 @@ internal fun PDFViewer(
 
                     override fun onDocumentLoadError(error: Throwable) {
                         Log.d("=====>", "onDocumentLoadError() called with: error = $error")
+                        // Reset flag on error so user can retry
+                        hasLoadedPdf = false
+
                         when (error) {
                             is IncorrectPasswordException -> onPasswordRequired?.invoke()
                             else -> onError(error.message.orEmpty())
