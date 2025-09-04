@@ -56,6 +56,8 @@ internal fun PDFViewer(
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { viewContext ->
+            Log.d("========>", "PDFViewer() AndroidView factory called")
+
             PDFView(viewContext, null).apply {
                 // Configure view-level settings once at factory time
                 configureView {
@@ -154,6 +156,8 @@ internal fun PDFViewer(
             }
         },
         update = { pdfView ->
+            Log.d("========>", "PDFViewer() AndroidView update called with: pdfView = $pdfView")
+
             // Load or reload document when data changes (runtime updates)
             pdfView.loadDocument(pdfDocument.file) {
                 defaultPage(viewerSettings.defaultPage)

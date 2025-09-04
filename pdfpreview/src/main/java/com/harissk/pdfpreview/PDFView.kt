@@ -37,12 +37,11 @@ import com.harissk.pdfpreview.utils.SnapEdge
 import com.harissk.pdfpreview.utils.toPx
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.coroutineContext
 
 /**
  * Copyright [2025] [Haris Kumar R](https://github.com/rhariskumar3)
@@ -275,17 +274,15 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         defaultPage = loadRequest.defaultPage
         currentDocumentLoadListener = loadRequest.documentLoadListener
 
+        pendingLoadRequest = loadRequest
+
         // Check if view has valid dimensions before starting PDF loading
         when {
             width > 0 && height > 0 -> startLoading(loadRequest)
-            else -> {
-                // Store request for later when view gets proper dimensions
-                pendingLoadRequest = loadRequest
-                logWriter?.writeLog(
-                    "PDF loading deferred - view size not ready (${width}x${height})",
-                    "PDFView"
-                )
-            }
+            else -> logWriter?.writeLog(
+                "PDF loading deferred - view size not ready (${width}x${height})",
+                "PDFView"
+            )
         }
     }
 
@@ -307,8 +304,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         // Prevent multiple concurrent operations
         if (isCurrentlyLoading) return
 
-        // Cancel any existing loading operation
-        currentLoadingJob?.cancel()
+        currentLoadingJob?.cancelSafely()
 
         // Set global loading flag immediately
         isCurrentlyLoading = true
@@ -333,12 +329,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                     isLoading = false
                     isCurrentlyLoading = false
                     currentLoadingJob = null
+                    pendingLoadRequest = null
                 }
             }
         } catch (e: Exception) {
             isLoading = false
             isCurrentlyLoading = false
             currentLoadingJob = null
+            pendingLoadRequest = null
             logWriter?.writeLog("Error starting PDF load: ${e.message}")
         }
     }
@@ -350,8 +348,6 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         userPages: List<Int>? = null,
         documentLoadListener: DocumentLoadListener? = null,
     ) {
-        coroutineContext.ensureActive()
-
         if (isRecycled) return
 
         // Validate that view has valid dimensions before proceeding with PDF loading
@@ -365,18 +361,15 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         isRecycling = false
         isRecycled = false
-        coroutineContext.ensureActive()
 
         try {
             documentLoadListener?.onDocumentLoadingStart()
             val pdfFile = withContext(Dispatchers.IO) {
-                coroutineContext.ensureActive()
-                if (isRecycling || !isCurrentlyLoading) return@withContext null
+                if (isRecycling || isRecycled) return@withContext null
 
                 docSource.createDocument(pdfView.context, pdfiumCore, password)
 
-                coroutineContext.ensureActive()
-                if (isRecycling || !isCurrentlyLoading) return@withContext null
+                if (isRecycling || isRecycled) return@withContext null
 
                 PdfFile(
                     pdfiumCore = pdfiumCore,
@@ -392,13 +385,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             }
 
             if (pdfFile == null) return
-            coroutineContext.ensureActive()
+            if (isRecycling || isRecycled) return
 
             withContext(Dispatchers.Main) {
-                coroutineContext.ensureActive()
+                if (isRecycling || isRecycled) return@withContext
                 pdfView.loadComplete(pdfFile)
             }
         } catch (t: Throwable) {
+            logWriter?.writeLog("PDF loading cancelled", "PDFView")
             withContext(Dispatchers.Main) {
                 pdfView.loadError(t)
             }
@@ -510,7 +504,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     fun recycle() = recycle(true)
 
     private fun recycle(isRemoveRequest: Boolean = true) {
-        currentLoadingJob?.cancel()
+        currentLoadingJob?.cancelSafely()
         currentLoadingJob = null
 
         isRecycling = true
@@ -562,7 +556,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             state = State.DEFAULT
         } catch (e: Exception) {
             // Log but don't crash during recycling
-            logWriter?.writeLog("Error during recycling: ${e.message}")
+            logWriter?.writeLog("Error during recycling: ${e.message}", "PDFView")
         } finally {
             // Ensure flags are set properly regardless of errors
             isRecycling = false
@@ -581,10 +575,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     override fun onDetachedFromWindow() {
-        currentLoadingJob?.cancel()
+        currentLoadingJob?.cancelSafely()
         currentLoadingJob = null
         scope.cancel()
         isLoading = false
+        isCurrentlyLoading = false
 
         // Clear any pending PDF request
         pendingLoadRequest = null
@@ -602,6 +597,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         // Check if we have a pending load request and valid dimensions now
         if (pendingLoadRequest != null && w > 0 && h > 0) {
+            if (isCurrentlyLoading) {
+                logWriter?.writeLog(
+                    "PDF loading already in progress during size change, updating pending request",
+                    "PDFView"
+                )
+                return
+            }
+
             logWriter?.writeLog(
                 "Starting deferred PDF loading with valid dimensions (${w}x${h})",
                 "PDFView"
@@ -612,18 +615,19 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             return
         }
 
-        // Only restart loading if PDF hasn't been loaded yet or if this is the first size change
-        // Don't restart loading for subsequent size changes to avoid blank screen issues
-        // Note: This fallback is mainly for backward compatibility
-        if (state == State.DEFAULT && w > 0 && h > 0)
-            // If we have no pending load request, we can't restart loading
-            // This situation should not occur with the new API
-            logWriter?.writeLog(
-                "No pending load request available for size change restart",
-                "PDFView"
-            )
-
-        if (isInEditMode || state != State.SHOWN) return
+        // Handle size changes when PDF is already loaded
+        if (isInEditMode || state != State.SHOWN) {
+            // If we're in DEFAULT state and have valid dimensions, but no pending request,
+            // this might be a configuration issue, but don't spam logs
+            if (state == State.DEFAULT && w > 0 && h > 0 && pendingLoadRequest == null) {
+                if (oldw == 0 || oldh == 0)
+                    logWriter?.writeLog(
+                        "Size changed to valid dimensions but no PDF loaded or pending. This may indicate the PDF needs to be reloaded.",
+                        "PDFView"
+                    )
+            }
+            return
+        }
 
         // If PDF is already loaded, just recalculate layout for new size
         if (_pdfFile == null) return
@@ -923,6 +927,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         state = State.LOADED
         _pdfFile = pdfFile
 
+        // Reset loading flags
+        isLoading = false
+        isCurrentlyLoading = false
+        currentLoadingJob = null
+
         // Create RenderingHandler
         try {
             if (renderingHandlerThread?.isAlive == false) renderingHandlerThread?.start()
@@ -956,9 +965,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             }
 
             postDelayed({
-                if (!isRecycled && !isRecycling) {
+                if (!isRecycled && !isRecycling && _pdfFile != null)
                     jumpTo(defaultPage, false)
-                }
             }, initDelay)
         } catch (e: Exception) {
             loadError(e)
@@ -970,7 +978,15 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         if (isRecycling) return null
         state = State.ERROR
+
+        // Ensure we reset loading flags properly
+        isLoading = false
+        isCurrentlyLoading = false
+        currentLoadingJob = null
+
         currentDocumentLoadListener?.onDocumentLoadError(t)
+
+        // Force a redraw to clear any partial content
         recycle()
         invalidate()
         return null
@@ -1344,6 +1360,15 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     internal fun callLinkHandler(linkTapEvent: LinkTapEvent) {
         viewConfiguration.linkHandler?.handleLinkEvent(linkTapEvent) ?: DefaultLinkHandler(this)
+    }
+
+    private fun Job.cancelSafely() {
+        if (!isActive || isCompleted || isCancelled) return
+        try {
+            cancel()
+        } catch (e: Exception) {
+            logWriter?.writeLog("Error cancelling job: ${e.message}", "PDFView")
+        }
     }
 
     private enum class State {
