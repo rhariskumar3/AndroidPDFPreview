@@ -322,60 +322,100 @@ internal class PagesLoader(private val pdfView: PDFView) {
             return
         }
 
-        val scaledPreloadOffset = preloadOffset.toFloat()
-        val rangeList = getRenderRangeList(
-            firstXOffset = -xOffset + scaledPreloadOffset,
-            firstYOffset = -yOffset + scaledPreloadOffset,
-            lastXOffset = -xOffset - pdfView.width - scaledPreloadOffset,
-            lastYOffset = -yOffset - pdfView.height - scaledPreloadOffset
-        )
-
-        val maxRangesToProcess = 3
-        val limitedRangeList = rangeList.take(maxRangesToProcess)
-
-        for (range in limitedRangeList)
-            try {
-                loadThumbnail(range.page)
-            } catch (e: Exception) {
-                pdfView.logWriter?.writeLog(
-                    "Failed to load thumbnail for page ${range.page}: ${e.message}",
-                    TAG
-                )
-                continue
-            }
-
-        var loadedParts = 0
-        val maxPartsPerCall = 50
-
-        for (range in limitedRangeList)
-            try {
-                calculatePartSize(range.gridSize)
-                val partsToLoad = minOf(
-                    pdfView.pdfViewerConfiguration.maxCachedBitmaps - loadedParts,
-                    maxPartsPerCall - loadedParts
-                )
-                if (partsToLoad <= 0) break
-
-                loadedParts += loadPage(
-                    page = range.page,
-                    firstRow = range.leftTop.row,
-                    lastRow = range.rightBottom.row,
-                    firstCol = range.leftTop.col,
-                    lastCol = range.rightBottom.col,
-                    nbOfPartsLoadable = partsToLoad
-                )
-
-                if (loadedParts >= maxPartsPerCall) {
+        when {
+            pdfView.singlePageMode -> {
+                // In single page mode, only load the current page
+                try {
+                    loadThumbnail(pdfView.currentPage)
+                } catch (e: Exception) {
                     pdfView.logWriter?.writeLog(
-                        "Reached max parts limit ($maxPartsPerCall), deferring remaining load",
+                        "Failed to load thumbnail for current page ${pdfView.currentPage}: ${e.message}",
                         TAG
                     )
-                    break
                 }
-            } catch (e: Exception) {
-                pdfView.logWriter?.writeLog("Failed to load page ${range.page}: ${e.message}", TAG)
-                continue
+
+                try {
+                    val gridSize = GridSize(0, 0)
+                    getPageColsRows(gridSize, pdfView.currentPage)
+                    calculatePartSize(gridSize)
+                    val partsToLoad = pdfView.pdfViewerConfiguration.maxCachedBitmaps
+                    loadPage(
+                        page = pdfView.currentPage,
+                        firstRow = 0,
+                        lastRow = gridSize.rows - 1,
+                        firstCol = 0,
+                        lastCol = gridSize.cols - 1,
+                        nbOfPartsLoadable = partsToLoad
+                    )
+                } catch (e: Exception) {
+                    pdfView.logWriter?.writeLog(
+                        "Failed to load current page ${pdfView.currentPage}: ${e.message}",
+                        TAG
+                    )
+                }
             }
+
+            else -> {
+                // Original multi-page loading logic
+                val scaledPreloadOffset = preloadOffset.toFloat()
+                val rangeList = getRenderRangeList(
+                    firstXOffset = -xOffset + scaledPreloadOffset,
+                    firstYOffset = -yOffset + scaledPreloadOffset,
+                    lastXOffset = -xOffset - pdfView.width - scaledPreloadOffset,
+                    lastYOffset = -yOffset - pdfView.height - scaledPreloadOffset
+                )
+
+                val maxRangesToProcess = 3
+                val limitedRangeList = rangeList.take(maxRangesToProcess)
+
+                for (range in limitedRangeList)
+                    try {
+                        loadThumbnail(range.page)
+                    } catch (e: Exception) {
+                        pdfView.logWriter?.writeLog(
+                            "Failed to load thumbnail for page ${range.page}: ${e.message}",
+                            TAG
+                        )
+                        continue
+                    }
+
+                var loadedParts = 0
+                val maxPartsPerCall = 50
+
+                for (range in limitedRangeList)
+                    try {
+                        calculatePartSize(range.gridSize)
+                        val partsToLoad = minOf(
+                            pdfView.pdfViewerConfiguration.maxCachedBitmaps - loadedParts,
+                            maxPartsPerCall - loadedParts
+                        )
+                        if (partsToLoad <= 0) break
+
+                        loadedParts += loadPage(
+                            page = range.page,
+                            firstRow = range.leftTop.row,
+                            lastRow = range.rightBottom.row,
+                            firstCol = range.leftTop.col,
+                            lastCol = range.rightBottom.col,
+                            nbOfPartsLoadable = partsToLoad
+                        )
+
+                        if (loadedParts >= maxPartsPerCall) {
+                            pdfView.logWriter?.writeLog(
+                                "Reached max parts limit ($maxPartsPerCall), deferring remaining load",
+                                TAG
+                            )
+                            break
+                        }
+                    } catch (e: Exception) {
+                        pdfView.logWriter?.writeLog(
+                            "Failed to load page ${range.page}: ${e.message}",
+                            TAG
+                        )
+                        continue
+                    }
+            }
+        }
     }
 
 

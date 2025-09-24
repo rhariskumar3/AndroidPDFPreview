@@ -112,6 +112,17 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
         return cachedThumbnail.pageRelativeBounds == bounds
     }
 
+    fun clearPageCache(page: Int) {
+        synchronized(passiveActiveLock) {
+            // Remove from active cache
+            activeCache.removeAll { it.page == page }
+            // Remove from passive cache
+            passiveCache.removeAll { it.page == page }
+        }
+        // Remove thumbnail
+        thumbnails.remove(page)
+    }
+
     fun getPageParts(): List<PagePart> = synchronized(passiveActiveLock) {
         return buildList {
             addAll(passiveCache)

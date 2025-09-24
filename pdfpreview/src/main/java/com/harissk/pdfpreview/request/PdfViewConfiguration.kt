@@ -50,6 +50,7 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * @property gestureEventListener A listener to be notified of gesture events (e.g., when a gesture is detected). Defaults to null.
  * @property linkHandler A handler for processing link clicks in the PDF document. Defaults to null.
  * @property logWriter A writer for logging messages and errors. Defaults to null.
+ * @property singlePageMode When true, displays only one page at a time in both portrait and landscape orientations, with no visibility of adjacent pages. When false, uses the traditional continuous scroll behavior. Defaults to false.
  */
 data class PdfViewConfiguration(
     val enableSwipe: Boolean = true,
@@ -73,6 +74,7 @@ data class PdfViewConfiguration(
     val gestureEventListener: GestureEventListener? = null,
     val linkHandler: LinkHandler? = null,
     val logWriter: LogWriter? = null,
+    val singlePageMode: Boolean = false,
 ) {
 
     class Builder {
@@ -97,6 +99,7 @@ data class PdfViewConfiguration(
         private var gestureEventListener: GestureEventListener? = null
         private var linkHandler: LinkHandler? = null
         private var logWriter: LogWriter? = null
+        private var singlePageMode: Boolean = false
 
         fun enableSwipe(enableSwipe: Boolean): Builder {
             this.enableSwipe = enableSwipe
@@ -205,6 +208,11 @@ data class PdfViewConfiguration(
             return this
         }
 
+        fun singlePageMode(singlePageMode: Boolean): Builder {
+            this.singlePageMode = singlePageMode
+            return this
+        }
+
         fun build() = PdfViewConfiguration(
             enableSwipe = enableSwipe,
             enableDoubleTap = enableDoubleTap,
@@ -227,6 +235,7 @@ data class PdfViewConfiguration(
             gestureEventListener = gestureEventListener,
             linkHandler = linkHandler,
             logWriter = logWriter,
+            singlePageMode = singlePageMode,
         )
     }
 

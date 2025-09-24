@@ -266,10 +266,23 @@ class DefaultScrollHandle(private val context: Context, private val inverted: Bo
                 if (viewSize > actualHandleSize && actualHandleSize > 0) {
                     val offset =
                         (handleCenter - actualHandleSize / 2f) / (viewSize - actualHandleSize)
-                    currentPdfView.setPositionOffset(offset.coerceIn(0f, 1f), false)
-                    
-                    val actualCurrentPage = currentPdfView.getPageAtPositionOffset(offset.coerceIn(0f, 1f))
-                    setPageNum(actualCurrentPage + 1)
+
+                    // In single page mode, don't allow page navigation via scroll handle
+                    // since pages are positioned at the same location
+                    when {
+                        !currentPdfView.singlePageMode -> {
+                            currentPdfView.setPositionOffset(offset.coerceIn(0f, 1f), false)
+
+                            val actualCurrentPage =
+                                currentPdfView.getPageAtPositionOffset(offset.coerceIn(0f, 1f))
+                            setPageNum(actualCurrentPage + 1)
+                        }
+
+                        else -> {
+                            // In single page mode, just update the handle position but keep current page
+                            setPageNum(currentPdfView.currentPage + 1)
+                        }
+                    }
                 }
                 return true
             }

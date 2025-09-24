@@ -90,6 +90,9 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     val pdfViewerConfiguration: PdfViewerConfiguration
         get() = viewConfiguration.pdfViewerConfiguration
 
+    val singlePageMode: Boolean
+        get() = viewConfiguration.singlePageMode
+
     val minZoom: Float = DEFAULT_MIN_SCALE
     val midZoom: Float = DEFAULT_MID_SCALE
     val maxZoom: Float = DEFAULT_MAX_SCALE
@@ -380,7 +383,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                     spacingPx = spacingPx,
                     autoSpacing = isAutoSpacingEnabled,
                     fitEachPage = isFitEachPage,
-                    maxPageCacheSize = pdfViewerConfiguration.maxCachedPages
+                    maxPageCacheSize = pdfViewerConfiguration.maxCachedPages,
+                    singlePageMode = viewConfiguration.singlePageMode
                 )
             }
 
@@ -432,7 +436,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         _pdfFile ?: return
 
         val userPage = pdfFile.determineValidPageNumberFrom(pageNb)
+        val oldPage = currentPage
         currentPage = userPage
+
+        // In single page mode, clear cache of the old page to prevent old parts from showing
+        if (viewConfiguration.singlePageMode && oldPage != currentPage) {
+            cacheManager.clearPageCache(oldPage)
+        }
+
         loadPages()
         if (!documentFitsView()) scrollHandle?.setPageNum(currentPage + 1)
         viewConfiguration.pageNavigationEventListener?.onPageChanged(currentPage, pageCount)
@@ -918,7 +929,18 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         // Dynamically enable best quality when zoomed in to reduce blur
         // Lower threshold for earlier quality improvement
+        val wasBestQuality = isBestQuality
         isBestQuality = zoom > 1.2f
+
+        // If quality setting changed to best quality, clear cache to force re-rendering
+        if (!wasBestQuality && isBestQuality) when {
+            viewConfiguration.singlePageMode -> cacheManager.clearPageCache(currentPage)
+
+            else -> {
+                // In multi-page mode, we could clear all caches, but for now just let it re-render naturally
+                // cacheManager.makeANewSet() will handle cache management
+            }
+        }
 
         // Cancel all current tasks
         renderingHandler?.removeMessages(RenderingHandler.MSG_RENDER_TASK)
@@ -1045,7 +1067,58 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         var offsetX1 = offsetX
         var offsetY1 = offsetY
+
         when {
+            viewConfiguration.singlePageMode -> {
+                // In single page mode, allow scrolling around zoomed pages but constrain to page boundaries
+                val pageSize = pdfFile.getPageSize(currentPage) ?: SizeF(0f, 0f)
+                val scaledPageWidth = toCurrentScale(pageSize.width)
+                val scaledPageHeight = toCurrentScale(pageSize.height)
+
+                // Check if page is larger than viewport in each dimension
+                val pageWiderThanViewport = scaledPageWidth > width
+                val pageTallerThanViewport = scaledPageHeight > height
+
+                when {
+                    // If page fits in viewport, center it
+                    !pageWiderThanViewport && !pageTallerThanViewport -> {
+                        offsetX1 = (width - scaledPageWidth) / 2f
+                        offsetY1 = (height - scaledPageHeight) / 2f
+                    }
+                    // If page is wider than viewport, allow horizontal scrolling within bounds
+                    pageWiderThanViewport && !pageTallerThanViewport -> {
+                        offsetX1 = when {
+                            offsetX1 > 0 -> 0f
+                            offsetX1 + scaledPageWidth < width -> width - scaledPageWidth
+                            else -> offsetX1
+                        }
+                        offsetY1 = (height - scaledPageHeight) / 2f
+                    }
+                    // If page is taller than viewport, allow vertical scrolling within bounds
+                    !pageWiderThanViewport && pageTallerThanViewport -> {
+                        offsetX1 = (width - scaledPageWidth) / 2f
+                        offsetY1 = when {
+                            offsetY1 > 0 -> 0f
+                            offsetY1 + scaledPageHeight < height -> height - scaledPageHeight
+                            else -> offsetY1
+                        }
+                    }
+                    // If page is larger than viewport in both dimensions, allow scrolling in both directions
+                    else -> {
+                        offsetX1 = when {
+                            offsetX1 > 0 -> 0f
+                            offsetX1 + scaledPageWidth < width -> width - scaledPageWidth
+                            else -> offsetX1
+                        }
+                        offsetY1 = when {
+                            offsetY1 > 0 -> 0f
+                            offsetY1 + scaledPageHeight < height -> height - scaledPageHeight
+                            else -> offsetY1
+                        }
+                    }
+                }
+            }
+
             isSwipeVertical -> {
                 // Check X offset
                 val scaledPageWidth = toCurrentScale(pdfFile.maxPageWidth)
@@ -1103,7 +1176,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             val positionOffset = positionOffset
             if (moveHandle && !documentFitsView()) {
                 scrollHandle?.setScroll(positionOffset)
-                val actualCurrentPage = getPageAtPositionOffset(positionOffset)
+                val actualCurrentPage = when {
+                    viewConfiguration.singlePageMode -> currentPage
+                    else -> getPageAtPositionOffset(positionOffset)
+                }
                 scrollHandle?.setPageNum(actualCurrentPage + 1)
             }
             redraw()
@@ -1111,7 +1187,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             val positionOffset = positionOffset
             if (moveHandle && !documentFitsView()) {
                 scrollHandle?.setScroll(positionOffset)
-                val actualCurrentPage = getPageAtPositionOffset(positionOffset)
+                val actualCurrentPage = when {
+                    viewConfiguration.singlePageMode -> currentPage
+                    else -> getPageAtPositionOffset(positionOffset)
+                }
                 scrollHandle?.setPageNum(actualCurrentPage + 1)
             }
             viewConfiguration.pageNavigationEventListener?.onPageScrolled(
@@ -1145,7 +1224,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         if (!documentFitsView()) {
             val positionOffset = positionOffset
             scrollHandle?.setScroll(positionOffset)
-            val actualCurrentPage = getPageAtPositionOffset(positionOffset)
+            val actualCurrentPage = when {
+                viewConfiguration.singlePageMode -> currentPage
+                else -> getPageAtPositionOffset(positionOffset)
+            }
             scrollHandle?.setPageNum(actualCurrentPage + 1)
         }
         viewConfiguration.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)

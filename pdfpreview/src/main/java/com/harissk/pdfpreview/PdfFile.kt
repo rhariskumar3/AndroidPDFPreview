@@ -48,6 +48,7 @@ import kotlin.math.max
  * @param fitEachPage          True if every page should fit separately according to the {@link
  * FitPolicy}, else the largest page fits and other pages scale relatively.
  * @param maxPageCacheSize The maximum number of pages that can be kept in the view
+ * @param singlePageMode When true, positions each page individually for single-page-at-a-time viewing
  */
 class PdfFile(
     private val pdfiumCore: PdfiumCore,
@@ -59,6 +60,7 @@ class PdfFile(
     private val autoSpacing: Boolean,
     private val fitEachPage: Boolean,
     private val maxPageCacheSize: Int,
+    private val singlePageMode: Boolean = false,
 ) {
     var pagesCount = 0
         private set
@@ -95,6 +97,9 @@ class PdfFile(
 
     /** Calculated document length (width or height, depending on swipe mode)  */
     private var documentLength = 0f
+
+    /** Current view size for calculations */
+    private var currentViewSize: Size? = null
 
     /**
      * The pages the user want to display in order (ex: 0, 2, 2, 8, 8, 1, 1, 1)
@@ -133,6 +138,7 @@ class PdfFile(
      * @param viewSize The size of the view where the PDF document is displayed.
      */
     fun recalculatePageSizes(viewSize: Size) {
+        currentViewSize = viewSize
         pageSizes.clear()
         val calculator = PageSizeCalculator(
             fitPolicy = pageFitPolicy,
@@ -187,38 +193,59 @@ class PdfFile(
     }
 
     private fun prepareDocLen() {
-        var length = 0f
-        for (i in 0 until pagesCount) {
-            val pageSize: SizeF = pageSizes[i]
-            length += if (isVertical) pageSize.height else pageSize.width
-            when {
-                autoSpacing -> length += pageSpacing[i]
-                i < pagesCount - 1 -> length += spacingPx.toFloat()
+        when {
+            singlePageMode -> {
+                // In single page mode, document length is the size of one page
+                val pageSize: SizeF = pageSizes.getOrNull(0) ?: SizeF(0F, 0F)
+                documentLength = if (isVertical) pageSize.height else pageSize.width
+            }
+
+            else -> {
+                // Original continuous document length calculation
+                var length = 0f
+                for (i in 0 until pagesCount) {
+                    val pageSize: SizeF = pageSizes[i]
+                    length += if (isVertical) pageSize.height else pageSize.width
+                    when {
+                        autoSpacing -> length += pageSpacing[i]
+                        i < pagesCount - 1 -> length += spacingPx.toFloat()
+                    }
+                }
+                documentLength = length
             }
         }
-        documentLength = length
     }
 
     private fun preparePagesOffset() {
         pageOffsets.clear()
-        var offset = 0f
-        for (i in 0 until pagesCount) {
-            val pageSize: SizeF = pageSizes[i]
-            val size: Float = if (isVertical) pageSize.height else pageSize.width
-            when {
-                autoSpacing -> {
-                    offset += pageSpacing[i] / 2f
-                    when (i) {
-                        0 -> offset -= spacingPx / 2f
-                        pagesCount - 1 -> offset += spacingPx / 2f
-                    }
-                    pageOffsets.add(offset)
-                    offset += size + pageSpacing[i] / 2f
-                }
+        when {
+            singlePageMode -> {
+                // In single page mode, each page is positioned at offset 0 (screen center)
+                for (i in 0 until pagesCount) pageOffsets.add(0f)
+            }
 
-                else -> {
-                    pageOffsets.add(offset)
-                    offset += size + spacingPx
+            else -> {
+                // Original continuous strip positioning
+                var offset = 0f
+                for (i in 0 until pagesCount) {
+                    val pageSize: SizeF = pageSizes[i]
+                    val size: Float = if (isVertical) pageSize.height else pageSize.width
+                    when {
+                        autoSpacing -> {
+                            offset += pageSpacing[i] / 2f
+                            when (i) {
+                                0 -> offset -= spacingPx / 2f
+                                pagesCount - 1 -> offset += spacingPx / 2f
+                            }
+                            pageOffsets.add(offset)
+                            offset += size + pageSpacing[i] / 2f
+                        }
+
+                        else -> {
+                            pageOffsets.add(offset)
+                            offset += size + spacingPx
+                        }
+                    }
                 }
             }
         }
