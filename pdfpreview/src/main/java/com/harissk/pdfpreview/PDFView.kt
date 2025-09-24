@@ -662,6 +662,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         }
         moveTo(currentXOffset, currentYOffset)
         loadPageByOffset(skipBitmapGenerationDuringScroll = false)
+        // Ensure scroll handle shows correct page number after orientation change
+        updateScrollUIElements()
     }
 
     override fun canScrollHorizontally(direction: Int): Boolean {
@@ -849,12 +851,21 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         val localTranslationX: Float
         val localTranslationY: Float
         val size: SizeF = pdfFile.getPageSize(part.page) ?: SizeF(0f, 0f)
-        if (isSwipeVertical) {
-            localTranslationY = pdfFile.getPageOffset(part.page, zoom)
-            localTranslationX = toCurrentScale(pdfFile.maxPageWidth - size.width) / 2
-        } else {
-            localTranslationX = pdfFile.getPageOffset(part.page, zoom)
-            localTranslationY = toCurrentScale(pdfFile.maxPageHeight - size.height) / 2
+        when {
+            isSwipeVertical -> {
+                localTranslationY = pdfFile.getPageOffset(part.page, zoom)
+                // Limit horizontal centering to prevent overlap in landscape mode
+                val maxCenterOffset = (width - toCurrentScale(size.width)) / 2f
+                localTranslationX = minOf(
+                    toCurrentScale(pdfFile.maxPageWidth - size.width) / 2,
+                    maxCenterOffset
+                ).coerceAtLeast(0f)
+            }
+
+            else -> {
+                localTranslationX = pdfFile.getPageOffset(part.page, zoom)
+                localTranslationY = toCurrentScale(pdfFile.maxPageHeight - size.height) / 2
+            }
         }
         canvas.translate(localTranslationX, localTranslationY)
         val srcRect = Rect(0, 0, renderedBitmap.width, renderedBitmap.height)
