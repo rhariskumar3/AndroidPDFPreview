@@ -31,6 +31,7 @@ features or active bug fixes.
 * **Single page mode** for e-book style reading with one page at a time
 * Lightweight and easy to integrate into your Android apps
 * Compatible with Android versions 5.1 and above
+* **16KB page size support** for Android 15+ devices
 
 ## Installation
 
@@ -38,7 +39,7 @@ To install AndroidPDFPreview, add the following dependency to your project's Gra
 
 ```
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.1.1'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.0'
 }
 ```
 

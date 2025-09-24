@@ -5,6 +5,56 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-09-24 - Single Page Mode and PDFium Update
+
+### Added
+
+- **📄 Single Page Mode**
+    - New `singlePageMode` configuration option for displaying one page at a time
+    - Improved page navigation with dedicated single-page rendering logic
+    - Enhanced user experience for document review workflows
+
+- **🔄 PDFium Library Update**
+    - Updated PDFium to chromium/7428 for improved PDF rendering and compatibility
+    - Added automated download script for PDFium libraries
+    - Enhanced stability and performance with latest PDFium features
+
+### Changed
+
+- **🏗️ Architecture Improvements**
+    - Removed deprecated `PdfRequest` class and related methods for cleaner API
+    - Refactored page positioning logic for better orientation change handling
+    - Improved scroll UI updates during device rotation
+    - Enhanced rendering pipeline for single page mode
+
+- **📚 Documentation Updates**
+    - Added maintenance status notice to README
+    - Updated project documentation for new features
+    - Improved clarity on single page mode usage
+
+### Technical Details
+
+- **Single Page Implementation**:
+    - Dedicated rendering path for single page display
+    - Optimized memory usage for single-page scenarios
+    - Better zoom and pan controls for focused reading
+
+- **PDFium Integration**:
+    - Seamless upgrade to chromium/7428
+    - Maintained backward compatibility with existing PDFs
+    - Improved text rendering and annotation support
+
+### Migration Guide
+
+No breaking changes for existing users. Single page mode is an optional feature that can be enabled
+via configuration.
+
+```gradle
+dependencies {
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.0'
+}
+```
+
 ## [1.1.1] - 2025-09-04 - Performance and Stability Improvements
 
 ### Fixed
@@ -448,7 +498,8 @@ dependencies {
 
 ## Version Links
 
-- [1.1.1](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.1.1) - Latest
+- [1.2.0](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.2.0) - Latest
+- [1.1.1](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.1.1)
 - [1.1.0](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.1.0)
 - [1.0.9](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.9)
 - [1.0.8](https://github.com/rhariskumar3/AndroidPDFPreview/releases/tag/v1.0.8)
