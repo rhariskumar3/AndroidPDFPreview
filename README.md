@@ -14,6 +14,14 @@ AndroidPDFPreview is a lightweight and easy-to-use library for displaying and in
 in your Android applications. Built on top of PdfiumAndroid for decoding and AndroidPdfViewer for
 rendering, it delivers a smooth and user-friendly experience.
 
+## Maintenance Status
+
+**Note:** This library is no longer actively maintained. Google is developing an official PDF
+library for Android as part of Jetpack. For new projects, consider using
+the [Android PDF library](https://developer.android.com/jetpack/androidx/releases/pdf) when it
+becomes available. This repository will remain available for existing users but will not receive new
+features or active bug fixes.
+
 ## Features
 
 * Display and interact with PDF documents
@@ -49,7 +57,6 @@ dependencies {
 
 2. Load a PDF in your code:
 
-   **New API (Recommended):**
    ```kotlin
    // Optional: Validate document first (recommended)
    val isValid = PDFThumbnailGenerator.isDocumentValid(this, file)
@@ -78,123 +85,10 @@ dependencies {
    }
    ```
 
-   **Legacy API (Deprecated but supported):**
-   ```kotlin
-   // Still works for backward compatibility
-   binding.pdfView.load(file) {
-       defaultPage(0)
-       swipeHorizontal(true)
-       enableAnnotationRendering(true)
-       singlePageMode(true)  // Enable single page mode
-       spacing(10F) // in dp
-       // ... other settings
-   }
-    ```
-
-Use code with caution. Learn more
-
 ## Jetpack Compose Usage
 
-You can use PDFView in Jetpack Compose with `AndroidView`:
-
-**New API (Recommended):**
-
-```kotlin
-@Composable
-fun PDFViewCompose(
-    file: File,
-    modifier: Modifier = Modifier
-) {
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            PDFView(context).apply {
-                // Configure view settings once at factory time
-                configureView {
-                    swipeHorizontal(true)
-                    enableAnnotationRendering(true)
-                    singlePageMode(true)  // Enable single page mode
-                    spacing(10F) // in dp
-                    documentLoadListener { pages ->
-                        // Document loaded with $pages pages
-                    }
-                    renderingEventListener { page ->
-                        // Page $page rendered
-                    }
-                    pageNavigationEventListener { page, pageCount ->
-                        // Navigated to page $page of $pageCount
-                    }
-                    gestureEventListener { type ->
-                        // Gesture event: $type
-                    }
-                    linkHandler { uri ->
-                        // Handle link: $uri
-                    }
-                }
-            }
-        },
-        update = { pdfView ->
-            // Update document at runtime (supports password retry, document switching)
-            pdfView.loadDocument(file) {
-                defaultPage(0)
-            }
-        }
-    )
-}
-```
-
-**Legacy API (Still supported):**
-
-```kotlin
-@Composable
-fun PDFViewCompose(
-    file: File,
-    modifier: Modifier = Modifier
-) {
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            PDFView(context).apply {
-                load(file) {
-                    defaultPage(0)
-                    swipeHorizontal(true)
-                    enableAnnotationRendering(true)
-                    singlePageMode(true)  // Enable single page mode
-                    spacing(10F) // in dp
-
-                    // Listeners
-                    documentLoadListener { pages ->
-                        // Document loaded with $pages pages
-                    }
-                    renderingEventListener { page ->
-                        // Page $page rendered
-                    }
-                    pageNavigationEventListener { page, pageCount ->
-                        // Navigated to page $page of $pageCount
-                    }
-                    gestureEventListener { type ->
-                        // Gesture event: $type
-                    }
-                    linkHandler { uri ->
-                        // Handle link: $uri
-                    }
-                }
-            }
-        }
-    )
-}
-
-// Usage in your Composable
-@Composable
-fun MyScreen() {
-    val pdfFile = remember { /* your file */ }
-
-    PDFViewCompose(
-        file = pdfFile,
-        modifier = Modifier.fillMaxSize()
-    )
-}
-```
+You can use PDFView in Jetpack Compose with `AndroidView`.
+See [Use Case Implementations](docs/Use_Case_Implementations.md) for detailed examples.
 
 ### Going Further:
 
@@ -208,46 +102,9 @@ fun MyScreen() {
 ## New Architecture: Factory vs Runtime Configuration
 
 AndroidPDFPreview now supports a modern architecture that separates factory-time configuration from
-runtime document loading:
-
-### **Factory-Time Configuration** (PdfViewConfiguration)
-
-Set once when the view is created. Controls view behavior, rendering options, and listeners:
-
-```kotlin
-val viewConfig = PdfViewConfiguration.Builder()
-    .swipeHorizontal(true)
-    .enableAnnotationRendering(true)
-    .spacing(10F)
-    .pageFitPolicy(FitPolicy.WIDTH)
-    .nightMode(false)
-    .documentLoadListener(...)
-.build()
-
-pdfView.configure(viewConfig)
-```
-
-### **Runtime Document Loading** (PdfLoadRequest)
-
-Can be called multiple times to load different documents or retry with different settings:
-
-```kotlin
-// Initial load
-val loadRequest = PdfLoadRequest(
-    source = file,
-    password = null,
-    defaultPage = 0
-)
-pdfView.load(loadRequest)
-
-// Password retry scenario
-val retryRequest = loadRequest.copy(password = "correct_password")
-pdfView.load(retryRequest)
-
-// Load different document
-val newRequest = PdfLoadRequest(source = anotherFile)
-pdfView.load(newRequest)
-```
+runtime document loading. See [API Documentation](docs/API_Documentation.md)
+and [Use Case Implementations](docs/Use_Case_Implementations.md) for detailed information and
+examples.
 
 ### **Key Advantages:**
 
@@ -257,247 +114,15 @@ pdfView.load(newRequest)
 - **Performance**: View configuration is set once and reused
 - **Memory Efficient**: Only document-specific data changes during runtime
 
-### **Migration Guide:**
-
-The old API still works but is deprecated:
-
-```kotlin
-// OLD (still works, but deprecated)
-pdfView.load(file) { /* all settings mixed together */ }
-
-// NEW (recommended)
-pdfView.configureView { /* factory settings */ }
-pdfView.loadDocument(file) { /* runtime settings */ }
-```
-
-### **Practical Examples:**
-
-**Password-Protected PDF with Retry:**
-
-```kotlin
-class PDFActivity : AppCompatActivity() {
-    private lateinit var pdfView: PDFView
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // Configure view once
-        pdfView.configureView {
-            swipeHorizontal(true)
-            enableAnnotationRendering(true)
-            documentLoadListener(object : DocumentLoadListener {
-                override fun onDocumentLoaded(totalPages: Int) {
-                    // Success!
-                }
-                override fun onDocumentLoadError(error: Throwable) {
-                    if (error is IncorrectPasswordException) {
-                        showPasswordDialog()
-                    }
-                }
-            })
-        }
-
-        // Initial load attempt
-        pdfView.loadDocument(file)
-    }
-
-    private fun retryWithPassword(password: String) {
-        // Easy password retry - just load with new password
-        pdfView.loadDocument(file) {
-            password(password)
-        }
-    }
-}
-```
-
-**Document Switching in Compose:**
-
-```kotlin
-@Composable
-fun DocumentViewer(documents: List<File>) {
-    var currentDoc by remember { mutableStateOf(documents.first()) }
-
-    AndroidView(
-        factory = { context ->
-            PDFView(context).apply {
-                // Configure once
-                configureView {
-                    swipeHorizontal(true)
-                }
-            }
-        },
-        update = { pdfView ->
-            // Recomposes when currentDoc changes
-            pdfView.loadDocument(currentDoc)
-        }
-    )
-
-    // Document switcher UI
-    LazyRow {
-        items(documents) { doc ->
-            Button(onClick = { currentDoc = doc }) {
-                Text(doc.name)
-            }
-        }
-    }
-}
-```
-
 ## PDF Thumbnail Generation
 
-Generate thumbnails from PDF documents for preview purposes:
-
-```kotlin
-// Simple thumbnail generation
-val thumbnail = PDFThumbnailGenerator.generateThumbnail(
-    context = this,
-    source = pdfFile,
-    pageIndex = 0
-)
-thumbnail?.let { imageView.setImageBitmap(it) }
-
-// Custom thumbnail configuration
-val config = ThumbnailConfig(
-    width = 300,
-    height = 400,
-    quality = Bitmap.Config.ARGB_8888,
-    annotationRendering = true,
-    aspectRatio = AspectRatio.PRESERVE
-)
-
-val thumbnail = PDFThumbnailGenerator.generateThumbnail(
-    context = this,
-    source = pdfFile,
-    pageIndex = 0,
-    config = config
-)
-
-// Generate multiple thumbnails
-val thumbnails = PDFThumbnailGenerator.generateThumbnails(
-    context = this,
-    source = pdfFile,
-    pageIndices = listOf(0, 1, 2, 3)
-)
-
-// Get page count
-val pageCount = PDFThumbnailGenerator.getPageCount(context, pdfFile)
-```
-
-### Jetpack Compose Integration:
-
-```kotlin
-@Composable
-fun PDFThumbnailImage(
-    file: File,
-    page: Int = 0,
-    size: Int = 200,
-    modifier: Modifier = Modifier
-) {
-    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-    val context = LocalContext.current
-
-    LaunchedEffect(file, page, size) {
-        bitmap = PDFThumbnailGenerator.generateThumbnail(
-            context = context,
-            source = file,
-            pageIndex = page,
-            config = ThumbnailConfig(width = size, height = size)
-        )
-    }
-
-    bitmap?.let {
-        Image(
-            bitmap = it.asImageBitmap(),
-            contentDescription = "PDF Thumbnail",
-            modifier = modifier
-        )
-    }
-}
-```
+Generate thumbnails from PDF documents for preview purposes.
+See [Use Case Implementations](docs/Use_Case_Implementations.md) for detailed examples.
 
 ## PDF Document Validation
 
 Validate PDF documents before processing to check if they're valid, password protected, or
-corrupted:
-
-```kotlin
-// Comprehensive validation with detailed results
-val validationResult = PDFThumbnailGenerator.validateDocument(context, pdfFile)
-
-when (validationResult) {
-    is DocumentValidationResult.Valid -> {
-        println("✅ Document is valid with ${validationResult.pageCount} pages")
-        println("Has metadata: ${validationResult.hasMetadata}")
-        println("Has bookmarks: ${validationResult.hasBookmarks}")
-
-        // Safe to generate thumbnails or open document
-        val thumbnail = PDFThumbnailGenerator.generateThumbnail(context, pdfFile)
-    }
-
-    is DocumentValidationResult.PasswordProtected -> {
-        println("🔒 Document requires password")
-        println("Security level: ${validationResult.securityLevel}")
-
-        // Request password from user
-        val password = showPasswordDialog()
-        val thumbnail = PDFThumbnailGenerator.generateThumbnail(
-            context, pdfFile, password = password
-        )
-    }
-
-    is DocumentValidationResult.Corrupted -> {
-        println("❌ Document is corrupted: ${validationResult.reason}")
-        println("Error code: ${validationResult.errorCode}")
-        showErrorDialog("Document cannot be opened: corrupted or damaged")
-    }
-
-    is DocumentValidationResult.Invalid -> {
-        println("⚠️ Document is invalid: ${validationResult.reason}")
-        showErrorDialog("Invalid PDF: ${validationResult.errorMessage}")
-    }
-
-    is DocumentValidationResult.Error -> {
-        println("🚫 Validation error: ${validationResult.errorMessage}")
-        showErrorDialog("Cannot validate document")
-    }
-}
-
-// Quick validation methods
-val isValid = PDFThumbnailGenerator.isDocumentValid(context, pdfFile)
-val needsPassword = PDFThumbnailGenerator.isPasswordProtected(context, pdfFile)
-val correctPassword = PDFThumbnailGenerator.isPasswordCorrect(context, pdfFile, "password123")
-```
-
-### Validation Features:
-
-- **📋 Document Status**: Valid, password protected, corrupted, or invalid
-- **🔍 Detailed Analysis**: Page count, metadata presence, bookmarks detection
-- **🔐 Security Detection**: Password protection and encryption level identification
-- **⚡ Efficient Operations**: All validation runs on background threads
-- **🎯 Multiple Sources**: Supports File, Uri, ByteArray, InputStream, and assets
-- **🛡️ Error Handling**: Comprehensive error detection with specific error codes
-
-### Use Cases:
-
-1. **Pre-validation**: Check documents before thumbnail generation or viewing
-2. **Password Handling**: Detect and handle password-protected PDFs
-3. **Error Prevention**: Avoid crashes from corrupted or invalid files
-4. **User Experience**: Provide specific error messages for different issues
-5. **Performance**: Quick boolean checks for simple validation needs
-
-## Additional Features
-
-AndroidPDFPreview supports a number of additional features, including:
-
-* Page navigation
-* **Single page mode** - E-book style reading with automatic page boundary constraints
-* **PDF Thumbnail Generation** - Generate preview thumbnails from any page
-* **PDF Document Validation** - Validate documents for integrity, password protection, and
-  corruption
-* Search (coming soon)
-* Table of contents
-* Bookmarks
-* Annotations (coming soon)
+corrupted. See [Use Case Implementations](docs/Use_Case_Implementations.md) for detailed examples.
 
 ## Documentation
 
@@ -513,11 +138,13 @@ For detailed API references, use case implementations, and project information, 
 
 ## Contributing
 
-We welcome contributions! Raise pull requests or file issues on GitHub.
+This library is no longer actively maintained. Pull requests will not be accepted for new features.
+Only critical bug fixes for existing users may be considered on a case-by-case basis.
 
 ## Contact
 
-Have questions or feedback? Reach out to us at [https://github.com/rhariskumar3/AndroidPDFPreview]
+For existing users with critical issues, please file an issue on GitHub. General support and feature
+requests will not be addressed due to the library's maintenance status.
 
 ## Acknowledgements
 
