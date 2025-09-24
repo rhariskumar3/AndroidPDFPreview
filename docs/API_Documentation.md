@@ -1,13 +1,13 @@
 # API Documentation for PDF Preview Library
 
 This document provides detailed descriptions of the parameters, methods, and classes in the PDF
-Preview library components. The library now features a modern architecture that separates
+Preview library components. The library features a modern architecture that separates
 factory-time configuration (`PdfViewConfiguration`) from runtime document loading (
-`PdfLoadRequest`), alongside the original unified approach (`PdfRequest`, now deprecated).
+`PdfLoadRequest`).
 
 ## New Architecture Overview
 
-The library now supports two configuration approaches:
+The library supports a separated configuration approach:
 
 ### **Recommended: Separate Configuration Pattern**
 
@@ -15,11 +15,6 @@ The library now supports two configuration approaches:
 - **`PdfLoadRequest`**: Runtime settings (document source, password, page selection) - can change
 - **`PDFView.configure()`**: Apply view configuration
 - **`PDFView.load()`**: Load documents with runtime settings
-
-### **Legacy: Unified Configuration Pattern**
-
-- **`PdfRequest`**: All settings combined (deprecated but supported)
-- **`PDFView.enqueue()`**: Load with unified configuration (deprecated)
 
 ## PdfViewConfiguration
 
@@ -55,11 +50,18 @@ constant across different document loads. This class is used with the `PDFView.c
   page alignment during scrolling.
 - **scrollOptimization** (`Boolean`): Optimizes scrolling by skipping bitmap generation during fast
   scrolls. Default: `true`. May show blank areas temporarily.
-- **singlePageMode** (`Boolean`): When true, displays only one page at a time in both portrait and landscape orientations, with no visibility of adjacent pages. When false, uses the traditional continuous scroll behavior. Defaults to false.
-  - **Single Page Mode Behavior**: Automatically constrains scrolling to page boundaries, ensuring users always see exactly one complete page. Scrolling gestures will snap to the next or previous page rather than allowing continuous scrolling through partial pages.
-  - **Performance Benefits**: Optimizes rendering by only loading and displaying the current page, reducing memory usage and improving performance for large documents.
-  - **User Experience**: Provides a focused reading experience similar to e-book readers, where each page fills the screen completely without distractions from adjacent pages.
-  - **Navigation**: Scroll handles and page navigation controls automatically adapt to show correct page numbers and disable inappropriate navigation actions.
+- **singlePageMode** (`Boolean`): When true, displays only one page at a time in both portrait and
+  landscape orientations, with no visibility of adjacent pages. When false, uses the traditional
+  continuous scroll behavior. Defaults to false.
+    - **Single Page Mode Behavior**: Automatically constrains scrolling to page boundaries, ensuring
+      users always see exactly one complete page. Scrolling gestures will snap to the next or
+      previous page rather than allowing continuous scrolling through partial pages.
+    - **Performance Benefits**: Optimizes rendering by only loading and displaying the current page,
+      reducing memory usage and improving performance for large documents.
+    - **User Experience**: Provides a focused reading experience similar to e-book readers, where
+      each page fills the screen completely without distractions from adjacent pages.
+    - **Navigation**: Scroll handles and page navigation controls automatically adapt to show
+      correct page numbers and disable inappropriate navigation actions.
 - **nightMode** (`Boolean`): Inverts colors for low-light readability. Default: `false`. Useful for
   dark themes.
 - **disableLongPress** (`Boolean`): Disables long-press gestures. Default: `false`. Prevents context
@@ -228,76 +230,10 @@ pdfView.loadDocument(file) {
 - **loadDocument(source) { ... }**: DSL extension function for loading documents (recommended over
   load()).
 
-### Deprecated Methods
-
-- **enqueue(pdfRequest: PdfRequest)**: **Deprecated**. Loads a document using the legacy unified
-  configuration. Still functional for backward compatibility but prefer the new `configure()` +
-  `load()` pattern.
-
-## PdfRequest (Deprecated)
-
-⚠️ **Deprecated**: Use `PdfViewConfiguration` + `PdfLoadRequest` instead.
-
-`PdfRequest` is a data class that encapsulates configuration options for loading and rendering a PDF
-document. While still functional, it combines factory-time and runtime settings in a single class,
-making runtime updates (like password retry) impossible.
-
-### Migration from PdfRequest
-
-```kotlin
-// OLD (deprecated)
-val request = PdfRequest.Builder(source)
-    .swipeHorizontal(true)
-    .password("password")
-    .defaultPage(1)
-    .build()
-pdfView.enqueue(request)
-
-// NEW (recommended with DSL)
-pdfView.configureView {
-    swipeHorizontal(true)
-}
-pdfView.loadDocument(source) {
-    password("password")
-    defaultPage(1)
-}
-
-// NEW (alternative with builder pattern)
-val viewConfig = PdfViewConfiguration.Builder()
-    .swipeHorizontal(true)
-    .build()
-val loadRequest = PdfLoadRequest(
-    source = source,
-    password = "password",
-    defaultPage = 1
-)
-pdfView.configure(viewConfig)
-pdfView.load(loadRequest)
-```
-
-### Extension Methods for Migration
-
-The `PdfRequest` class provides extension methods to convert to the new architecture:
-
-- **toViewConfiguration()**: Extracts factory-time settings into a `PdfViewConfiguration`
-- **toLoadRequest()**: Extracts runtime settings into a `PdfLoadRequest`
-
-```kotlin
-// Automatic migration helper (uses extension methods)
-val oldRequest = PdfRequest.Builder(source)...build()
-pdfView.configure(oldRequest.toViewConfiguration())
-pdfView.load(oldRequest.toLoadRequest())
-
-// Or migrate to DSL (recommended)
-val oldRequest = PdfRequest.Builder(source)...build()
-pdfView.configureView { /* copy view settings from oldRequest */ }
-pdfView.loadDocument(source) { /* copy load settings from oldRequest */ }
-```
-
 ## PdfViewerConfiguration
 
 `PdfViewerConfiguration` holds rendering options for the PDF viewer, controlling performance,
-quality, and caching settings. Used within `PdfRequest` for advanced customization.
+quality, and caching settings. Used within `PdfViewConfiguration` for advanced customization.
 
 ### Properties
 
@@ -323,7 +259,7 @@ quality, and caching settings. Used within `PdfRequest` for advanced customizati
 ## FitPolicy
 
 `FitPolicy` is an enum defining how PDF pages are fitted to the view. Used in
-`PdfRequest.pageFitPolicy`.
+`PdfViewConfiguration.pageFitPolicy`.
 
 ### Values
 
@@ -335,7 +271,7 @@ quality, and caching settings. Used within `PdfRequest` for advanced customizati
 ## SnapEdge
 
 `SnapEdge` is an internal enum for snapping positions, used internally for page snapping behavior in
-`PdfRequest.pageSnap`.
+`PdfViewConfiguration.pageSnap`.
 
 ### Values
 

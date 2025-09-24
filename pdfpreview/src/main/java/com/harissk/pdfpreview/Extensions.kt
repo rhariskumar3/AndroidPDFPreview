@@ -2,7 +2,6 @@ package com.harissk.pdfpreview
 
 import android.net.Uri
 import com.harissk.pdfpreview.request.PdfLoadRequest
-import com.harissk.pdfpreview.request.PdfRequest
 import com.harissk.pdfpreview.request.PdfViewConfiguration
 import com.harissk.pdfpreview.source.DocumentSource
 import java.io.File
@@ -62,31 +61,6 @@ inline fun PDFView.configureView(
     )
 }
 
-/**
- * Load PDF using custom [DocumentSource].
- *
- * @deprecated Use configureView() and loadDocument() for better separation of concerns.
- * @param source The {@link DocumentSource} to use for loading the PDF document.
- * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
- * instance.
- *
- * @see [DocumentSource]
- * @see [PdfRequest.Builder]
- */
-@Deprecated(
-    "Use configureView() and loadDocument() methods instead",
-    ReplaceWith("configureView {...}; loadDocument(source) {...}")
-)
-inline fun PDFView.load(
-    source: DocumentSource,
-    builder: PdfRequest.Builder.() -> Unit = {},
-) {
-    enqueue(
-        pdfRequest = PdfRequest.Builder(source)
-            .apply(builder)
-            .build()
-    )
-}
 
 /**
  * Load PDF from the assets file.
@@ -102,21 +76,6 @@ inline fun PDFView.loadDocument(
     builder: PdfLoadRequest.Builder.() -> Unit = {},
 ) = loadDocument(DocumentSource.toDocumentSource(assetName), builder)
 
-/**
- * Load PDF from the assets file.
- *
- * @deprecated Use loadDocument() instead.
- * @param assetName The name of the asset file containing the PDF document.
- * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
- * instance.
- *
- * @see [PdfRequest.Builder]
- */
-@Deprecated("Use loadDocument() instead")
-inline fun PDFView.load(
-    assetName: String,
-    builder: PdfRequest.Builder.() -> Unit = {},
-) = load(DocumentSource.toDocumentSource(assetName), builder)
 
 /**
  * Load PDF from a file.
@@ -132,21 +91,6 @@ inline fun PDFView.loadDocument(
     builder: PdfLoadRequest.Builder.() -> Unit = {},
 ) = loadDocument(DocumentSource.toDocumentSource(file), builder)
 
-/**
- * Load PDF from a file.
- *
- * @deprecated Use loadDocument() instead.
- * @param file     The {@link File} containing the PDF document.
- * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
- * instance.
- *
- * @see [PdfRequest.Builder]
- */
-@Deprecated("Use loadDocument() instead")
-inline fun PDFView.load(
-    file: File,
-    builder: PdfRequest.Builder.() -> Unit = {},
-) = load(DocumentSource.toDocumentSource(file), builder)
 
 /**
  * Load PDF from a URI. Useful for content providers.
@@ -162,21 +106,6 @@ inline fun PDFView.loadDocument(
     builder: PdfLoadRequest.Builder.() -> Unit = {},
 ) = loadDocument(DocumentSource.toDocumentSource(uri), builder)
 
-/**
- * Load PDF from a URI. Useful for content providers.
- *
- * @deprecated Use loadDocument() instead.
- * @param uri      The {@link Uri} pointing to the PDF document.
- * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
- * instance.
- *
- * @see [PdfRequest.Builder]
- */
-@Deprecated("Use loadDocument() instead")
-inline fun PDFView.load(
-    uri: Uri,
-    builder: PdfRequest.Builder.() -> Unit = {},
-) = load(DocumentSource.toDocumentSource(uri), builder)
 
 /**
  * Load PDF from a byte array. Document is not saved on disk.
@@ -192,21 +121,6 @@ inline fun PDFView.loadDocument(
     builder: PdfLoadRequest.Builder.() -> Unit = {},
 ) = loadDocument(DocumentSource.toDocumentSource(bytes), builder)
 
-/**
- * Load PDF from a byte array. Document is not saved on disk.
- *
- * @deprecated Use loadDocument() instead.
- * @param bytes   The byte array containing the PDF document content.
- * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
- * instance.
- *
- * @see [PdfRequest.Builder]
- */
-@Deprecated("Use loadDocument() instead")
-inline fun PDFView.load(
-    bytes: ByteArray,
-    builder: PdfRequest.Builder.() -> Unit = {},
-) = load(DocumentSource.toDocumentSource(bytes), builder)
 
 /**
  * Load PDF from an {@link InputStream}. The stream is converted to a byte array, since native
@@ -223,19 +137,3 @@ inline fun PDFView.loadDocument(
     builder: PdfLoadRequest.Builder.() -> Unit = {},
 ) = loadDocument(DocumentSource.toDocumentSource(stream), builder)
 
-/**
- * Load PDF from an {@link InputStream}. The stream is converted to a byte array, since native
- * code does not support direct stream handling.
- *
- * @deprecated Use loadDocument() instead.
- * @param stream The {@link InputStream} containing the PDF document content.
- * @param builder A lambda function to configure the PDF request using a {@link PdfRequest.Builder}
- * instance.
- *
- * @see [PdfRequest.Builder]
- */
-@Deprecated("Use loadDocument() instead")
-inline fun PDFView.load(
-    stream: InputStream,
-    builder: PdfRequest.Builder.() -> Unit = {},
-) = load(DocumentSource.toDocumentSource(stream), builder)

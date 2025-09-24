@@ -27,7 +27,6 @@ import com.harissk.pdfpreview.listener.DocumentLoadListener
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.model.PagePart
 import com.harissk.pdfpreview.request.PdfLoadRequest
-import com.harissk.pdfpreview.request.PdfRequest
 import com.harissk.pdfpreview.request.PdfViewConfiguration
 import com.harissk.pdfpreview.request.PdfViewerConfiguration
 import com.harissk.pdfpreview.scroll.ScrollHandle
@@ -287,20 +286,6 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                 "PDFView"
             )
         }
-    }
-
-    /**
-     * @deprecated Use configure() for view settings and load() for document loading.
-     * This method is kept for backward compatibility.
-     */
-    @Deprecated(
-        "Use configure() and load() methods instead",
-        ReplaceWith("configure(pdfRequest.toViewConfiguration()); load(pdfRequest.toLoadRequest())")
-    )
-    fun enqueue(pdfRequest: PdfRequest) {
-        // For backward compatibility, extract view and load configurations
-        configure(pdfRequest.toViewConfiguration())
-        load(pdfRequest.toLoadRequest())
     }
 
     private fun startLoading(loadRequest: PdfLoadRequest) {
