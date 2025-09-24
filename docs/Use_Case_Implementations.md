@@ -20,24 +20,24 @@ The library now supports two configuration approaches:
 - **All-in-one**: `PdfRequest` - all settings combined (deprecated)
 - **Method**: `enqueue()` (deprecated but supported)
 
-## 1. Single Page Handling
+## 1. Single Page Mode
 
-Configure the viewer to display one page at a time, disable user swiping, and enable programmatic
-navigation (e.g., via buttons or `jumpTo`).
+Enable single page mode to display one page at a time with automatic scroll constraints and optimized performance. This provides an e-book reader-like experience where users see exactly one complete page without adjacent page visibility.
 
 ### New API (Recommended)
 
 ```kotlin
 // Configure view behavior once
 val viewConfig = PdfViewConfiguration.Builder()
-    .fitEachPage(true)  // Fit each page individually
+    .singlePageMode(true)  // Enable single page mode
     .pageFitPolicy(FitPolicy.BOTH)  // Fit entire page to view
-    .enableSwipe(false)  // Disable swipe gestures
-    .swipeHorizontal(false)  // Ensure no horizontal swiping
-    .pageSnap(true)  // Snap to page boundaries
+    .enableSwipe(true)  // Allow swipe gestures for page navigation
+    .swipeHorizontal(false)  // Vertical scrolling between pages
+    .scrollHandle(DefaultScrollHandle(context))  // Optional scroll handle
     .documentLoadListener(object : DocumentLoadListener {
         override fun onDocumentLoaded(totalPages: Int) {
-            // Handle document loaded, e.g., update UI with total pages
+            // Document loaded successfully
+            println("Loaded $totalPages pages in single page mode")
         }
         override fun onDocumentLoadError(error: Throwable) {
             // Handle load errors
@@ -45,7 +45,8 @@ val viewConfig = PdfViewConfiguration.Builder()
     })
     .pageNavigationEventListener(object : PageNavigationEventListener {
         override fun onPageChanged(newPage: Int, pageCount: Int) {
-            // Update UI or perform actions on page change
+            // Page changed - update UI indicators
+            updatePageIndicator(newPage + 1, pageCount)
         }
     })
     .build()
@@ -62,23 +63,22 @@ pdfView.loadDocument(documentSource) {
 
 ```kotlin
 val request = PdfRequest.Builder(documentSource)
-    .fitEachPage(true)  // Fit each page individually
+    .singlePageMode(true)  // Enable single page mode
     .pageFitPolicy(FitPolicy.BOTH)  // Fit entire page to view
-    .enableSwipe(false)  // Disable swipe gestures
-    .swipeHorizontal(false)  // Ensure no horizontal swiping
-    .pageSnap(true)  // Snap to page boundaries
+    .enableSwipe(true)  // Allow swipe gestures
+    .swipeHorizontal(false)  // Vertical scrolling
     .defaultPage(0)  // Start at first page
     .documentLoadListener(object : DocumentLoadListener {
         override fun onDocumentLoaded(totalPages: Int) {
-            // Handle document loaded, e.g., update UI with total pages
+            // Document loaded
         }
         override fun onDocumentLoadError(error: Throwable) {
-            // Handle load errors
+            // Handle errors
         }
     })
     .pageNavigationEventListener(object : PageNavigationEventListener {
         override fun onPageChanged(newPage: Int, pageCount: Int) {
-            // Update UI or perform actions on page change
+            // Page changed
         }
     })
     .build()
@@ -89,15 +89,28 @@ pdfView.enqueue(request)
 
 ### Explanation
 
-- `fitEachPage(true)` ensures each page is fitted to the view.
-- `enableSwipe(false)` prevents manual navigation.
-- Use `pdfView.jumpTo(page)` programmatically for navigation.
-- Add UI controls (e.g., next/previous buttons) that call `jumpTo`.
+- `singlePageMode(true)` enables the single page viewing experience
+- Scrolling is automatically constrained to page boundaries
+- Only the current page is rendered, improving performance
+- Scroll handles show correct page numbers and disable inappropriate navigation
+- Zooming works within the current page boundaries
+
+### Key Features of Single Page Mode
+
+- **📖 E-book Experience**: Clean, distraction-free reading with one page at a time
+- **⚡ Performance Optimized**: Only renders current page, reducing memory usage
+- **🎯 Precise Navigation**: Automatic snapping to page boundaries during scrolling
+- **🔄 Zoom Support**: Zoom within page while maintaining single-page constraints
+- **📱 Responsive**: Works in both portrait and landscape orientations
+- **🎨 UI Adaptation**: Scroll handles and navigation controls adapt automatically
 
 ### Best Practices
 
-- Implement page change listeners to update UI state.
-- Handle edge cases like first/last page navigation.
+- Use `FitPolicy.BOTH` for best single-page experience
+- Implement page navigation listeners to update UI indicators
+- Consider adding custom navigation controls for enhanced UX
+- Test on various screen sizes and orientations
+- Monitor performance improvements with large documents
 
 ## 2. Two Pages Per View Handling
 

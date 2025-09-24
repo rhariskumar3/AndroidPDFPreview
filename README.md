@@ -20,6 +20,7 @@ rendering, it delivers a smooth and user-friendly experience.
 * Generate thumbnails from PDF pages for preview purposes
 * Validate PDF documents for integrity, password protection, and corruption
 * Support for gestures, zoom, and double tap
+* **Single page mode** for e-book style reading with one page at a time
 * Lightweight and easy to integrate into your Android apps
 * Compatible with Android versions 5.1 and above
 
@@ -61,6 +62,7 @@ dependencies {
    binding.pdfView.configureView {
        swipeHorizontal(true)
        enableAnnotationRendering(true)
+       singlePageMode(true)  // Enable single page mode for e-book experience
        spacing(10F) // in dp
        documentLoadListener(...)
        renderingEventListener(...)
@@ -83,6 +85,7 @@ dependencies {
        defaultPage(0)
        swipeHorizontal(true)
        enableAnnotationRendering(true)
+       singlePageMode(true)  // Enable single page mode
        spacing(10F) // in dp
        // ... other settings
    }
@@ -110,6 +113,7 @@ fun PDFViewCompose(
                 configureView {
                     swipeHorizontal(true)
                     enableAnnotationRendering(true)
+                    singlePageMode(true)  // Enable single page mode
                     spacing(10F) // in dp
                     documentLoadListener { pages ->
                         // Document loaded with $pages pages
@@ -155,6 +159,7 @@ fun PDFViewCompose(
                     defaultPage(0)
                     swipeHorizontal(true)
                     enableAnnotationRendering(true)
+                    singlePageMode(true)  // Enable single page mode
                     spacing(10F) // in dp
 
                     // Listeners
@@ -485,6 +490,7 @@ val correctPassword = PDFThumbnailGenerator.isPasswordCorrect(context, pdfFile, 
 AndroidPDFPreview supports a number of additional features, including:
 
 * Page navigation
+* **Single page mode** - E-book style reading with automatic page boundary constraints
 * **PDF Thumbnail Generation** - Generate preview thumbnails from any page
 * **PDF Document Validation** - Validate documents for integrity, password protection, and
   corruption

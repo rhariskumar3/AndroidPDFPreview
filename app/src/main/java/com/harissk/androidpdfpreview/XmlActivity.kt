@@ -35,7 +35,8 @@ import com.harissk.pdfpreview.listener.DocumentLoadListener
 import com.harissk.pdfpreview.listener.GestureEventListener
 import com.harissk.pdfpreview.listener.PageNavigationEventListener
 import com.harissk.pdfpreview.listener.RenderingEventListener
-import com.harissk.pdfpreview.load
+import com.harissk.pdfpreview.configureView
+import com.harissk.pdfpreview.loadDocument
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
 import kotlinx.coroutines.CoroutineScope
@@ -129,22 +130,27 @@ class XmlActivity : AppCompatActivity() {
         val viewerSettings = ViewerSettings(
             defaultPage = 0,
             swipeHorizontal = false,
-            enableAnnotationRendering = true
+            enableAnnotationRendering = true,
+            singlePageMode = false
         )
 
-        binding.pdfView.load(file) {
-            defaultPage(viewerSettings.defaultPage)
+        binding.pdfView.configureView {
             swipeHorizontal(viewerSettings.swipeHorizontal)
             enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
+            singlePageMode(viewerSettings.singlePageMode)
             scrollHandle(DefaultScrollHandle(this@XmlActivity))
             spacing(10F)
             scrollOptimization(true)
-            documentLoadListener(createDocumentLoadListener(binding))
             renderingEventListener(createRenderingEventListener())
             pageNavigationEventListener(createPageNavigationEventListener())
             gestureEventListener(createGestureEventListener())
             linkHandler(createLinkHandler())
             logWriter(createLogWriter())
+        }
+
+        binding.pdfView.loadDocument(file) {
+            defaultPage(viewerSettings.defaultPage)
+            documentLoadListener(createDocumentLoadListener(binding))
         }
     }
 

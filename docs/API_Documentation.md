@@ -55,6 +55,11 @@ constant across different document loads. This class is used with the `PDFView.c
   page alignment during scrolling.
 - **scrollOptimization** (`Boolean`): Optimizes scrolling by skipping bitmap generation during fast
   scrolls. Default: `true`. May show blank areas temporarily.
+- **singlePageMode** (`Boolean`): When true, displays only one page at a time in both portrait and landscape orientations, with no visibility of adjacent pages. When false, uses the traditional continuous scroll behavior. Defaults to false.
+  - **Single Page Mode Behavior**: Automatically constrains scrolling to page boundaries, ensuring users always see exactly one complete page. Scrolling gestures will snap to the next or previous page rather than allowing continuous scrolling through partial pages.
+  - **Performance Benefits**: Optimizes rendering by only loading and displaying the current page, reducing memory usage and improving performance for large documents.
+  - **User Experience**: Provides a focused reading experience similar to e-book readers, where each page fills the screen completely without distractions from adjacent pages.
+  - **Navigation**: Scroll handles and page navigation controls automatically adapt to show correct page numbers and disable inappropriate navigation actions.
 - **nightMode** (`Boolean`): Inverts colors for low-light readability. Default: `false`. Useful for
   dark themes.
 - **disableLongPress** (`Boolean`): Disables long-press gestures. Default: `false`. Prevents context
@@ -91,6 +96,7 @@ The `Builder` class provides a fluent API to construct a `PdfViewConfiguration` 
 - **pageSnap(pageSnap: Boolean)**: Sets page snapping enablement.
 - **pageFling(pageFling: Boolean)**: Sets page flinging enablement.
 - **scrollOptimization(scrollOptimization: Boolean)**: Sets scroll optimization.
+- **singlePageMode(singlePageMode: Boolean)**: Sets single page mode enablement.
 - **nightMode(nightMode: Boolean)**: Sets night mode enablement.
 - **disableLongPress()**: Disables long-press gestures.
 - **renderOptions(pdfViewerConfiguration: PdfViewerConfiguration)**: Sets custom rendering options.
@@ -110,6 +116,7 @@ The `Builder` class provides a fluent API to construct a `PdfViewConfiguration` 
 val viewConfig = PdfViewConfiguration.Builder()
     .swipeHorizontal(true)
     .enableAnnotationRendering(true)
+    .singlePageMode(true)
     .pageFitPolicy(FitPolicy.WIDTH)
     .documentLoadListener { pages ->
         println("Document loaded with $pages pages")
@@ -122,6 +129,7 @@ pdfView.configure(viewConfig)
 pdfView.configureView {
     swipeHorizontal(true)
     enableAnnotationRendering(true)
+    singlePageMode(true)
     pageFitPolicy(FitPolicy.WIDTH)
     documentLoadListener { pages ->
         println("Document loaded with $pages pages")

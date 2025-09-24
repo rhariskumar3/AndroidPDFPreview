@@ -24,4 +24,5 @@ internal data class ViewerSettings(
     val swipeHorizontal: Boolean = false,
     val enableAnnotationRendering: Boolean = true,
     val spacing: Float = 10f,
+    val singlePageMode: Boolean = false,
 )

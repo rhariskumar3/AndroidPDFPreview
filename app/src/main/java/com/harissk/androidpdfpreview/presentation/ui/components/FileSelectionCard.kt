@@ -132,6 +132,16 @@ private fun ViewerSettingsSection(
             checked = settings.enableAnnotationRendering,
             onCheckedChange = { onSettingsChange(settings.copy(enableAnnotationRendering = it)) }
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Single Page Mode Setting
+        SettingRow(
+            title = "Single Page Mode",
+            subtitle = "View one page at a time without adjacent page visibility",
+            checked = settings.singlePageMode,
+            onCheckedChange = { onSettingsChange(settings.copy(singlePageMode = it)) }
+        )
     }
 }
 
