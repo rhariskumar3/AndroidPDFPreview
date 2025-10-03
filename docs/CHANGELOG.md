@@ -5,6 +5,19 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-10-03 - Fix password retry issue & update PDFium to chromium/7442
+
+### Fixed
+
+- Prevent premature resource recycling on incorrect password, allowing retries for protected PDFs.
+
+### Changed
+
+- Upgraded PDFium binaries to chromium/7442 for all supported architectures.
+- Refactored download_pdfium_libs.sh for portability, safety, structured logging, strict error
+  handling, and robust cleanup.
+- Corrected README.md sample: moved documentLoadListener into loadDocument block.
+
 ## [1.2.0] - 2025-09-24 - Single Page Mode and PDFium Update
 
 ### Added

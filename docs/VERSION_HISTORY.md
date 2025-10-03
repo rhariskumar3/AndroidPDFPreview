@@ -4,17 +4,16 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 📋 Current Version
 
-**[1.2.0](./CHANGELOG.md#120---2025-09-24)** - Latest Release (September 24, 2025)
+**[1.2.1](./CHANGELOG.md#121---2025-10-03---fix-password-retry-issue--update-pdfium-to-chromium7442)** - Latest Release (October 3, 2025)
 
-- **Single Page Mode**: New configuration option for displaying one page at a time
-- **PDFium Update**: Upgraded to chromium/7428 for improved rendering and compatibility
-- **Architecture Refactor**: Removed deprecated APIs and improved page positioning
-- **Documentation**: Added maintenance status and updated project docs
+- Prevent premature resource recycling on incorrect password, allowing retries for protected PDFs.
+- Upgraded PDFium binaries to chromium/7442 for all supported architectures.
 
 ## 📚 Version History
 
 | Version   | Release Date | Type  | Key Features                                                                       |
 |-----------|--------------|-------|------------------------------------------------------------------------------------|
+| **1.2.1** | 2025-10-03   | Minor | Fix password retry issue & update PDFium to chromium/7442                          |
 | **1.2.0** | 2025-09-24   | Minor | Single page mode, PDFium chromium/7428 update, API cleanup, documentation updates  |
 | **1.1.1** | 2025-09-04   | Patch | Performance optimizations, loading state improvements, lifecycle enhancements      |
 | **1.1.0** | 2025-09-03   | Major | Architecture refactor, separated configuration, DSL APIs, improved Compose support |
@@ -25,7 +24,8 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 🔄 Version Status
 
-- ✅ **1.2.0** - Current (Recommended)
+- ✅ **1.2.1** - Current (Recommended)
+- ✅ **1.2.0** - Previous (Still supported)
 - ✅ **1.1.1** - Previous (Still supported)
 - ✅ **1.1.0** - Previous (Still supported)
 - ❌ **1.0.9** - Older (Deprecated)
@@ -36,7 +36,7 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ```gradle
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.2.0'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.1'
 }
 ```
 
@@ -55,6 +55,21 @@ dependencies {
 ```
 
 ## 🚀 Upgrade Guide
+
+### From 1.1.1 to 1.2.1
+
+- **Compatibility**: ✅ Fully backward compatible
+- **Breaking Changes**: None
+- **Action Required**: None - just update the version number
+- **Benefits**: Prevent premature resource recycling on incorrect password
+
+```gradle
+// Old
+implementation 'io.github.rhariskumar3:pdfpreview:1.2.0'
+
+// New
+implementation 'io.github.rhariskumar3:pdfpreview:1.2.1'
+```
 
 ### From 1.1.1 to 1.2.0
 

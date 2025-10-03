@@ -26,13 +26,6 @@ project root.
 - 🔄 **Need to upgrade?** → See [VERSION_HISTORY.md](./VERSION_HISTORY.md)
 - 📋 **Want technical details?** → Review [CHANGELOG.md](./CHANGELOG.md)
 
-### Current Version Information
-
-- **Latest Version**: 1.1.1 (Sep 04, 2025)
-- **Installation**: `implementation 'io.github.rhariskumar3:pdfpreview:1.1.1'`
-- **Compatibility**: Android API 21+ (Android 5.1 and above)
-- **Kotlin**: 1.9.23+
-
 ## 📝 Documentation Guidelines
 
 This documentation follows these principles:
