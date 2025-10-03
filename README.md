@@ -72,7 +72,6 @@ dependencies {
        enableAnnotationRendering(true)
        singlePageMode(true)  // Enable single page mode for e-book experience
        spacing(10F) // in dp
-       documentLoadListener(...)
        renderingEventListener(...)
        pageNavigationEventListener(...)
        gestureEventListener(...)
@@ -83,6 +82,7 @@ dependencies {
    binding.pdfView.loadDocument(file) {
        defaultPage(0)
        password(null) // Can be updated for password retry
+       documentLoadListener(...)
    }
    ```
 
