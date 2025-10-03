@@ -18,6 +18,7 @@ import com.harissk.pdfium.Bookmark
 import com.harissk.pdfium.Link
 import com.harissk.pdfium.Meta
 import com.harissk.pdfium.PdfiumCore
+import com.harissk.pdfium.exception.IncorrectPasswordException
 import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.listener.LogWriter
 import com.harissk.pdfium.util.Size
@@ -71,7 +72,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // Track the current loading job to prevent concurrent operations
-    private var currentLoadingJob: kotlinx.coroutines.Job? = null
+    private var currentLoadingJob: Job? = null
     private var isCurrentlyLoading: Boolean = false
 
     // Configuration approach
@@ -557,9 +558,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             // Ensure flags are set properly regardless of errors
             isRecycling = false
             // Only mark as recycled if this is a full removal, not just cleanup before loading
-            if (isRemoveRequest) {
-                isRecycled = true
-            }
+            if (isRemoveRequest) isRecycled = true
         }
     }
 
@@ -1003,6 +1002,9 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         currentLoadingJob = null
 
         currentDocumentLoadListener?.onDocumentLoadError(t)
+
+        // Don't recycle if it's a password error - user will retry with password
+        if (t is IncorrectPasswordException) return null
 
         // Force a redraw to clear any partial content
         recycle()
