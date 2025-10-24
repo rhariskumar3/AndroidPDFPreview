@@ -656,17 +656,29 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             }
         }
         pdfAnimator.cancelAllAnimations()
+
+        // Save the current page before recalculation to maintain user's position
+        val pageBeforeSizeChange = currentPage
+
         pdfFile.recalculatePageSizes(Size(w, h))
-        if (isSwipeVertical) {
-            currentXOffset = -relativeCenterPointInStripXOffset * pdfFile.maxPageWidth + w * 0.5f
-            currentYOffset = -relativeCenterPointInStripYOffset * pdfFile.getDocLen(zoom) + h * 0.5f
-        } else {
-            currentXOffset = -relativeCenterPointInStripXOffset * pdfFile.getDocLen(zoom) + w * 0.5f
-            currentYOffset = -relativeCenterPointInStripYOffset * pdfFile.maxPageHeight + h * 0.5f
+        currentXOffset = when {
+            isSwipeVertical -> -relativeCenterPointInStripXOffset * pdfFile.maxPageWidth + w * 0.5f
+            else -> -relativeCenterPointInStripXOffset * pdfFile.getDocLen(zoom) + w * 0.5f
         }
-        moveTo(currentXOffset, currentYOffset)
-        loadPageByOffset(skipBitmapGenerationDuringScroll = false)
-        // Ensure scroll handle shows correct page number after orientation change
+        currentYOffset = when {
+            isSwipeVertical -> -relativeCenterPointInStripYOffset * pdfFile.getDocLen(zoom) + h * 0.5f
+            else -> -relativeCenterPointInStripYOffset * pdfFile.maxPageHeight + h * 0.5f
+        }
+        moveTo(offsetX = currentXOffset, offsetY = currentYOffset)
+
+        // Restore the current page to prevent jumping to wrong page due to 
+        // floating-point precision errors in getPageAtOffset() after recalculation
+        currentPage = pageBeforeSizeChange
+
+        // Load pages for the current page instead of recalculating from offset
+        loadPages()
+
+        // Ensure scroll handle shows correct page number after size change
         updateScrollUIElements()
     }
 
@@ -916,7 +928,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         // Skip bitmap generation if scroll optimization is enabled and we're actively scrolling
         if (isScrollOptimizationEnabled && isActivelyScrolling()) {
-            android.util.Log.d("ScrollOptimization", "loadPages() skipped during active scrolling")
+            logWriter?.writeLog("loadPages() skipped during active scrolling", "PDFView")
             return
         }
 
