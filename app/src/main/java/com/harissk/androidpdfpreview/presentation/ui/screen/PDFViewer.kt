@@ -72,10 +72,12 @@ internal fun PDFViewer(
     // Function to jump to a random page
     val jumpToRandomPage: () -> Unit = {
         pdfViewRef?.let { pdfView ->
-            if (totalPages > 1) {
-                val randomPage = Random.nextInt(0, totalPages)
-                pdfView.jumpTo(randomPage, withAnimation = true)
-            }
+            if (totalPages > 1)
+                pdfView.jumpTo(
+                    page = Random.nextInt(0, totalPages),
+                    withAnimation = Random.nextBoolean(),
+                    resetZoom = Random.nextBoolean(),
+                )
         }
     }
 
@@ -142,6 +144,13 @@ internal fun PDFViewer(
                                 )
                             }
                         })
+
+                        zoomEventListener { newZoom, oldZoom ->
+                            Log.d(
+                                "=====>",
+                                "zoomEventListener() called with: newZoom = $newZoom, oldZoom = $oldZoom"
+                            )
+                        }
 
                         gestureEventListener(object : GestureEventListener {
                             private var lastTapTime = 0L

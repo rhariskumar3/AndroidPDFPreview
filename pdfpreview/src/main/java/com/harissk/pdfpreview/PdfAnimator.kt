@@ -65,7 +65,7 @@ internal class PdfAnimator(private val pdfView: PDFView) {
 
     private fun handleAnimationEnd() {
         if (pdfView.isRecycled) return
-        
+
         pdfView.updateScrollUIElements()
         pdfView.loadPages()
         isPageAnimating = false
@@ -94,11 +94,13 @@ internal class PdfAnimator(private val pdfView: PDFView) {
                     pdfView.loadPages()
                     pdfView.performPageSnap()
                     pdfView.scrollHandle?.hideDelayed()
+                    pdfView.notifyZoomChanged(newZoom = targetZoom, oldZoom = startZoom)
                 }
 
                 override fun onAnimationCancel(animation: Animator) {
                     pdfView.loadPages()
                     pdfView.scrollHandle?.hideDelayed()
+                    pdfView.notifyZoomChanged(newZoom = pdfView.zoom, oldZoom = startZoom)
                 }
             })
             duration = 400
@@ -145,7 +147,11 @@ internal class PdfAnimator(private val pdfView: PDFView) {
         if (pdfView.isRecycled || !flinging) return
         when {
             flingScroller.computeScrollOffset() -> {
-                pdfView.moveTo(flingScroller.currX.toFloat(), flingScroller.currY.toFloat(), moveHandle = true)
+                pdfView.moveTo(
+                    offsetX = flingScroller.currX.toFloat(),
+                    offsetY = flingScroller.currY.toFloat(),
+                    moveHandle = true,
+                )
                 pdfView.invalidate()
             }
 

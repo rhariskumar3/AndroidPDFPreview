@@ -5,6 +5,7 @@ import com.harissk.pdfpreview.link.LinkHandler
 import com.harissk.pdfpreview.listener.GestureEventListener
 import com.harissk.pdfpreview.listener.PageNavigationEventListener
 import com.harissk.pdfpreview.listener.RenderingEventListener
+import com.harissk.pdfpreview.listener.ZoomEventListener
 import com.harissk.pdfpreview.scroll.ScrollHandle
 import com.harissk.pdfpreview.utils.FitPolicy
 
@@ -47,6 +48,7 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * @property pdfViewerConfiguration Custom rendering options for the PDF document. Defaults to [PdfViewerConfiguration.DEFAULT].
  * @property renderingEventListener A listener to be notified of rendering events (e.g., when a page is rendered). Defaults to null.
  * @property pageNavigationEventListener A listener to be notified of page navigation events (e.g., when a page is changed). Defaults to null.
+ * @property zoomEventListener A listener to be notified of zoom level changes (e.g., when zoom gesture completes). Defaults to null.
  * @property gestureEventListener A listener to be notified of gesture events (e.g., when a gesture is detected). Defaults to null.
  * @property linkHandler A handler for processing link clicks in the PDF document. Defaults to null.
  * @property logWriter A writer for logging messages and errors. Defaults to null.
@@ -71,6 +73,7 @@ data class PdfViewConfiguration(
     val pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT,
     val renderingEventListener: RenderingEventListener? = null,
     val pageNavigationEventListener: PageNavigationEventListener? = null,
+    val zoomEventListener: ZoomEventListener? = null,
     val gestureEventListener: GestureEventListener? = null,
     val linkHandler: LinkHandler? = null,
     val logWriter: LogWriter? = null,
@@ -96,6 +99,7 @@ data class PdfViewConfiguration(
         private var pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT
         private var renderingEventListener: RenderingEventListener? = null
         private var pageNavigationEventListener: PageNavigationEventListener? = null
+        private var zoomEventListener: ZoomEventListener? = null
         private var gestureEventListener: GestureEventListener? = null
         private var linkHandler: LinkHandler? = null
         private var logWriter: LogWriter? = null
@@ -193,6 +197,11 @@ data class PdfViewConfiguration(
             return this
         }
 
+        fun zoomEventListener(zoomEventListener: ZoomEventListener): Builder {
+            this.zoomEventListener = zoomEventListener
+            return this
+        }
+
         fun gestureEventListener(gestureEventListener: GestureEventListener): Builder {
             this.gestureEventListener = gestureEventListener
             return this
@@ -232,6 +241,7 @@ data class PdfViewConfiguration(
             pdfViewerConfiguration = pdfViewerConfiguration,
             renderingEventListener = renderingEventListener,
             pageNavigationEventListener = pageNavigationEventListener,
+            zoomEventListener = zoomEventListener,
             gestureEventListener = gestureEventListener,
             linkHandler = linkHandler,
             logWriter = logWriter,

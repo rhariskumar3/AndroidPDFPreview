@@ -393,14 +393,23 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      * Go to the given page.
      *
      * @param page Page index.
+     * @param withAnimation Whether to animate the jump transition.
+     * @param resetZoom If true, resets the zoom level to minimum (1f) before jumping to the page.
      */
-    fun jumpTo(page: Int, withAnimation: Boolean = false) {
+    fun jumpTo(page: Int, withAnimation: Boolean = false, resetZoom: Boolean = false) {
         _pdfFile ?: return
         val userPage = pdfFile.determineValidPageNumberFrom(page)
         logWriter?.writeLog(
-            "Jumping to page $userPage (requested: $page) with animation: $withAnimation",
+            "Jumping to page $userPage (requested: $page) with animation: $withAnimation, resetZoom: $resetZoom",
             "PDFView"
         )
+
+        // Reset zoom if requested
+        if (resetZoom && zoom != minZoom) {
+            val oldZoom = zoom
+            zoomTo(minZoom)
+            viewConfiguration.zoomEventListener?.onZoomChanged(newZoom = minZoom, oldZoom = oldZoom)
+        }
 
         val offset: Float = if (userPage == 0) 0F else -pdfFile.getPageOffset(userPage, zoom)
         when {
@@ -1388,7 +1397,11 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             logWriter?.writeLog("Cannot fit, document not rendered yet", TAG)
             return
         }
-        zoomTo(width / pdfFile.getPageSize(page)?.width!!)
+        val oldZoom = zoom
+        val newZoom = width / pdfFile.getPageSize(page)?.width!!
+        zoomTo(newZoom)
+        if (oldZoom != newZoom)
+            viewConfiguration.zoomEventListener?.onZoomChanged(newZoom = newZoom, oldZoom = oldZoom)
         jumpTo(page)
     }
 
@@ -1440,6 +1453,19 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
     internal fun callLinkHandler(linkTapEvent: LinkTapEvent) {
         viewConfiguration.linkHandler?.handleLinkEvent(linkTapEvent) ?: DefaultLinkHandler(this)
+    }
+
+    /**
+     * Notify listeners about zoom level changes.
+     * This is called internally when zoom operations complete.
+     *
+     * @param newZoom The new zoom level.
+     * @param oldZoom The previous zoom level.
+     */
+    internal fun notifyZoomChanged(newZoom: Float, oldZoom: Float) {
+        if (newZoom != oldZoom) {
+            viewConfiguration.zoomEventListener?.onZoomChanged(newZoom = newZoom, oldZoom = oldZoom)
+        }
     }
 
     private fun Job.cancelSafely() {

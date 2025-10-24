@@ -22,7 +22,9 @@ The library now supports two configuration approaches:
 
 ## 1. Single Page Mode
 
-Enable single page mode to display one page at a time with automatic scroll constraints and optimized performance. This provides an e-book reader-like experience where users see exactly one complete page without adjacent page visibility.
+Enable single page mode to display one page at a time with automatic scroll constraints and
+optimized performance. This provides an e-book reader-like experience where users see exactly one
+complete page without adjacent page visibility.
 
 ### New API (Recommended)
 
@@ -508,18 +510,33 @@ val request = PdfRequest.Builder(documentSource)
     )
     .enableAnnotationRendering(true)  // Render annotations
     .nightMode(false)  // Or true for dark mode
+    .zoomEventListener(object : ZoomEventListener {
+        override fun onZoomChanged(newZoom: Float, oldZoom: Float) {
+            // Handle zoom changes
+            println("Zoom changed from $oldZoom to $newZoom")
+            updateZoomIndicator(newZoom)
+        }
+    })
     .build()
+
+// Jump to page with zoom reset
+pdfView.jumpTo(page = 5, withAnimation = true, resetZoom = true)
 ```
 
 ### Explanation
 
 - Customize zoom via `PdfViewerConfiguration`.
+- `ZoomEventListener` notifies when zoom level changes (e.g., after pinch-to-zoom, double-tap, or
+  programmatic zoom).
+- `jumpTo()` now supports `resetZoom` parameter to automatically reset zoom before navigating.
 - `enableAnnotationRendering(true)` shows PDF annotations.
 - `nightMode` inverts colors for better readability.
 
 ### Best Practices
 
 - Balance zoom limits with performance.
+- Use `ZoomEventListener` to update UI indicators (e.g., zoom percentage display).
+- Use `resetZoom = true` when jumping to pages for consistent viewing experience.
 - Test annotation rendering on various PDF types.
 
 ## 6. Performance Optimization for Large Documents
