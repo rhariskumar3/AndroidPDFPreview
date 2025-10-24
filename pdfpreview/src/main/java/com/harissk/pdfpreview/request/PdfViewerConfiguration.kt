@@ -53,8 +53,10 @@ data class PdfViewerConfiguration(
     val preloadMarginDp: Float = 20F,
     /**
      * The size of the cache (number of bitmaps kept).
+     * Increased to 64 to support better caching at high zoom levels (3-4×)
+     * and reduce cache thrashing during multi-page viewing.
      */
-    val maxCachedBitmaps: Int = 32,
+    val maxCachedBitmaps: Int = 64,
     /**
      * Max pages kept in View
      * Increasing this value may cause performance decrease

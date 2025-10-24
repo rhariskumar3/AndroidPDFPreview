@@ -8,7 +8,9 @@ import java.util.LinkedList
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * Copyright [2025] [Haris Kumar R](https://github.com/rhariskumar3)
@@ -380,7 +382,8 @@ internal class PagesLoader(private val pdfView: PDFView) {
                     }
 
                 var loadedParts = 0
-                val maxPartsPerCall = 50
+                // Reduced from 50 to 40 to prevent queue overload with prioritized loading
+                val maxPartsPerCall = 40
 
                 for (range in limitedRangeList)
                     try {
@@ -423,13 +426,31 @@ internal class PagesLoader(private val pdfView: PDFView) {
         page: Int, firstRow: Int, lastRow: Int, firstCol: Int, lastCol: Int,
         nbOfPartsLoadable: Int,
     ): Int {
-        var loaded = 0
+        // Calculate screen center in page coordinates for prioritized loading
+        val screenCenterRow = (firstRow + lastRow) / 2f
+        val screenCenterCol = (firstCol + lastCol) / 2f
+        
+        // Build list of tiles with their distance from screen center
+        val cellsWithDistance = mutableListOf<Triple<Int, Int, Float>>()
         for (row in firstRow..lastRow) {
             for (col in firstCol..lastCol) {
-                if (loadCell(page, row, col, pageRelativePartWidth, pageRelativePartHeight))
-                    loaded++
-                if (loaded >= nbOfPartsLoadable) return loaded
+                val distance = sqrt(
+                    (row - screenCenterRow).pow(2) + 
+                    (col - screenCenterCol).pow(2)
+                )
+                cellsWithDistance.add(Triple(row, col, distance))
             }
+        }
+        
+        // Sort by distance - load center tiles first for better perceived performance
+        cellsWithDistance.sortBy { it.third }
+        
+        // Load tiles in priority order (center to edges)
+        var loaded = 0
+        for ((row, col, _) in cellsWithDistance) {
+            if (loadCell(page, row, col, pageRelativePartWidth, pageRelativePartHeight))
+                loaded++
+            if (loaded >= nbOfPartsLoadable) return loaded
         }
         return loaded
     }
