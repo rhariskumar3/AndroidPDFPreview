@@ -5,6 +5,66 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-10-28 - Critical Bug Fix: Page Calculation Accuracy with Page Snap
+
+### Fixed
+
+- **🐛 Page Snap Callback Inaccuracy**
+  - Fixed `onPageScrolled()` reporting incorrect page numbers during page snap animations
+  - Updated `updateScrollUIElements()` to use screen-center-based page calculation instead of positionOffset conversion
+  - Now uses identical page detection logic as `loadPageByOffset()` for consistent results
+  - Eliminates page number jumping during scroll deceleration and snap animations
+
+- **📊 Accurate Page Position Tracking**
+  - Page calculations now account for viewport size and screen center positioning
+  - Fixed floating-point precision errors in page offset calculations
+  - Consistent page detection across scroll gestures, animations, and callbacks
+  - Improved reliability with `pageSnap=true` configuration
+
+### Technical Details
+
+- **Page Calculation Algorithm Fix**:
+  - Changed from `getPageAtPositionOffset(positionOffset)` to direct screen-center calculation
+  - Uses `-(currentYOffset - height/2)` for vertical scrolling, `-(currentXOffset - width/2)` for horizontal
+  - Matches the exact logic used in `loadPageByOffset()` for page change detection
+  - Eliminates discrepancies between scroll callbacks and actual page changes
+
+- **Page Snap Compatibility**:
+  - Fixed callback accuracy when `pageSnap=true` is enabled
+  - Page numbers remain stable during snap animations
+  - No more incorrect page reporting during scroll deceleration
+
+### Migration Guide
+
+No code changes required. This is an internal bug fix that improves callback accuracy.
+
+**What's Fixed:**
+
+```kotlin
+// With pageSnap=true, this now reports accurate page numbers
+pdfView.configureView {
+    pageSnap(true)
+    pageNavigationEventListener(object : PageNavigationEventListener {
+        override fun onPageScrolled(page: Int, positionOffset: Float) {
+            // ✅ NOW ACCURATE: No more jumping between wrong page numbers
+            // ✅ STABLE: Consistent page numbers during snap animations
+        }
+    })
+}
+```
+
+**Root Cause:**
+
+- `positionOffset` conversion (`docLen * positionOffset`) didn't account for viewport size
+- Screen-center calculation (`-(offset - screenCenter)`) provides accurate page detection
+- Inconsistent algorithms caused callback/page change detection mismatch
+
+```gradle
+dependencies {
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.4'
+}
+```
+
 ## [1.2.3] - 2025-10-28 - Critical Bug Fix: Page Navigation Callbacks
 
 ### Fixed
