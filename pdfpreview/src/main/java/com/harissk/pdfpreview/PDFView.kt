@@ -1229,16 +1229,27 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     internal fun updateScrollUIElements() {
         if (isRecycled || isRecycling) return
 
-        if (!documentFitsView()) {
-            val positionOffset = positionOffset
-            scrollHandle?.setScroll(positionOffset)
-            val actualCurrentPage = when {
-                viewConfiguration.singlePageMode -> currentPage
-                else -> getPageAtPositionOffset(positionOffset)
+        when {
+            !documentFitsView() -> {
+                val positionOffset = positionOffset
+                scrollHandle?.setScroll(positionOffset)
+                val actualCurrentPage = when {
+                    viewConfiguration.singlePageMode -> currentPage
+                    else -> getPageAtPositionOffset(positionOffset)
+                }
+                scrollHandle?.setPageNum(actualCurrentPage + 1)
+                // Fire callback with the actual current page calculated from position offset
+                viewConfiguration.pageNavigationEventListener?.onPageScrolled(
+                    actualCurrentPage,
+                    positionOffset
+                )
             }
-            scrollHandle?.setPageNum(actualCurrentPage + 1)
+            // Document fits view - use current page
+            else -> viewConfiguration.pageNavigationEventListener?.onPageScrolled(
+                page = currentPage,
+                positionOffset = positionOffset
+            )
         }
-        viewConfiguration.pageNavigationEventListener?.onPageScrolled(currentPage, positionOffset)
     }
 
     internal fun loadPageByOffset() {
