@@ -1233,12 +1233,31 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             !documentFitsView() -> {
                 val positionOffset = positionOffset
                 scrollHandle?.setScroll(positionOffset)
+
+                // Calculate actual current page using same logic as loadPageByOffset()
+                // for consistent page detection across scroll and callbacks
                 val actualCurrentPage = when {
                     viewConfiguration.singlePageMode -> currentPage
-                    else -> getPageAtPositionOffset(positionOffset)
+                    else -> {
+                        val offset: Float
+                        val screenCenter: Float
+                        when {
+                            isSwipeVertical -> {
+                                offset = currentYOffset
+                                screenCenter = height.toFloat() / 2
+                            }
+
+                            else -> {
+                                offset = currentXOffset
+                                screenCenter = width.toFloat() / 2
+                            }
+                        }
+                        pdfFile.getPageAtOffset(-(offset - screenCenter), zoom)
+                    }
                 }
+
                 scrollHandle?.setPageNum(actualCurrentPage + 1)
-                // Fire callback with the actual current page calculated from position offset
+                // Fire callback with the actual current page calculated from screen center
                 viewConfiguration.pageNavigationEventListener?.onPageScrolled(
                     actualCurrentPage,
                     positionOffset
