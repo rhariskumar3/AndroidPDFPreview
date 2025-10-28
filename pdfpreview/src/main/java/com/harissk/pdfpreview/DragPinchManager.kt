@@ -195,7 +195,7 @@ internal class DragPinchManager(
 
     private fun onScrollEnd() {
         pdfView.updateScrollUIElements()
-        pdfView.loadPages()
+        pdfView.loadPageByOffset()  // Check if page changed and fire onPageChanged callback
         hideHandle()
         if (!pdfAnimator.isFlinging) pdfView.performPageSnap()
     }
