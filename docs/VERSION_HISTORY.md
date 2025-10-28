@@ -4,18 +4,18 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 📋 Current Version
 
-**[1.2.2](./CHANGELOG.md#122---2025-10-24---performance-optimization-smart-tile-loading--enhanced-scroll-experience)** - Latest Release (October 24, 2025)
+**[1.2.3](./CHANGELOG.md#123---2025-10-28---critical-bug-fix-page-navigation-callbacks)** - Latest Release (October 28, 2025)
 
-- Prioritized center-first tile loading for 75-80% faster perceived loading
-- Hybrid scroll optimization with pre-rendering during deceleration
-- New ZoomEventListener interface for zoom change tracking
-- Reset zoom parameter in jumpTo() method
-- Enhanced cache management (32→64 tiles) and improved size change handling
+- Fixed `onPageChanged()` callback not firing after manual scroll stops
+- Fixed `onPageScrolled()` reporting incorrect page numbers during scroll
+- Improved callback reliability across all navigation methods
+- Removed redundant page loading operations
 
 ## 📚 Version History
 
 | Version   | Release Date | Type  | Key Features                                                                       |
 |-----------|--------------|-------|------------------------------------------------------------------------------------|
+| **1.2.3** | 2025-10-28   | Patch | Critical bug fix: page navigation callbacks now fire correctly after manual scroll |
 | **1.2.2** | 2025-10-24   | Minor | Performance optimization: smart tile loading, scroll pre-rendering, zoom listener  |
 | **1.2.1** | 2025-10-03   | Minor | Fix password retry issue & update PDFium to chromium/7442                          |
 | **1.2.0** | 2025-09-24   | Minor | Single page mode, PDFium chromium/7428 update, API cleanup, documentation updates  |
@@ -28,7 +28,8 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 🔄 Version Status
 
-- ✅ **1.2.2** - Current (Recommended)
+- ✅ **1.2.3** - Current (Recommended)
+- ✅ **1.2.2** - Previous (Still supported)
 - ✅ **1.2.1** - Previous (Still supported)
 - ✅ **1.2.0** - Previous (Still supported)
 - ✅ **1.1.1** - Previous (Still supported)
@@ -41,7 +42,7 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ```gradle
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.2.2'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.3'
 }
 ```
 
@@ -49,7 +50,7 @@ dependencies {
 
 ```gradle
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.2.1'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.2'
 }
 ```
 
@@ -60,6 +61,25 @@ dependencies {
 ```
 
 ## 🚀 Upgrade Guide
+
+### From 1.2.2 to 1.2.3
+
+- **Compatibility**: ✅ Fully backward compatible
+- **Breaking Changes**: None
+- **Action Required**: None - just update the version number
+- **Benefits**:
+  - `onPageChanged()` callback now fires correctly after manual scroll stops
+  - `onPageScrolled()` reports accurate page numbers during scroll
+  - More reliable page navigation callbacks across all scenarios
+  - Reduced redundant page loading operations
+
+```gradle
+// Old
+implementation 'io.github.rhariskumar3:pdfpreview:1.2.2'
+
+// New
+implementation 'io.github.rhariskumar3:pdfpreview:1.2.3'
+```
 
 ### From 1.2.1 to 1.2.2
 
@@ -196,8 +216,8 @@ implementation 'io.github.rhariskumar3:pdfpreview:1.0.8'
 
 ## 📊 Release Statistics
 
-- **Total Releases**: 7 versions
-- **Latest Release**: October 24, 2025
+- **Total Releases**: 8 versions
+- **Latest Release**: October 28, 2025
 - **Release Frequency**: Regular updates with improvements
 - **Stability**: Stable and production-ready
 

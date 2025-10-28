@@ -39,7 +39,7 @@ To install AndroidPDFPreview, add the following dependency to your project's Gra
 
 ```
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.2.2'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.3'
 }
 ```
 
@@ -91,7 +91,7 @@ dependencies {
 You can use PDFView in Jetpack Compose with `AndroidView`.
 See [Use Case Implementations](docs/Use_Case_Implementations.md) for detailed examples.
 
-### Going Further:
+### Going Further
 
 * Asset
 * File
@@ -109,11 +109,11 @@ examples.
 
 ### **Key Advantages:**
 
-- **Password Retry**: Update password without reconfiguring the entire view
-- **Document Switching**: Load different documents while preserving view settings
-- **Compose-Friendly**: Matches AndroidView's factory/update pattern
-- **Performance**: View configuration is set once and reused
-- **Memory Efficient**: Only document-specific data changes during runtime
+* **Password Retry**: Update password without reconfiguring the entire view
+* **Document Switching**: Load different documents while preserving view settings
+* **Compose-Friendly**: Matches AndroidView's factory/update pattern
+* **Performance**: View configuration is set once and reused
+* **Memory Efficient**: Only document-specific data changes during runtime
 
 ## PDF Thumbnail Generation
 
@@ -129,13 +129,13 @@ corrupted. See [Use Case Implementations](docs/Use_Case_Implementations.md) for 
 
 For detailed API references, use case implementations, and project information, see:
 
-- [API Documentation](docs/API_Documentation.md) - Comprehensive guide to all parameters, methods,
+* [API Documentation](docs/API_Documentation.md) - Comprehensive guide to all parameters, methods,
   and classes.
-- [Use Case Implementations](docs/Use_Case_Implementations.md) - Practical examples for common
+* [Use Case Implementations](docs/Use_Case_Implementations.md) - Practical examples for common
   scenarios.
-- [Changelog](docs/CHANGELOG.md) - List of changes and updates.
-- [Version History](docs/VERSION_HISTORY.md) - Detailed version release notes.
-- [Docs README](docs/README.md) - Additional documentation overview.
+* [Changelog](docs/CHANGELOG.md) - List of changes and updates.
+* [Version History](docs/VERSION_HISTORY.md) - Detailed version release notes.
+* [Docs README](docs/README.md) - Additional documentation overview.
 
 ## Contributing
 
@@ -172,4 +172,4 @@ We hope you find AndroidPDFPreview to be a valuable tool for developing your And
     See the License for the specific language governing permissions and
     limitations under the License.
 
-** Happy coding! **
+**Happy coding!**
