@@ -15,7 +15,7 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 | Version   | Release Date | Type  | Key Features                                                                       |
 |-----------|--------------|-------|------------------------------------------------------------------------------------|
-| **1.2.4** | 2025-10-28   | Patch | Critical bug fix: page calculation accuracy with page snap enabled                |
+| **1.2.4** | 2025-10-29   | Patch | Critical bug fix: page navigation callbacks & page snap accuracy with improved reliability |
 | **1.2.3** | 2025-10-28   | Patch | Critical bug fix: page navigation callbacks now fire correctly after manual scroll |
 | **1.2.2** | 2025-10-24   | Minor | Performance optimization: smart tile loading, scroll pre-rendering, zoom listener  |
 | **1.2.1** | 2025-10-03   | Minor | Fix password retry issue & update PDFium to chromium/7442                          |
@@ -72,8 +72,10 @@ dependencies {
 - **Benefits**:
   - `onPageScrolled()` reports accurate page numbers during page snap animations
   - No more page number jumping with `pageSnap=true` configuration
-  - Consistent page detection across all scroll scenarios
-  - Improved callback reliability during scroll deceleration
+  - `onPageChanged()` callback now fires reliably after scroll/animation completion
+  - Prevents intermediate page callbacks during smooth animations
+  - Improved page centering for initial load and programmatic navigation
+  - Consistent callback behavior across all navigation methods
 
 ```gradle
 // Old

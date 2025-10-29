@@ -5,7 +5,7 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.4] - 2025-10-28 - Critical Bug Fix: Page Calculation Accuracy with Page Snap
+## [1.2.4] - 2025-10-29 - Critical Bug Fix: Page Navigation Callbacks & Page Snap Accuracy
 
 ### Fixed
 
@@ -21,6 +21,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consistent page detection across scroll gestures, animations, and callbacks
   - Improved reliability with `pageSnap=true` configuration
 
+- **🔄 Page Change Callback Reliability**
+  - Fixed `onPageChanged()` callback not firing after scroll/animation completion
+  - Added `loadPageByOffset()` calls in animation completion handlers (`handleAnimationEnd()` and `performFling()`)
+  - Ensures page change detection occurs after all navigation operations settle
+  - `onPageChanged()` now fires reliably for manual scroll, fling, and programmatic navigation
+
+- **⚡ Intermediate Callback Prevention**
+  - Prevented `onPageScrolled()` from reporting intermediate page numbers during page snap animations
+  - Added animation state check in `updateScrollUIElements()` to skip callbacks during active animations
+  - Eliminates confusing page number reports during smooth page transitions
+  - Cleaner callback sequence with only final page positions reported
+
+- **🎯 JumpTo Page Snapping**
+  - Added page snapping to non-animated `jumpTo()` calls when `pageSnap=true` is enabled
+  - Ensures pages are properly centered after programmatic navigation
+  - Consistent behavior between animated and non-animated page jumps
+  - Fixed initial load page positioning issues
+
 ### Technical Details
 
 - **Page Calculation Algorithm Fix**:
@@ -29,14 +47,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Matches the exact logic used in `loadPageByOffset()` for page change detection
   - Eliminates discrepancies between scroll callbacks and actual page changes
 
+- **Animation Completion Handling**:
+  - `PdfAnimator.handleAnimationEnd()` now calls `loadPageByOffset()` to detect page changes
+  - `PdfAnimator.performFling()` calls `loadPageByOffset()` when fling animations complete
+  - Ensures `onPageChanged()` fires after all animation types (page snap, zoom, fling)
+  - Proper callback sequencing: animation → page detection → callback firing
+
 - **Page Snap Compatibility**:
   - Fixed callback accuracy when `pageSnap=true` is enabled
   - Page numbers remain stable during snap animations
   - No more incorrect page reporting during scroll deceleration
+  - Animation state tracking prevents intermediate callback reports
 
 ### Migration Guide
 
-No code changes required. This is an internal bug fix that improves callback accuracy.
+No code changes required. This is an internal bug fix that improves callback accuracy and reliability.
 
 **What's Fixed:**
 
@@ -48,6 +73,12 @@ pdfView.configureView {
         override fun onPageScrolled(page: Int, positionOffset: Float) {
             // ✅ NOW ACCURATE: No more jumping between wrong page numbers
             // ✅ STABLE: Consistent page numbers during snap animations
+            // ✅ NO INTERMEDIATE: Only reports final page positions
+        }
+        
+        override fun onPageChanged(page: Int, pageCount: Int) {
+            // ✅ NOW FIRES: After scroll/animation completion on new pages
+            // ✅ RELIABLE: Works for all navigation methods (scroll, fling, jumpTo)
         }
     })
 }
@@ -57,7 +88,17 @@ pdfView.configureView {
 
 - `positionOffset` conversion (`docLen * positionOffset`) didn't account for viewport size
 - Screen-center calculation (`-(offset - screenCenter)`) provides accurate page detection
-- Inconsistent algorithms caused callback/page change detection mismatch
+- Animation completion didn't trigger page change detection
+- Page snap animations caused intermediate callback reports
+- Missing `loadPageByOffset()` calls in animation end handlers
+
+**Affected Components:**
+
+- `PDFView.updateScrollUIElements()` - Fixed page calculation and animation state checks
+- `PdfAnimator.handleAnimationEnd()` - Added page change detection after animations
+- `PdfAnimator.performFling()` - Added page change detection after flings
+- `PDFView.jumpTo()` - Added page snapping for non-animated jumps
+- `PDFView.loadComplete()` - Enhanced initial load page positioning
 
 ```gradle
 dependencies {
