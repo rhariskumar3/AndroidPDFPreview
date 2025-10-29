@@ -415,12 +415,20 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         when {
             isSwipeVertical -> when {
                 withAnimation -> pdfAnimator.animateVertical(currentYOffset, offset)
-                else -> moveTo(currentXOffset, offset)
+                else -> {
+                    moveTo(currentXOffset, offset)
+                    // Perform page snap after jumpTo completes to center the page
+                    if (isPageSnap) performPageSnap()
+                }
             }
 
             else -> when {
                 withAnimation -> pdfAnimator.animateHorizontal(currentXOffset, offset)
-                else -> moveTo(offset, currentYOffset)
+                else -> {
+                    moveTo(offset, currentYOffset)
+                    // Perform page snap after jumpTo completes to center the page
+                    if (isPageSnap) performPageSnap()
+                }
             }
         }
         showPage(userPage)
@@ -1002,14 +1010,14 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             }
 
             postDelayed({
-                if (!isRecycled && !isRecycling && _pdfFile != null)
-                    jumpTo(
-                        page = when {
-                            currentPage > 0 -> currentPage
-                            else -> defaultPage
-                        },
-                        withAnimation = false
-                    )
+                if (!isRecycled && !isRecycling && _pdfFile != null) {
+                    val targetPage = when {
+                        currentPage > 0 -> currentPage
+                        else -> defaultPage
+                    }
+                    logWriter?.writeLog("Performing initial jump to page $targetPage", "PDFView")
+                    jumpTo(page = targetPage, withAnimation = false)
+                }
             }, initDelay)
         } catch (e: Exception) {
             loadError(e)
@@ -1233,6 +1241,10 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
      */
     internal fun updateScrollUIElements() {
         if (isRecycled || isRecycling) return
+
+        // Don't report intermediate page numbers during page snap animations
+        // to avoid confusing callbacks with pages "in between" the target pages
+        if (isPageSnap && pdfAnimator.isFlinging) return
 
         when {
             !documentFitsView() -> {

@@ -67,6 +67,7 @@ internal class PdfAnimator(private val pdfView: PDFView) {
         if (pdfView.isRecycled) return
 
         pdfView.updateScrollUIElements()
+        pdfView.loadPageByOffset()  // Check if page changed and fire onPageChanged callback
         pdfView.loadPages()
         isPageAnimating = false
         pdfView.scrollHandle?.hideDelayed()
@@ -159,6 +160,7 @@ internal class PdfAnimator(private val pdfView: PDFView) {
                 flinging = false
                 if (!pdfView.isRecycled) {
                     pdfView.updateScrollUIElements()
+                    pdfView.loadPageByOffset()  // Check if page changed and fire onPageChanged callback
                     pdfView.loadPages()
                     pdfView.scrollHandle?.hideDelayed()
                     pdfView.performPageSnap()
