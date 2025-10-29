@@ -5,6 +5,88 @@ All notable changes to AndroidPDFPreview will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-10-29 - Critical Bug Fix: Page Navigation Callbacks & Page Snap
+
+### Fixed
+
+- **🐛 Page Navigation Callback Issues**
+  - Fixed `onPageChanged()` callback not firing after scroll/animation completion
+  - Added `loadPageByOffset()` calls in animation completion handlers (`handleAnimationEnd()` and `performFling()`)
+  - Ensures page change detection occurs after all navigation operations (scroll, fling, jumpTo, page snap)
+  - `onPageChanged()` now fires reliably for all navigation scenarios
+
+- **📊 Page Snap Animation Callbacks**
+  - Fixed `onPageScrolled()` reporting intermediate page numbers during page snap animations
+  - Added check in `updateScrollUIElements()` to skip callbacks during active page snap animations
+  - Prevents confusing page number jumping during snap animations when `pageSnap=true`
+  - Page callbacks now only report final settled page positions
+
+- **🎯 Initial Load Page Snapping**
+  - Fixed pages not centering with page snap enabled during first load with default page
+  - Added `performPageSnap()` calls to `jumpTo()` for non-animated jumps when page snap is enabled
+  - Pages now properly center on initial load when `pageSnap=true` configuration is used
+  - Improved `loadComplete()` with enhanced logging for debugging initial load issues
+
+- **⚡ Animation State Detection**
+  - Fixed compilation error with incorrect `pdfAnimator.isRunning` property reference
+  - Replaced with correct `pdfAnimator.isFlinging` property that checks for active animations
+  - Proper detection of page snap animations and flings for callback suppression
+
+### Technical Details
+
+- **Animation Completion Handling**:
+  - `PdfAnimator.handleAnimationEnd()` now calls `pdfView.loadPageByOffset()` to detect page changes
+  - `PdfAnimator.performFling()` now calls `pdfView.loadPageByOffset()` when fling completes
+  - Ensures `onPageChanged()` fires after both programmatic animations and user scroll flings
+
+- **Page Snap Callback Prevention**:
+  - `PDFView.updateScrollUIElements()` skips intermediate callbacks when `isPageSnap && pdfAnimator.isFlinging`
+  - Prevents page number jumping during snap animations while maintaining final position callbacks
+  - Uses consistent page calculation logic across all callback scenarios
+
+- **Initial Load Improvements**:
+  - `PDFView.jumpTo()` now performs page snapping for non-animated jumps when page snap is enabled
+  - Enhanced `loadComplete()` with better logging for initial page jump operations
+  - Proper initialization sequence ensures page centering on document load
+
+### Migration Guide
+
+No code changes required. This is an internal bug fix that improves callback reliability and page snap behavior.
+
+**What's Fixed:**
+
+```kotlin
+// Page change callbacks now work correctly in all scenarios
+pdfView.configureView {
+    pageSnap(true)
+    pageNavigationEventListener(object : PageNavigationEventListener {
+        override fun onPageChanged(page: Int, pageCount: Int) {
+            // ✅ NOW FIRES: After scroll completion
+            // ✅ NOW FIRES: After animation completion  
+            // ✅ NOW FIRES: After page snap settles
+        }
+        
+        override fun onPageScrolled(page: Int, positionOffset: Float) {
+            // ✅ NO MORE JUMPING: Stable page numbers during snap animations
+            // ✅ ACCURATE: Reports correct page during scroll
+        }
+    })
+}
+```
+
+**Root Cause:**
+
+- Animation completion didn't trigger page change detection
+- Page snap animations caused intermediate callback reports
+- Initial load timing issues prevented proper page positioning
+- Missing `loadPageByOffset()` calls in animation end handlers
+
+```gradle
+dependencies {
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.5'
+}
+```
+
 ## [1.2.4] - 2025-10-28 - Critical Bug Fix: Page Calculation Accuracy with Page Snap
 
 ### Fixed

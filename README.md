@@ -39,7 +39,7 @@ To install AndroidPDFPreview, add the following dependency to your project's Gra
 
 ```
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.2.4'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.5'
 }
 ```
 
