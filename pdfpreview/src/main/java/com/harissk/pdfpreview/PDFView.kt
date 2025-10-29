@@ -435,9 +435,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         currentPage = userPage
 
         // In single page mode, clear cache of the old page to prevent old parts from showing
-        if (viewConfiguration.singlePageMode && oldPage != currentPage) {
+        if (viewConfiguration.singlePageMode && oldPage != currentPage)
             cacheManager.clearPageCache(oldPage)
-        }
 
         loadPages()
         if (!documentFitsView()) scrollHandle?.setPageNum(currentPage + 1)
@@ -1004,7 +1003,13 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
             postDelayed({
                 if (!isRecycled && !isRecycling && _pdfFile != null)
-                    jumpTo(defaultPage, false)
+                    jumpTo(
+                        page = when {
+                            currentPage > 0 -> currentPage
+                            else -> defaultPage
+                        },
+                        withAnimation = false
+                    )
             }, initDelay)
         } catch (e: Exception) {
             loadError(e)
