@@ -1300,6 +1300,13 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             return
         }
 
+        // In single page mode, don't calculate page from offset since all pages have offset 0
+        // Just reload the current page instead
+        if (viewConfiguration.singlePageMode) {
+            loadPages()
+            return
+        }
+
         val offset: Float
         val screenCenter: Float
         when {
