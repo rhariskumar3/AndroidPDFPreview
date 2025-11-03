@@ -13,7 +13,7 @@ cd "$PROJECT_ROOT"
 echo "Current directory: $(pwd)"
 
 # Release & base URL
-RELEASE="chromium/7442"
+RELEASE="chromium/7506"
 BASE_URL="https://github.com/bblanchon/pdfium-binaries/releases/download/${RELEASE}"
 echo "Release: ${RELEASE}"
 
