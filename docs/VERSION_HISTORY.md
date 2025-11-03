@@ -4,19 +4,21 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 📋 Current Version
 
-**[1.2.5](./CHANGELOG.md#125---2025-10-29---critical-bug-fix-page-navigation-callbacks--page-snap)** - Latest Release (October 29, 2025)
+**[1.2.6](./CHANGELOG.md#126---2025-11-03---critical-bug-fix-single-page-mode-navigation)** - Latest
+Release (November 3, 2025)
 
-- Fixed `onPageChanged()` callback not firing after scroll/animation completion
-- Fixed `onPageScrolled()` reporting intermediate pages during page snap animations
-- Fixed pages not centering with page snap enabled during first load
-- Improved page navigation callback reliability across all scenarios
+- Fixed `jumpTo()` automatically loading the last page in single-page mode
+- Fixed duplicate `onPageChanged()` callbacks in single-page mode
+- Upgraded PDFium library to chromium/7506 with latest improvements
+- Enhanced single-page mode navigation reliability
 
 ## 📚 Version History
 
 | Version   | Release Date | Type  | Key Features                                                                       |
 |-----------|--------------|-------|------------------------------------------------------------------------------------|
-| **1.2.5** | 2025-10-29   | Patch | Critical bug fix: page navigation callbacks & page snap behavior                  |
-| **1.2.4** | 2025-10-28   | Patch | Critical bug fix: page calculation accuracy with page snap enabled                |
+| **1.2.6** | 2025-11-03   | Patch | Critical bug fix: single-page mode navigation & PDFium chromium/7506 upgrade       |
+| **1.2.5** | 2025-10-29   | Patch | Critical bug fix: page navigation callbacks & page snap behavior                   |
+| **1.2.4** | 2025-10-28   | Patch | Critical bug fix: page calculation accuracy with page snap enabled                 |
 | **1.2.3** | 2025-10-28   | Patch | Critical bug fix: page navigation callbacks now fire correctly after manual scroll |
 | **1.2.2** | 2025-10-24   | Minor | Performance optimization: smart tile loading, scroll pre-rendering, zoom listener  |
 | **1.2.1** | 2025-10-03   | Minor | Fix password retry issue & update PDFium to chromium/7442                          |
@@ -30,7 +32,8 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ## 🔄 Version Status
 
-- ✅ **1.2.5** - Current (Recommended)
+- ✅ **1.2.6** - Current (Recommended)
+- ✅ **1.2.5** - Previous (Still supported)
 - ✅ **1.2.4** - Previous (Still supported)
 - ✅ **1.2.3** - Previous (Still supported)
 - ✅ **1.2.2** - Previous (Still supported)
@@ -46,7 +49,7 @@ This document provides a quick overview of all AndroidPDFPreview releases.
 
 ```gradle
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.2.5'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.6'
 }
 ```
 
@@ -54,7 +57,7 @@ dependencies {
 
 ```gradle
 dependencies {
-    implementation 'io.github.rhariskumar3:pdfpreview:1.2.4'
+    implementation 'io.github.rhariskumar3:pdfpreview:1.2.5'
 }
 ```
 
@@ -66,16 +69,35 @@ dependencies {
 
 ## 🚀 Upgrade Guide
 
+### From 1.2.5 to 1.2.6
+
+- **Compatibility**: ✅ Fully backward compatible
+- **Breaking Changes**: None
+- **Action Required**: None - just update the version number
+- **Benefits**:
+    - Fixed `jumpTo()` automatically loading last page in single-page mode
+    - Fixed duplicate `onPageChanged()` callbacks in single-page mode
+    - Upgraded PDFium to chromium/7506 with latest improvements and bug fixes
+    - Enhanced single-page mode navigation reliability
+
+```gradle
+// Old
+implementation 'io.github.rhariskumar3:pdfpreview:1.2.5'
+
+// New
+implementation 'io.github.rhariskumar3:pdfpreview:1.2.6'
+```
+
 ### From 1.2.4 to 1.2.5
 
 - **Compatibility**: ✅ Fully backward compatible
 - **Breaking Changes**: None
 - **Action Required**: None - just update the version number
 - **Benefits**:
-  - `onPageChanged()` callback now fires after scroll/animation completion
-  - `onPageScrolled()` no longer reports intermediate pages during page snap animations
-  - Pages properly center with page snap enabled during first load
-  - Improved page navigation callback reliability across all scenarios
+    - `onPageChanged()` callback now fires after scroll/animation completion
+    - `onPageScrolled()` no longer reports intermediate pages during page snap animations
+    - Pages properly center with page snap enabled during first load
+    - Improved page navigation callback reliability across all scenarios
 
 ```gradle
 // Old
@@ -91,10 +113,10 @@ implementation 'io.github.rhariskumar3:pdfpreview:1.2.5'
 - **Breaking Changes**: None
 - **Action Required**: None - just update the version number
 - **Benefits**:
-  - `onPageScrolled()` reports accurate page numbers during page snap animations
-  - No more page number jumping with `pageSnap=true` configuration
-  - Consistent page detection across all scroll scenarios
-  - Improved callback reliability during scroll deceleration
+    - `onPageScrolled()` reports accurate page numbers during page snap animations
+    - No more page number jumping with `pageSnap=true` configuration
+    - Consistent page detection across all scroll scenarios
+    - Improved callback reliability during scroll deceleration
 
 ```gradle
 // Old
@@ -110,10 +132,10 @@ implementation 'io.github.rhariskumar3:pdfpreview:1.2.4'
 - **Breaking Changes**: None
 - **Action Required**: None - just update the version number
 - **Benefits**:
-  - `onPageChanged()` callback now fires correctly after manual scroll stops
-  - `onPageScrolled()` reports accurate page numbers during scroll
-  - More reliable page navigation callbacks across all scenarios
-  - Reduced redundant page loading operations
+    - `onPageChanged()` callback now fires correctly after manual scroll stops
+    - `onPageScrolled()` reports accurate page numbers during scroll
+    - More reliable page navigation callbacks across all scenarios
+    - Reduced redundant page loading operations
 
 ```gradle
 // Old
@@ -129,11 +151,11 @@ implementation 'io.github.rhariskumar3:pdfpreview:1.2.3'
 - **Breaking Changes**: None
 - **Action Required**: None - just update the version number
 - **Benefits**:
-  - 75-80% faster perceived tile loading with center-first rendering
-  - Hybrid scroll optimization eliminates post-scroll delay (2-3s → ~500ms)
-  - New ZoomEventListener for tracking zoom changes
-  - Reset zoom option in jumpTo() method
-  - 90% reduction in cache thrashing at high zoom levels
+    - 75-80% faster perceived tile loading with center-first rendering
+    - Hybrid scroll optimization eliminates post-scroll delay (2-3s → ~500ms)
+    - New ZoomEventListener for tracking zoom changes
+    - Reset zoom option in jumpTo() method
+    - 90% reduction in cache thrashing at high zoom levels
 
 ```gradle
 // Old
@@ -258,8 +280,8 @@ implementation 'io.github.rhariskumar3:pdfpreview:1.0.8'
 
 ## 📊 Release Statistics
 
-- **Total Releases**: 10 versions
-- **Latest Release**: October 29, 2025
+- **Total Releases**: 11 versions
+- **Latest Release**: November 3, 2025
 - **Release Frequency**: Regular updates with improvements
 - **Stability**: Stable and production-ready
 
