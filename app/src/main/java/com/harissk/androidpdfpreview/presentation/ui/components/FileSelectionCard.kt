@@ -142,6 +142,16 @@ private fun ViewerSettingsSection(
             checked = settings.singlePageMode,
             onCheckedChange = { onSettingsChange(settings.copy(singlePageMode = it)) }
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // High Memory Mode Setting
+        SettingRow(
+            title = "High Memory Mode",
+            subtitle = "Use more memory to prevent empty pages during scrolling",
+            checked = settings.highMemoryMode,
+            onCheckedChange = { onSettingsChange(settings.copy(highMemoryMode = it)) }
+        )
     }
 }
 

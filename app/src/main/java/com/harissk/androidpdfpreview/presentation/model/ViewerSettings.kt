@@ -25,4 +25,5 @@ internal data class ViewerSettings(
     val enableAnnotationRendering: Boolean = true,
     val spacing: Float = 10f,
     val singlePageMode: Boolean = false,
+    val highMemoryMode: Boolean = false, // Enable high-memory configuration to prevent empty pages
 )

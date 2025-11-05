@@ -36,6 +36,7 @@ import com.harissk.pdfpreview.listener.PageNavigationEventListener
 import com.harissk.pdfpreview.listener.RenderingEventListener
 import com.harissk.pdfpreview.loadDocument
 import com.harissk.pdfpreview.model.LinkTapEvent
+import com.harissk.pdfpreview.request.PdfViewerConfiguration
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
 import com.harissk.pdfpreview.utils.FitPolicy
 import com.harissk.pdfpreview.validation.PDFDocumentValidator
@@ -97,8 +98,32 @@ internal fun PDFViewer(
                         enableSinglePageMode(viewerSettings.singlePageMode)
                         scrollHandle(DefaultScrollHandle(viewContext))
                         pageSpacingDp(10F) // in dp
-                        enableScrollOptimization(true) // Enable scroll optimization for better performance
+                        enableScrollOptimization(!viewerSettings.highMemoryMode) // Disable optimization in high-memory mode
                         pageFitPolicy(FitPolicy.BOTH)
+
+                        // Apply configuration based on high-memory mode setting
+                        when {
+                            // ULTRA-FAST CONFIGURATION: Optimized for speed, uses more memory
+                            // Reduces tile size for faster initial rendering, increases caches
+                            viewerSettings.highMemoryMode -> renderOptions(
+                                PdfViewerConfiguration(
+                                    enableDebugMode = true, // Enable debug to see loading progress
+                                    thumbnailRenderingQuality = 0.8f, // Good quality thumbnails
+                                    tileSize = 256f, // Smaller tiles for faster initial loading (was 512f)
+                                    offscreenPreloadMarginDp = 500f, // MASSIVE preload area - preload 5x screen height
+                                    renderedTileCacheCapacity = 500, // Cache more rendered tiles
+                                    openPdfPageCapacity = 20, // Keep more pages open
+                                    thumbnailCacheCapacity = 300, // Cache even more thumbnails
+                                    concurrentPageRenderingLimit = 10, // Allow more concurrent rendering
+                                    tileRenderingBatchSize = 80, // Render more tiles per batch
+                                    minimumAllowedZoomLevel = 1f,
+                                    maximumAllowedZoomLevel = 5f
+                                )
+                            )
+
+                            // DEFAULT CONFIGURATION: Balanced memory usage and performance
+                            else -> renderOptions(PdfViewerConfiguration.DEFAULT)
+                        }
 
                         renderingEventListener(object : RenderingEventListener {
                             override fun onPageRendered(pageNumber: Int) {

@@ -100,6 +100,7 @@ fun PDFPreviewScreen(
         val intent = Intent(context, XmlActivity::class.java).apply {
             putExtra("fileName", fileName)
             putExtra("filePath", filePath)
+            putExtra("highMemoryMode", state.viewerSettings.highMemoryMode)
         }
         context.startActivity(intent)
     }

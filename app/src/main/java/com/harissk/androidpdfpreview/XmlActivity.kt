@@ -38,7 +38,9 @@ import com.harissk.pdfpreview.listener.PageNavigationEventListener
 import com.harissk.pdfpreview.listener.RenderingEventListener
 import com.harissk.pdfpreview.loadDocument
 import com.harissk.pdfpreview.model.LinkTapEvent
+import com.harissk.pdfpreview.request.PdfViewerConfiguration
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
+import com.harissk.pdfpreview.utils.FitPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -131,7 +133,11 @@ class XmlActivity : AppCompatActivity() {
             defaultPage = 0,
             swipeHorizontal = false,
             enableAnnotationRendering = true,
-            singlePageMode = false
+            singlePageMode = false,
+            highMemoryMode = intent.getBooleanExtra(
+                "highMemoryMode",
+                false
+            ) // Get from intent, default false
         )
 
         binding.pdfView.configureView {
@@ -140,7 +146,31 @@ class XmlActivity : AppCompatActivity() {
             enableSinglePageMode(viewerSettings.singlePageMode)
             scrollHandle(DefaultScrollHandle(this@XmlActivity))
             pageSpacingDp(10F)
-            enableScrollOptimization(true)
+            enableScrollOptimization(!viewerSettings.highMemoryMode) // Disable optimization in high-memory mode
+            pageFitPolicy(FitPolicy.WIDTH)
+
+            // Apply configuration based on high-memory mode setting
+            when {
+                // ULTRA-FAST CONFIGURATION: Optimized for speed, uses more memory
+                // Reduces tile size for faster initial rendering, increases caches
+                viewerSettings.highMemoryMode -> renderOptions(
+                    PdfViewerConfiguration(
+                        enableDebugMode = false, // Enable debug to see loading progress
+                        thumbnailRenderingQuality = 0.8f, // Good quality thumbnails
+                        tileSize = 256f, // Smaller tiles for faster initial loading (was 512f)
+                        offscreenPreloadMarginDp = 500f, // MASSIVE preload area (was 200f) - preload 5x screen height
+                        renderedTileCacheCapacity = 500, // Increased from 300 - cache more rendered tiles
+                        openPdfPageCapacity = 20, // Increased from 15 - keep more pages open
+                        thumbnailCacheCapacity = 300, // Increased from 200 - cache even more thumbnails
+                        concurrentPageRenderingLimit = 10, // Increased from 5 - allow more concurrent rendering
+                        tileRenderingBatchSize = 80, // Increased from 60 - render more tiles per batch
+                        minimumAllowedZoomLevel = 1f,
+                        maximumAllowedZoomLevel = 5f
+                    )
+                )
+                // DEFAULT CONFIGURATION: Balanced memory usage and performance
+                else -> renderOptions(PdfViewerConfiguration.DEFAULT)
+            }
             renderingEventListener(createRenderingEventListener())
             pageNavigationEventListener(createPageNavigationEventListener())
             gestureEventListener(createGestureEventListener())
