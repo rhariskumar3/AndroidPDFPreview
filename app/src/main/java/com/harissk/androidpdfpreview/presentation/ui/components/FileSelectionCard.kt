@@ -7,15 +7,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -43,7 +53,8 @@ internal fun FileSelectionCard(
         Column(
             modifier = Modifier
                 .padding(24.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -93,7 +104,10 @@ private fun ViewerSettingsSection(
     onSettingsChange: (ViewerSettings) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
         Text(
             text = "Viewer Settings",
             style = MaterialTheme.typography.titleMedium,
@@ -102,7 +116,7 @@ private fun ViewerSettingsSection(
         )
 
         // Default Page Setting
-        TextField(
+        OutlinedTextField(
             value = settings.defaultPage.toString(),
             onValueChange = { value ->
                 val page = value.toIntOrNull()?.coerceAtLeast(0) ?: 0
@@ -111,47 +125,97 @@ private fun ViewerSettingsSection(
             label = { Text("Default Page") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 24.dp),
             singleLine = true
         )
 
-        // Swipe Direction Setting
-        SettingRow(
-            title = "Horizontal Swipe",
-            subtitle = "Enable horizontal page navigation",
-            checked = settings.swipeHorizontal,
-            onCheckedChange = { onSettingsChange(settings.copy(swipeHorizontal = it)) }
-        )
+        // Display Settings
+        SettingsCategory(
+            title = "Display",
+            icon = Icons.Default.Palette
+        ) {
+            SettingRow(
+                title = "Night Mode",
+                subtitle = "Enable dark theme for better readability in low light",
+                checked = settings.enableNightMode,
+                onCheckedChange = { onSettingsChange(settings.copy(enableNightMode = it)) }
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        // Annotation Rendering Setting
-        SettingRow(
-            title = "Render Annotations",
-            subtitle = "Display PDF annotations and comments",
-            checked = settings.enableAnnotationRendering,
-            onCheckedChange = { onSettingsChange(settings.copy(enableAnnotationRendering = it)) }
-        )
+            SettingRow(
+                title = "Anti-aliasing",
+                subtitle = "Enable smooth rendering for better text and graphics quality",
+                checked = settings.enableAntialiasing,
+                onCheckedChange = { onSettingsChange(settings.copy(enableAntialiasing = it)) }
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        // Single Page Mode Setting
-        SettingRow(
-            title = "Single Page Mode",
-            subtitle = "View one page at a time without adjacent page visibility",
-            checked = settings.singlePageMode,
-            onCheckedChange = { onSettingsChange(settings.copy(singlePageMode = it)) }
-        )
+            SettingRow(
+                title = "Render Annotations",
+                subtitle = "Display PDF annotations and comments",
+                checked = settings.enableAnnotationRendering,
+                onCheckedChange = { onSettingsChange(settings.copy(enableAnnotationRendering = it)) }
+            )
+        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // High Memory Mode Setting
-        SettingRow(
-            title = "High Memory Mode",
-            subtitle = "Use more memory to prevent empty pages during scrolling",
-            checked = settings.highMemoryMode,
-            onCheckedChange = { onSettingsChange(settings.copy(highMemoryMode = it)) }
-        )
+        // Interaction Settings
+        SettingsCategory(
+            title = "Interaction",
+            icon = Icons.Default.TouchApp
+        ) {
+            SettingRow(
+                title = "Horizontal Swipe",
+                subtitle = "Enable horizontal page navigation",
+                checked = settings.swipeHorizontal,
+                onCheckedChange = { onSettingsChange(settings.copy(swipeHorizontal = it)) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingRow(
+                title = "Double Tap Zoom",
+                subtitle = "Enable double-tap gestures for zooming in and out",
+                checked = settings.enableDoubleTapZoom,
+                onCheckedChange = { onSettingsChange(settings.copy(enableDoubleTapZoom = it)) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingRow(
+                title = "Single Page Mode",
+                subtitle = "View one page at a time without adjacent page visibility",
+                checked = settings.singlePageMode,
+                onCheckedChange = { onSettingsChange(settings.copy(singlePageMode = it)) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingRow(
+                title = "Auto Page Spacing",
+                subtitle = "Automatically adjust spacing between pages based on screen size",
+                checked = settings.automaticPageSpacing,
+                onCheckedChange = { onSettingsChange(settings.copy(automaticPageSpacing = it)) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Performance Settings
+        SettingsCategory(
+            title = "Performance",
+            icon = Icons.Default.Speed
+        ) {
+            SettingRow(
+                title = "High Memory Mode",
+                subtitle = "Use more memory to prevent empty pages during scrolling",
+                checked = settings.highMemoryMode,
+                onCheckedChange = { onSettingsChange(settings.copy(highMemoryMode = it)) }
+            )
+        }
     }
 }
 
@@ -185,5 +249,47 @@ private fun SettingRow(
             checked = checked,
             onCheckedChange = onCheckedChange
         )
+    }
+}
+
+@Composable
+private fun SettingsCategory(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    content: @Composable () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Category Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 16.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // Category Content
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                content()
+            }
+        }
     }
 }

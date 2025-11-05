@@ -1,6 +1,7 @@
 package com.harissk.androidpdfpreview.presentation.ui.screen
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.util.Log
 import android.view.MotionEvent
 import androidx.compose.foundation.layout.Box
@@ -91,13 +92,20 @@ internal fun PDFViewer(
                 PDFView(viewContext, null).apply {
                     pdfViewRef = this
 
+                    // Set sample background color for testing
+                    setBackgroundColor(Color.parseColor("#E3F2FD")) // Light blue background
+
                     // Configure view-level settings once at factory time
                     configureView {
                         horizontalSwipeNavigation(viewerSettings.swipeHorizontal)
                         enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
                         enableSinglePageMode(viewerSettings.singlePageMode)
+                        enableNightMode(viewerSettings.enableNightMode)
+                        enableDoubleTapZoom(viewerSettings.enableDoubleTapZoom)
+                        enableAntialiasing(viewerSettings.enableAntialiasing)
+                        automaticPageSpacing(viewerSettings.automaticPageSpacing)
                         scrollHandle(DefaultScrollHandle(viewContext))
-                        pageSpacingDp(10F) // in dp
+                        pageSpacingDp(viewerSettings.spacing) // Keep as float for dp
                         enableScrollOptimization(!viewerSettings.highMemoryMode) // Disable optimization in high-memory mode
                         pageFitPolicy(FitPolicy.BOTH)
 

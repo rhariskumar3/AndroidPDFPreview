@@ -26,4 +26,8 @@ internal data class ViewerSettings(
     val spacing: Float = 10f,
     val singlePageMode: Boolean = false,
     val highMemoryMode: Boolean = false, // Enable high-memory configuration to prevent empty pages
+    val enableNightMode: Boolean = false, // Enable night mode for better readability in low light
+    val enableDoubleTapZoom: Boolean = true, // Enable double-tap to zoom functionality
+    val enableAntialiasing: Boolean = true, // Enable anti-aliasing for smoother rendering
+    val automaticPageSpacing: Boolean = false, // Automatically adjust spacing based on screen size
 )

@@ -17,6 +17,7 @@
 package com.harissk.androidpdfpreview
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
@@ -137,15 +138,26 @@ class XmlActivity : AppCompatActivity() {
             highMemoryMode = intent.getBooleanExtra(
                 "highMemoryMode",
                 false
-            ) // Get from intent, default false
+            ), // Get from intent, default false
+            enableNightMode = false,
+            enableDoubleTapZoom = true,
+            enableAntialiasing = true,
+            automaticPageSpacing = false
         )
+
+        // Set sample background color for testing
+        binding.pdfView.setBackgroundColor(Color.parseColor("#FFF3E0")) // Light orange background
 
         binding.pdfView.configureView {
             horizontalSwipeNavigation(viewerSettings.swipeHorizontal)
             enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
             enableSinglePageMode(viewerSettings.singlePageMode)
+            enableNightMode(viewerSettings.enableNightMode)
+            enableDoubleTapZoom(viewerSettings.enableDoubleTapZoom)
+            enableAntialiasing(viewerSettings.enableAntialiasing)
+            automaticPageSpacing(viewerSettings.automaticPageSpacing)
             scrollHandle(DefaultScrollHandle(this@XmlActivity))
-            pageSpacingDp(10F)
+            pageSpacingDp(viewerSettings.spacing)
             enableScrollOptimization(!viewerSettings.highMemoryMode) // Disable optimization in high-memory mode
             pageFitPolicy(FitPolicy.WIDTH)
 

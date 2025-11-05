@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.harissk.androidpdfpreview.presentation.model.ViewerSettings
 import com.harissk.pdfpreview.validation.DocumentValidationResult
 
 @Composable
@@ -43,8 +42,6 @@ internal fun DocumentDetailsCard(
     validationResult: DocumentValidationResult?,
     isLoading: Boolean,
     canPreview: Boolean,
-    viewerSettings: ViewerSettings,
-    onSettingsChange: (ViewerSettings) -> Unit,
     onStartPreview: () -> Unit,
     onPickNewFile: () -> Unit,
     onLaunchXmlActivity: () -> Unit,
@@ -65,12 +62,31 @@ internal fun DocumentDetailsCard(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Document Details",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Column(modifier = Modifier.padding(24.dp)) {
+                    // Header Section
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "Document Details",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Button(
+                            onClick = onStartPreview,
+                            enabled = canPreview,
+                            modifier = Modifier.padding(start = 16.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Preview", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -92,20 +108,10 @@ internal fun DocumentDetailsCard(
                     validationResult = validationResult
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Viewer Settings (Collapsible)
-                ViewerSettingsCard(
-                    settings = viewerSettings,
-                    onSettingsChange = onSettingsChange
-                )
-
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Action Buttons
                 ActionButtonsSection(
-                    canPreview = canPreview,
-                    onStartPreview = onStartPreview,
                     onPickNewFile = onPickNewFile,
                     onLaunchXmlActivity = onLaunchXmlActivity,
                 )
@@ -235,46 +241,7 @@ private fun DocumentInfoSection(
 }
 
 @Composable
-private fun ViewerSettingsCard(
-    settings: ViewerSettings,
-    onSettingsChange: (ViewerSettings) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Preview Settings",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            SettingRow(
-                title = "Horizontal Swipe",
-                checked = settings.swipeHorizontal,
-                onCheckedChange = { onSettingsChange(settings.copy(swipeHorizontal = it)) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingRow(
-                title = "Render Annotations",
-                checked = settings.enableAnnotationRendering,
-                onCheckedChange = { onSettingsChange(settings.copy(enableAnnotationRendering = it)) }
-            )
-        }
-    }
-}
-
-@Composable
 private fun ActionButtonsSection(
-    canPreview: Boolean,
-    onStartPreview: () -> Unit,
     onPickNewFile: () -> Unit,
     onLaunchXmlActivity: () -> Unit,
     modifier: Modifier = Modifier,
@@ -296,16 +263,6 @@ private fun ActionButtonsSection(
         ) {
             Text("Open in Xml")
         }
-    }
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    Button(
-        onClick = onStartPreview,
-        modifier = Modifier.fillMaxWidth(),
-        enabled = canPreview
-    ) {
-        Text("Preview PDF")
     }
 }
 
@@ -331,30 +288,6 @@ private fun InfoRow(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun SettingRow(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        androidx.compose.material3.Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
         )
     }
 }

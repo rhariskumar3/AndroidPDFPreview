@@ -218,10 +218,6 @@ fun PDFPreviewScreen(
                         validationResult = state.validationResult,
                         isLoading = state.isLoading,
                         canPreview = state.canPreview,
-                        viewerSettings = state.viewerSettings,
-                        onSettingsChange = { settings ->
-                            viewModel.handleIntent(PDFPreviewIntent.UpdateViewerSettings(settings))
-                        },
                         onStartPreview = {
                             viewModel.handleIntent(PDFPreviewIntent.NavigateToViewer)
                         },
