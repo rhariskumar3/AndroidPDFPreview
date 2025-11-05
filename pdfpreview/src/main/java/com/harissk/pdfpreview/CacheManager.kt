@@ -40,12 +40,12 @@ import java.util.PriorityQueue
 internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfiguration) {
 
     private val passiveCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(pdfViewerConfiguration.maxCachedBitmaps, PAGE_PART_COMPARATOR)
+        PriorityQueue(pdfViewerConfiguration.renderedTileCacheCapacity, PAGE_PART_COMPARATOR)
     }
     private val activeCache: PriorityQueue<PagePart> by lazy {
-        PriorityQueue(pdfViewerConfiguration.maxCachedBitmaps, PAGE_PART_COMPARATOR)
+        PriorityQueue(pdfViewerConfiguration.renderedTileCacheCapacity, PAGE_PART_COMPARATOR)
     }
-    private val thumbnails = LruCache<Int, PagePart>(pdfViewerConfiguration.maxCachedThumbnails)
+    private val thumbnails = LruCache<Int, PagePart>(pdfViewerConfiguration.thumbnailCacheCapacity)
 
     // Comparator for prioritizing page parts in the cache.  Now a constant
     private companion object {
@@ -70,7 +70,7 @@ internal class CacheManager(private val pdfViewerConfiguration: PdfViewerConfigu
     }
 
     private fun makeAFreeSpace() = synchronized(passiveActiveLock) {
-        while ((activeCache.size + passiveCache.size) >= pdfViewerConfiguration.maxCachedBitmaps) {
+        while ((activeCache.size + passiveCache.size) >= pdfViewerConfiguration.renderedTileCacheCapacity) {
             // Remove from passive first, then active if needed
             passiveCache.poll()?.renderedBitmap?.recycle()
                 ?: activeCache.poll()?.renderedBitmap?.recycle()

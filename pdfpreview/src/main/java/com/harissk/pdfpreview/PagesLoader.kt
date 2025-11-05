@@ -43,7 +43,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
 
     private val thumbnailRect = RectF(0f, 0f, 1f, 1f)
     private val preloadOffset: Int =
-        pdfView.context.toPx(pdfView.pdfViewerConfiguration.preloadMarginDp)
+        pdfView.context.toPx(pdfView.pdfViewerConfiguration.offscreenPreloadMarginDp)
 
     private data class Holder(
         var row: Int = 0,
@@ -78,7 +78,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
         // Maintain tile size at higher zoom levels to prevent blur
         // Use a more aggressive scaling approach for better quality
         val zoomFactor = pdfView.zoom.coerceAtLeast(1f)
-        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize *
+        val effectiveTileSize = pdfView.pdfViewerConfiguration.tileSize *
                 when {
                     zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
                     zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
@@ -112,7 +112,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
 
         // Use effective tile size that maintains quality at higher zoom levels
         val zoomFactor = pdfView.zoom.coerceAtLeast(1f)
-        val effectiveTileSize = pdfView.pdfViewerConfiguration.renderTileSize *
+        val effectiveTileSize = pdfView.pdfViewerConfiguration.tileSize *
                 when {
                     zoomFactor >= 3f -> zoomFactor * 1.5f  // Extra quality at high zoom
                     zoomFactor >= 2f -> zoomFactor * 1.25f // Good quality at medium zoom
@@ -129,8 +129,8 @@ internal class PagesLoader(private val pdfView: PDFView) {
 
         // Validate final results
         if (partRenderWidth.isNaN() || partRenderHeight.isNaN() || partRenderWidth <= 0 || partRenderHeight <= 0) {
-            partRenderWidth = pdfView.pdfViewerConfiguration.renderTileSize.toFloat()
-            partRenderHeight = pdfView.pdfViewerConfiguration.renderTileSize.toFloat()
+            partRenderWidth = pdfView.pdfViewerConfiguration.tileSize.toFloat()
+            partRenderHeight = pdfView.pdfViewerConfiguration.tileSize.toFloat()
         }
     }
 
@@ -340,7 +340,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
                     val gridSize = GridSize(0, 0)
                     getPageColsRows(gridSize, pdfView.currentPage)
                     calculatePartSize(gridSize)
-                    val partsToLoad = pdfView.pdfViewerConfiguration.maxCachedBitmaps
+                    val partsToLoad = pdfView.pdfViewerConfiguration.renderedTileCacheCapacity
                     loadPage(
                         page = pdfView.currentPage,
                         firstRow = 0,
@@ -367,7 +367,7 @@ internal class PagesLoader(private val pdfView: PDFView) {
                     lastYOffset = -yOffset - pdfView.height - scaledPreloadOffset
                 )
 
-                val maxRangesToProcess = 3
+                val maxRangesToProcess = pdfView.pdfViewerConfiguration.concurrentPageRenderingLimit
                 val limitedRangeList = rangeList.take(maxRangesToProcess)
 
                 for (range in limitedRangeList)
@@ -383,13 +383,13 @@ internal class PagesLoader(private val pdfView: PDFView) {
 
                 var loadedParts = 0
                 // Reduced from 50 to 40 to prevent queue overload with prioritized loading
-                val maxPartsPerCall = 40
+                val maxPartsPerCall = pdfView.pdfViewerConfiguration.tileRenderingBatchSize
 
                 for (range in limitedRangeList)
                     try {
                         calculatePartSize(range.gridSize)
                         val partsToLoad = minOf(
-                            pdfView.pdfViewerConfiguration.maxCachedBitmaps - loadedParts,
+                            pdfView.pdfViewerConfiguration.renderedTileCacheCapacity - loadedParts,
                             maxPartsPerCall - loadedParts
                         )
                         if (partsToLoad <= 0) break
@@ -429,22 +429,22 @@ internal class PagesLoader(private val pdfView: PDFView) {
         // Calculate screen center in page coordinates for prioritized loading
         val screenCenterRow = (firstRow + lastRow) / 2f
         val screenCenterCol = (firstCol + lastCol) / 2f
-        
+
         // Build list of tiles with their distance from screen center
         val cellsWithDistance = mutableListOf<Triple<Int, Int, Float>>()
         for (row in firstRow..lastRow) {
             for (col in firstCol..lastCol) {
                 val distance = sqrt(
-                    (row - screenCenterRow).pow(2) + 
-                    (col - screenCenterCol).pow(2)
+                    (row - screenCenterRow).pow(2) +
+                            (col - screenCenterCol).pow(2)
                 )
                 cellsWithDistance.add(Triple(row, col, distance))
             }
         }
-        
+
         // Sort by distance - load center tiles first for better perceived performance
         cellsWithDistance.sortBy { it.third }
-        
+
         // Load tiles in priority order (center to edges)
         var loaded = 0
         for ((row, col, _) in cellsWithDistance) {
@@ -512,8 +512,8 @@ internal class PagesLoader(private val pdfView: PDFView) {
             return
         }
 
-        val thumbWidth = pageSize.width * pdfView.pdfViewerConfiguration.thumbnailQuality
-        val thumbHeight = pageSize.height * pdfView.pdfViewerConfiguration.thumbnailQuality
+        val thumbWidth = pageSize.width * pdfView.pdfViewerConfiguration.thumbnailRenderingQuality
+        val thumbHeight = pageSize.height * pdfView.pdfViewerConfiguration.thumbnailRenderingQuality
 
         // Validate calculated thumbnail dimensions
         if (thumbWidth <= 0f || thumbHeight <= 0f || thumbWidth.isNaN() || thumbHeight.isNaN()) {

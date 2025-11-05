@@ -92,12 +92,12 @@ internal fun PDFViewer(
 
                     // Configure view-level settings once at factory time
                     configureView {
-                        swipeHorizontal(viewerSettings.swipeHorizontal)
+                        horizontalSwipeNavigation(viewerSettings.swipeHorizontal)
                         enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
-                        singlePageMode(viewerSettings.singlePageMode)
+                        enableSinglePageMode(viewerSettings.singlePageMode)
                         scrollHandle(DefaultScrollHandle(viewContext))
-                        spacing(10F) // in dp
-                        scrollOptimization(true) // Enable scroll optimization for better performance
+                        pageSpacingDp(10F) // in dp
+                        enableScrollOptimization(true) // Enable scroll optimization for better performance
                         pageFitPolicy(FitPolicy.BOTH)
 
                         renderingEventListener(object : RenderingEventListener {

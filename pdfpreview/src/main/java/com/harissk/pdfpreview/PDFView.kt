@@ -91,7 +91,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         get() = viewConfiguration.pdfViewerConfiguration
 
     val singlePageMode: Boolean
-        get() = viewConfiguration.singlePageMode
+        get() = viewConfiguration.enableSinglePageMode
 
     val minZoom: Float = DEFAULT_MIN_SCALE
     val midZoom: Float = DEFAULT_MID_SCALE
@@ -251,21 +251,21 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
     }
 
     private fun applyViewConfiguration() {
-        isSwipeEnabled = viewConfiguration.enableSwipe
-        setNightMode(viewConfiguration.nightMode)
-        isDoubleTapEnabled = viewConfiguration.enableDoubleTap
-        isSwipeVertical = !viewConfiguration.swipeHorizontal
-        isAnnotationRendering = viewConfiguration.annotationRendering
+        isSwipeEnabled = viewConfiguration.enableSwipeNavigation
+        setNightMode(viewConfiguration.enableNightMode)
+        isDoubleTapEnabled = viewConfiguration.enableDoubleTapZoom
+        isSwipeVertical = !viewConfiguration.horizontalSwipeNavigation
+        isAnnotationRendering = viewConfiguration.enableAnnotationRendering
         scrollHandle = viewConfiguration.scrollHandle
-        isAntialiasing = viewConfiguration.antialiasing
-        spacingPx = context.toPx(viewConfiguration.spacing)
-        isAutoSpacingEnabled = viewConfiguration.autoSpacing
+        isAntialiasing = viewConfiguration.enableAntialiasing
+        spacingPx = context.toPx(viewConfiguration.pageSpacingDp)
+        isAutoSpacingEnabled = viewConfiguration.automaticPageSpacing
         pageFitPolicy = viewConfiguration.pageFitPolicy
-        isFitEachPage = viewConfiguration.fitEachPage
-        isPageSnap = viewConfiguration.pageSnap
-        isPageFlingEnabled = viewConfiguration.pageFling
-        isScrollOptimizationEnabled = viewConfiguration.scrollOptimization
-        if (viewConfiguration.disableLongPress) dragPinchManager.disableLongPress()
+        isFitEachPage = viewConfiguration.fitEachPageIndividually
+        isPageSnap = viewConfiguration.enablePageSnapping
+        isPageFlingEnabled = viewConfiguration.enablePageFling
+        isScrollOptimizationEnabled = viewConfiguration.enableScrollOptimization
+        if (viewConfiguration.disableLongPressGestures) dragPinchManager.disableLongPress()
         isBestQuality = false
     }
 
@@ -369,8 +369,8 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                     spacingPx = spacingPx,
                     autoSpacing = isAutoSpacingEnabled,
                     fitEachPage = isFitEachPage,
-                    maxPageCacheSize = pdfViewerConfiguration.maxCachedPages,
-                    singlePageMode = viewConfiguration.singlePageMode
+                    maxPageCacheSize = pdfViewerConfiguration.openPdfPageCapacity,
+                    singlePageMode = viewConfiguration.enableSinglePageMode
                 )
             }
 
@@ -443,7 +443,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         currentPage = userPage
 
         // In single page mode, clear cache of the old page to prevent old parts from showing
-        if (viewConfiguration.singlePageMode && oldPage != currentPage)
+        if (viewConfiguration.enableSinglePageMode && oldPage != currentPage)
             cacheManager.clearPageCache(oldPage)
 
         loadPages()
@@ -779,7 +779,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         // Draws parts
         for (part in cacheManager.getPageParts()) drawPart(canvas, part)
-        if (pdfViewerConfiguration.isDebugEnabled && viewConfiguration.renderingEventListener != null)
+        if (pdfViewerConfiguration.enableDebugMode && viewConfiguration.renderingEventListener != null)
             drawWithListener(canvas, currentPage)
 
         // Restores the canvas position
@@ -916,7 +916,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             return
         }
         canvas.drawBitmap(renderedBitmap, srcRect, dstRect, paint)
-        if (pdfViewerConfiguration.isDebugEnabled) {
+        if (pdfViewerConfiguration.enableDebugMode) {
             debugPaint.setColor(if (part.page % 2 == 0) Color.RED else Color.BLUE)
             canvas.drawRect(dstRect, debugPaint)
         }
@@ -946,7 +946,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         // If quality setting changed to best quality, clear cache to force re-rendering
         if (!wasBestQuality && isBestQuality) when {
-            viewConfiguration.singlePageMode -> cacheManager.clearPageCache(currentPage)
+            viewConfiguration.enableSinglePageMode -> cacheManager.clearPageCache(currentPage)
 
             else -> {
                 // In multi-page mode, we could clear all caches, but for now just let it re-render naturally
@@ -1090,7 +1090,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
         var offsetY1 = offsetY
 
         when {
-            viewConfiguration.singlePageMode -> {
+            viewConfiguration.enableSinglePageMode -> {
                 // In single page mode, allow scrolling around zoomed pages but constrain to page boundaries
                 val pageSize = pdfFile.getPageSize(currentPage) ?: SizeF(0f, 0f)
                 val scaledPageWidth = toCurrentScale(pageSize.width)
@@ -1198,7 +1198,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             if (moveHandle && !documentFitsView()) {
                 scrollHandle?.setScroll(positionOffset)
                 val actualCurrentPage = when {
-                    viewConfiguration.singlePageMode -> currentPage
+                    viewConfiguration.enableSinglePageMode -> currentPage
                     else -> getPageAtPositionOffset(positionOffset)
                 }
                 scrollHandle?.setPageNum(actualCurrentPage + 1)
@@ -1209,7 +1209,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
             if (moveHandle && !documentFitsView()) {
                 scrollHandle?.setScroll(positionOffset)
                 val actualCurrentPage = when {
-                    viewConfiguration.singlePageMode -> currentPage
+                    viewConfiguration.enableSinglePageMode -> currentPage
                     else -> getPageAtPositionOffset(positionOffset)
                 }
                 scrollHandle?.setPageNum(actualCurrentPage + 1)
@@ -1254,7 +1254,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
                 // Calculate actual current page using same logic as loadPageByOffset()
                 // for consistent page detection across scroll and callbacks
                 val actualCurrentPage = when {
-                    viewConfiguration.singlePageMode -> currentPage
+                    viewConfiguration.enableSinglePageMode -> currentPage
                     else -> {
                         val offset: Float
                         val screenCenter: Float
@@ -1302,7 +1302,7 @@ class PDFView(context: Context?, attrs: AttributeSet?) : RelativeLayout(context,
 
         // In single page mode, don't calculate page from offset since all pages have offset 0
         // Just reload the current page instead
-        if (viewConfiguration.singlePageMode) {
+        if (viewConfiguration.enableSinglePageMode) {
             loadPages()
             return
         }

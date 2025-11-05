@@ -68,10 +68,10 @@ dependencies {
    
    // Configure view settings (factory-time, set once)
    binding.pdfView.configureView {
-       swipeHorizontal(true)
+       horizontalSwipeNavigation(true)
        enableAnnotationRendering(true)
-       singlePageMode(true)  // Enable single page mode for e-book experience
-       spacing(10F) // in dp
+       enableSinglePageMode(true)  // Enable single page mode for e-book experience
+       pageSpacingDp(10F) // in dp
        renderingEventListener(...)
        pageNavigationEventListener(...)
        gestureEventListener(...)

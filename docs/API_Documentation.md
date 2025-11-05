@@ -237,23 +237,33 @@ quality, and caching settings. Used within `PdfViewConfiguration` for advanced c
 
 ### Properties
 
-- **isDebugEnabled** (`Boolean`): Enables debug mode for logging. Default: `false`. Useful for
+- **enableDebugMode** (`Boolean`): Enables debug mode for logging. Default: `false`. Useful for
   development.
-- **thumbnailQuality** (`Float`): Quality of thumbnails (0-1, higher is better). Default: `0.7f`.
+- **thumbnailRenderingQuality** (`Float`): Quality of thumbnails (0-1, higher is better). Default:
+  `0.7f`.
   Affects thumbnail clarity and memory usage.
-- **renderTileSize** (`Float`): Size of rendered parts in pixels. Default: `512f`. Larger values
+- **tileSize** (`Float`): Size of rendered parts in pixels. Default: `512f`. Larger values
   improve quality but increase memory usage.
-- **preloadMarginDp** (`Float`): Preload margin in dp (distance to preload content). Default: `20F`.
+- **offscreenPreloadMarginDp** (`Float`): Preload margin in dp (distance to preload content).
+  Default: `20F`.
   Balances performance and responsiveness.
-- **maxCachedBitmaps** (`Int`): Number of bitmaps to cache in memory. Default: `32`. Higher values
+- **renderedTileCacheCapacity** (`Int`): Number of bitmaps to cache in memory. Default: `64`. Higher
+  values
   improve performance but use more memory.
-- **maxCachedPages** (`Int`): Maximum pages kept in view. Default: `3`. Limits memory usage for
+- **openPdfPageCapacity** (`Int`): Maximum pages kept in view. Default: `3`. Limits memory usage for
   large documents.
-- **maxCachedThumbnails** (`Int`): Number of thumbnail bitmaps to cache. Default: `4`. Optimizes
+- **thumbnailCacheCapacity** (`Int`): Number of thumbnail bitmaps to cache. Default: `4`. Optimizes
   thumbnail loading.
-- **minZoom** (`Float`): Minimum zoom level (e.g., 1.0 for no zoom out). Default: `1f`. Prevents
+- **concurrentPageRenderingLimit** (`Int`): Maximum concurrent page rendering operations. Default:
+  `3`.
+  Prevents overload during loading.
+- **tileRenderingBatchSize** (`Int`): Number of tiles per rendering batch. Default: `40`. Balances
+  smoothness and memory usage.
+- **minimumAllowedZoomLevel** (`Float`): Minimum zoom level (e.g., 1.0 for no zoom out). Default:
+  `1f`. Prevents
   over-zooming out.
-- **maxZoom** (`Float`): Maximum zoom level (e.g., 5.0 for 5x zoom). Default: `5f`. Limits zoom in
+- **maximumAllowedZoomLevel** (`Float`): Maximum zoom level (e.g., 5.0 for 5x zoom). Default: `5f`.
+  Limits zoom in
   to prevent performance issues.
 
 ## FitPolicy
@@ -301,7 +311,7 @@ types for PDF handling.
 
 - **Dependencies**: Ensure the Pdfium library is properly integrated. Refer to the project's README
   for setup instructions.
-- **Performance Considerations**: Settings like `maxCachedBitmaps` and `renderTileSize` should be
+- **Performance Considerations**: Settings like `renderedTileCacheCapacity` and `tileSize` should be
   tuned based on device capabilities.
 - **Event Handling**: Implement listeners (e.g., `DocumentLoadListener`) to handle asynchronous
   operations and user feedback.

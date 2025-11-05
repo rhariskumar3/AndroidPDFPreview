@@ -30,12 +30,12 @@ import com.harissk.androidpdfpreview.databinding.ActivityXmlBinding
 import com.harissk.androidpdfpreview.presentation.model.ViewerSettings
 import com.harissk.pdfium.exception.PageRenderingException
 import com.harissk.pdfium.listener.LogWriter
+import com.harissk.pdfpreview.configureView
 import com.harissk.pdfpreview.link.LinkHandler
 import com.harissk.pdfpreview.listener.DocumentLoadListener
 import com.harissk.pdfpreview.listener.GestureEventListener
 import com.harissk.pdfpreview.listener.PageNavigationEventListener
 import com.harissk.pdfpreview.listener.RenderingEventListener
-import com.harissk.pdfpreview.configureView
 import com.harissk.pdfpreview.loadDocument
 import com.harissk.pdfpreview.model.LinkTapEvent
 import com.harissk.pdfpreview.scroll.DefaultScrollHandle
@@ -135,12 +135,12 @@ class XmlActivity : AppCompatActivity() {
         )
 
         binding.pdfView.configureView {
-            swipeHorizontal(viewerSettings.swipeHorizontal)
+            horizontalSwipeNavigation(viewerSettings.swipeHorizontal)
             enableAnnotationRendering(viewerSettings.enableAnnotationRendering)
-            singlePageMode(viewerSettings.singlePageMode)
+            enableSinglePageMode(viewerSettings.singlePageMode)
             scrollHandle(DefaultScrollHandle(this@XmlActivity))
-            spacing(10F)
-            scrollOptimization(true)
+            pageSpacingDp(10F)
+            enableScrollOptimization(true)
             renderingEventListener(createRenderingEventListener())
             pageNavigationEventListener(createPageNavigationEventListener())
             gestureEventListener(createGestureEventListener())

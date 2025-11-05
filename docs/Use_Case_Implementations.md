@@ -33,8 +33,8 @@ complete page without adjacent page visibility.
 val viewConfig = PdfViewConfiguration.Builder()
     .singlePageMode(true)  // Enable single page mode
     .pageFitPolicy(FitPolicy.BOTH)  // Fit entire page to view
-    .enableSwipe(true)  // Allow swipe gestures for page navigation
-    .swipeHorizontal(false)  // Vertical scrolling between pages
+    .enableSwipeNavigation(true)  // Allow swipe gestures for page navigation
+    .horizontalSwipeNavigation(false)  // Vertical scrolling between pages
     .scrollHandle(DefaultScrollHandle(context))  // Optional scroll handle
     .documentLoadListener(object : DocumentLoadListener {
         override fun onDocumentLoaded(totalPages: Int) {
@@ -67,8 +67,8 @@ pdfView.loadDocument(documentSource) {
 val request = PdfRequest.Builder(documentSource)
     .singlePageMode(true)  // Enable single page mode
     .pageFitPolicy(FitPolicy.BOTH)  // Fit entire page to view
-    .enableSwipe(true)  // Allow swipe gestures
-    .swipeHorizontal(false)  // Vertical scrolling
+    .enableSwipeNavigation(true)  // Allow swipe gestures
+    .horizontalSwipeNavigation(false)  // Vertical scrolling
     .defaultPage(0)  // Start at first page
     .documentLoadListener(object : DocumentLoadListener {
         override fun onDocumentLoaded(totalPages: Int) {
@@ -123,21 +123,21 @@ enabled.
 
 ```kotlin
 val request = PdfRequest.Builder(documentSource)
-    .fitEachPage(false)  // Allow multiple pages in view
+    .fitEachPageIndividually(false)  // Allow multiple pages in view
     .pageFitPolicy(FitPolicy.WIDTH)  // Fit width for side-by-side
-    .enableSwipe(true)  // Enable swiping
-    .swipeHorizontal(true)  // Horizontal swiping for page pairs
-    .pageSnap(true)  // Snap to page boundaries
-    .spacing(10f)  // Space between pages
+    .enableSwipeNavigation(true)  // Enable swiping
+    .horizontalSwipeNavigation(true)  // Horizontal swiping for page pairs
+    .enablePageSnapping(true)  // Snap to page boundaries
+    .pageSpacingDp(10f)  // Space between pages
     .defaultPage(0)  // Start at first page
     .build()
 ```
 
 ### Explanation
 
-- `fitEachPage(false)` allows multiple pages in the view.
-- `swipeHorizontal(true)` enables horizontal navigation.
-- Adjust `spacing` for visual separation between pages.
+- `fitEachPageIndividually(false)` allows multiple pages in the view.
+- `horizontalSwipeNavigation(true)` enables horizontal navigation.
+- Adjust `pageSpacingDp` for visual separation between pages.
 - For even/odd page pairing, handle programmatically in navigation logic.
 
 ### Best Practices
@@ -153,8 +153,8 @@ Disable all user gestures and rely on programmatic scrolling/navigation for cont
 
 ```kotlin
 val request = PdfRequest.Builder(documentSource)
-    .enableSwipe(false)  // Disable swipe gestures
-    .enableDoubleTap(false)  // Disable double-tap zoom
+    .enableSwipeNavigation(false)  // Disable swipe gestures
+    .enableDoubleTapZoom(false)  // Disable double-tap zoom
     .scrollHandle(null)  // No scroll handle
     .disableLongPress()  // Disable long-press
     .gestureEventListener(object : GestureEventListener {
@@ -500,16 +500,16 @@ Enable zoom controls and annotation rendering for interactive viewing.
 
 ```kotlin
 val request = PdfRequest.Builder(documentSource)
-    .enableDoubleTap(true)  // Enable double-tap zoom
+    .enableDoubleTapZoom(true)  // Enable double-tap zoom
     .renderOptions(
         PdfViewerConfiguration(
-            minZoom = 1f,
-            maxZoom = 3f,  // Limit zoom levels
-            isDebugEnabled = false
+            minimumAllowedZoomLevel = 1f,
+            maximumAllowedZoomLevel = 3f,  // Limit zoom levels
+            enableDebugMode = false
         )
     )
     .enableAnnotationRendering(true)  // Render annotations
-    .nightMode(false)  // Or true for dark mode
+    .enableNightMode(false)  // Or true for dark mode
     .zoomEventListener(object : ZoomEventListener {
         override fun onZoomChanged(newZoom: Float, oldZoom: Float) {
             // Handle zoom changes
@@ -549,13 +549,13 @@ Configure for efficient loading and rendering of large PDFs.
 val request = PdfRequest.Builder(documentSource)
     .renderOptions(
         PdfViewerConfiguration(
-            renderTileSize = 256f,  // Smaller tiles for memory efficiency
-            maxCachedBitmaps = 16,  // Reduce cache
-            preloadMarginDp = 10f  // Smaller preload area
+            tileSize = 256f,  // Smaller tiles for memory efficiency
+            renderedTileCacheCapacity = 16,  // Reduce cache
+            offscreenPreloadMarginDp = 10f  // Smaller preload area
         )
     )
-    .scrollOptimization(true)  // Enable scroll optimization
-    .antialiasing(false)  // Disable for performance
+    .enableScrollOptimization(true)  // Enable scroll optimization
+    .enableAntialiasing(false)  // Disable for performance
     .build()
 ```
 
@@ -567,7 +567,7 @@ val request = PdfRequest.Builder(documentSource)
 ### Best Practices
 
 - Monitor memory usage on target devices.
-- Use `thumbnailQuality` for faster thumbnail loading.
+- Use `thumbnailRenderingQuality` for faster thumbnail loading.
 
 ## 7. Custom Gesture Handling
 

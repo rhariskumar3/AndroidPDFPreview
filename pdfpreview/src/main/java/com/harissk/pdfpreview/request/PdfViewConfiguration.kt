@@ -30,20 +30,20 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * These settings are typically set once when the view is created (factory time)
  * and remain consistent across different document loads.
  *
- * @property enableSwipe Enables or disables swipe gestures for page navigation. Defaults to true.
- * @property enableDoubleTap Enables or disables double tap gestures for zooming. Defaults to true.
- * @property swipeHorizontal If true, swipe gestures will navigate horizontally instead of vertically. Defaults to false.
- * @property annotationRendering Enables or disables rendering of PDF annotations. Defaults to false.
- * @property antialiasing Enables or disables anti-aliasing for smoother rendering. Defaults to true.
- * @property spacing The spacing between pages in dp. Defaults to 0F.
- * @property autoSpacing If true, automatically adjusts spacing between pages based on screen size. Defaults to false.
+ * @property enableSwipeNavigation Enables or disables swipe gestures for page navigation. Defaults to true.
+ * @property enableDoubleTapZoom Enables or disables double tap gestures for zooming. Defaults to true.
+ * @property horizontalSwipeNavigation If true, swipe gestures will navigate horizontally instead of vertically. Defaults to false.
+ * @property enableAnnotationRendering Enables or disables rendering of PDF annotations. Defaults to false.
+ * @property enableAntialiasing Enables or disables anti-aliasing, which smooths jagged edges in rendered text and graphics by blending edge pixels, resulting in cleaner, more professional-looking content at the cost of slightly higher rendering time. Defaults to true.
+ * @property pageSpacingDp The spacing between pages in dp. Defaults to 0F.
+ * @property automaticPageSpacing If true, automatically adjusts spacing between pages based on screen size. Defaults to false.
  * @property pageFitPolicy The policy to use for fitting the page content to the screen. Defaults to [FitPolicy.WIDTH].
- * @property fitEachPage If true, each page will be individually fitted to the screen. Defaults to false.
- * @property pageFling Enables or disables page flinging for faster navigation. Defaults to false.
- * @property pageSnap Enables or disables page snapping, where pages will snap to the screen edges. Defaults to false.
- * @property scrollOptimization Enables or disables scroll optimization. When true, bitmap generation is skipped during scrolling for better performance, but may show empty areas when scrolling to new content. Defaults to true.
- * @property nightMode Enables or disables night mode, which inverts the colors for better readability in low-light conditions. Defaults to false.
- * @property disableLongPress Disables long press gestures on the PDF view. Defaults to false.
+ * @property fitEachPageIndividually If true, each page will be individually fitted to the screen. Defaults to false.
+ * @property enablePageFling Enables or disables inertial scrolling where swipes continue moving with momentum after finger lift, like throwing a page. Provides faster navigation through momentum physics. Defaults to false.
+ * @property enablePageSnapping Enables or disables automatic page alignment where scrolling stops at page boundaries, ensuring pages are fully visible without partial overlaps. Defaults to false.
+ * @property enableScrollOptimization Enables or disables scroll performance optimization that skips bitmap rendering during active scrolling to improve responsiveness, potentially showing blank areas that fill in after scrolling stops. Defaults to true.
+ * @property enableNightMode Enables or disables night mode, which inverts the colors for better readability in low-light conditions. Defaults to false.
+ * @property disableLongPressGestures Disables long press gestures on the PDF view. Defaults to false.
  * @property scrollHandle The type of scroll handle to display. Defaults to null (no scroll handle).
  * @property pdfViewerConfiguration Custom rendering options for the PDF document. Defaults to [PdfViewerConfiguration.DEFAULT].
  * @property renderingEventListener A listener to be notified of rendering events (e.g., when a page is rendered). Defaults to null.
@@ -52,23 +52,23 @@ import com.harissk.pdfpreview.utils.FitPolicy
  * @property gestureEventListener A listener to be notified of gesture events (e.g., when a gesture is detected). Defaults to null.
  * @property linkHandler A handler for processing link clicks in the PDF document. Defaults to null.
  * @property logWriter A writer for logging messages and errors. Defaults to null.
- * @property singlePageMode When true, displays only one page at a time in both portrait and landscape orientations, with no visibility of adjacent pages. When false, uses the traditional continuous scroll behavior. Defaults to false.
+ * @property enableSinglePageMode When true, displays exactly one page at a time with no adjacent page visibility, like a traditional document viewer. When false, allows continuous scrolling with multiple pages visible simultaneously. Defaults to false.
  */
 data class PdfViewConfiguration(
-    val enableSwipe: Boolean = true,
-    val enableDoubleTap: Boolean = true,
-    val swipeHorizontal: Boolean = false,
-    val annotationRendering: Boolean = false,
-    val antialiasing: Boolean = true,
-    val spacing: Float = 0F,
-    val autoSpacing: Boolean = false,
+    val enableSwipeNavigation: Boolean = true,
+    val enableDoubleTapZoom: Boolean = true,
+    val horizontalSwipeNavigation: Boolean = false,
+    val enableAnnotationRendering: Boolean = false,
+    val enableAntialiasing: Boolean = true,
+    val pageSpacingDp: Float = 0F,
+    val automaticPageSpacing: Boolean = false,
     val pageFitPolicy: FitPolicy = FitPolicy.WIDTH,
-    val fitEachPage: Boolean = false,
-    val pageFling: Boolean = false,
-    val pageSnap: Boolean = false,
-    val scrollOptimization: Boolean = true,
-    val nightMode: Boolean = false,
-    val disableLongPress: Boolean = false,
+    val fitEachPageIndividually: Boolean = false,
+    val enablePageFling: Boolean = false,
+    val enablePageSnapping: Boolean = false,
+    val enableScrollOptimization: Boolean = true,
+    val enableNightMode: Boolean = false,
+    val disableLongPressGestures: Boolean = false,
     val scrollHandle: ScrollHandle? = null,
     val pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT,
     val renderingEventListener: RenderingEventListener? = null,
@@ -77,24 +77,24 @@ data class PdfViewConfiguration(
     val gestureEventListener: GestureEventListener? = null,
     val linkHandler: LinkHandler? = null,
     val logWriter: LogWriter? = null,
-    val singlePageMode: Boolean = false,
+    val enableSinglePageMode: Boolean = false,
 ) {
 
     class Builder {
-        private var enableSwipe: Boolean = true
-        private var enableDoubleTap: Boolean = true
-        private var swipeHorizontal: Boolean = false
-        private var annotationRendering: Boolean = false
-        private var antialiasing: Boolean = true
-        private var spacing: Float = 0F
-        private var autoSpacing: Boolean = false
+        private var enableSwipeNavigation: Boolean = true
+        private var enableDoubleTapZoom: Boolean = true
+        private var horizontalSwipeNavigation: Boolean = false
+        private var enableAnnotationRendering: Boolean = false
+        private var enableAntialiasing: Boolean = true
+        private var pageSpacingDp: Float = 0F
+        private var automaticPageSpacing: Boolean = false
         private var pageFitPolicy: FitPolicy = FitPolicy.WIDTH
-        private var fitEachPage: Boolean = false
-        private var pageFling: Boolean = false
-        private var pageSnap: Boolean = false
-        private var scrollOptimization: Boolean = true
-        private var nightMode: Boolean = false
-        private var disableLongPress: Boolean = false
+        private var fitEachPageIndividually: Boolean = false
+        private var enablePageFling: Boolean = false
+        private var enablePageSnapping: Boolean = false
+        private var enableScrollOptimization: Boolean = true
+        private var enableNightMode: Boolean = false
+        private var disableLongPressGestures: Boolean = false
         private var scrollHandle: ScrollHandle? = null
         private var pdfViewerConfiguration: PdfViewerConfiguration = PdfViewerConfiguration.DEFAULT
         private var renderingEventListener: RenderingEventListener? = null
@@ -103,40 +103,40 @@ data class PdfViewConfiguration(
         private var gestureEventListener: GestureEventListener? = null
         private var linkHandler: LinkHandler? = null
         private var logWriter: LogWriter? = null
-        private var singlePageMode: Boolean = false
+        private var enableSinglePageMode: Boolean = false
 
-        fun enableSwipe(enableSwipe: Boolean): Builder {
-            this.enableSwipe = enableSwipe
+        fun enableSwipeNavigation(enableSwipeNavigation: Boolean): Builder {
+            this.enableSwipeNavigation = enableSwipeNavigation
             return this
         }
 
-        fun enableDoubleTap(doubleTap: Boolean): Builder {
-            this.enableDoubleTap = doubleTap
+        fun enableDoubleTapZoom(doubleTapZoom: Boolean): Builder {
+            this.enableDoubleTapZoom = doubleTapZoom
             return this
         }
 
-        fun swipeHorizontal(swipeHorizontal: Boolean): Builder {
-            this.swipeHorizontal = swipeHorizontal
+        fun horizontalSwipeNavigation(horizontalSwipeNavigation: Boolean): Builder {
+            this.horizontalSwipeNavigation = horizontalSwipeNavigation
             return this
         }
 
         fun enableAnnotationRendering(annotationRendering: Boolean): Builder {
-            this.annotationRendering = annotationRendering
+            this.enableAnnotationRendering = annotationRendering
             return this
         }
 
         fun enableAntialiasing(antialiasing: Boolean): Builder {
-            this.antialiasing = antialiasing
+            this.enableAntialiasing = antialiasing
             return this
         }
 
-        fun spacing(spacing: Float): Builder {
-            this.spacing = spacing
+        fun pageSpacingDp(pageSpacingDp: Float): Builder {
+            this.pageSpacingDp = pageSpacingDp
             return this
         }
 
-        fun autoSpacing(autoSpacing: Boolean): Builder {
-            this.autoSpacing = autoSpacing
+        fun automaticPageSpacing(automaticPageSpacing: Boolean): Builder {
+            this.automaticPageSpacing = automaticPageSpacing
             return this
         }
 
@@ -145,33 +145,33 @@ data class PdfViewConfiguration(
             return this
         }
 
-        fun fitEachPage(fitEachPage: Boolean): Builder {
-            this.fitEachPage = fitEachPage
+        fun fitEachPageIndividually(fitEachPageIndividually: Boolean): Builder {
+            this.fitEachPageIndividually = fitEachPageIndividually
             return this
         }
 
-        fun pageSnap(pageSnap: Boolean): Builder {
-            this.pageSnap = pageSnap
+        fun enablePageFling(enablePageFling: Boolean): Builder {
+            this.enablePageFling = enablePageFling
             return this
         }
 
-        fun pageFling(pageFling: Boolean): Builder {
-            this.pageFling = pageFling
+        fun enablePageSnapping(enablePageSnapping: Boolean): Builder {
+            this.enablePageSnapping = enablePageSnapping
             return this
         }
 
-        fun scrollOptimization(scrollOptimization: Boolean): Builder {
-            this.scrollOptimization = scrollOptimization
+        fun enableScrollOptimization(enableScrollOptimization: Boolean): Builder {
+            this.enableScrollOptimization = enableScrollOptimization
             return this
         }
 
-        fun nightMode(nightMode: Boolean): Builder {
-            this.nightMode = nightMode
+        fun enableNightMode(enableNightMode: Boolean): Builder {
+            this.enableNightMode = enableNightMode
             return this
         }
 
-        fun disableLongPress(): Builder {
-            this.disableLongPress = true
+        fun disableLongPressGestures(): Builder {
+            this.disableLongPressGestures = true
             return this
         }
 
@@ -217,26 +217,26 @@ data class PdfViewConfiguration(
             return this
         }
 
-        fun singlePageMode(singlePageMode: Boolean): Builder {
-            this.singlePageMode = singlePageMode
+        fun enableSinglePageMode(enableSinglePageMode: Boolean): Builder {
+            this.enableSinglePageMode = enableSinglePageMode
             return this
         }
 
         fun build() = PdfViewConfiguration(
-            enableSwipe = enableSwipe,
-            enableDoubleTap = enableDoubleTap,
-            swipeHorizontal = swipeHorizontal,
-            annotationRendering = annotationRendering,
-            antialiasing = antialiasing,
-            spacing = spacing,
-            autoSpacing = autoSpacing,
+            enableSwipeNavigation = enableSwipeNavigation,
+            enableDoubleTapZoom = enableDoubleTapZoom,
+            horizontalSwipeNavigation = horizontalSwipeNavigation,
+            enableAnnotationRendering = enableAnnotationRendering,
+            enableAntialiasing = enableAntialiasing,
+            pageSpacingDp = pageSpacingDp,
+            automaticPageSpacing = automaticPageSpacing,
             pageFitPolicy = pageFitPolicy,
-            fitEachPage = fitEachPage,
-            pageSnap = pageSnap,
-            pageFling = pageFling,
-            scrollOptimization = scrollOptimization,
-            nightMode = nightMode,
-            disableLongPress = disableLongPress,
+            fitEachPageIndividually = fitEachPageIndividually,
+            enablePageFling = enablePageFling,
+            enablePageSnapping = enablePageSnapping,
+            enableScrollOptimization = enableScrollOptimization,
+            enableNightMode = enableNightMode,
+            disableLongPressGestures = disableLongPressGestures,
             scrollHandle = scrollHandle,
             pdfViewerConfiguration = pdfViewerConfiguration,
             renderingEventListener = renderingEventListener,
@@ -245,7 +245,7 @@ data class PdfViewConfiguration(
             gestureEventListener = gestureEventListener,
             linkHandler = linkHandler,
             logWriter = logWriter,
-            singlePageMode = singlePageMode,
+            enableSinglePageMode = enableSinglePageMode,
         )
     }
 
